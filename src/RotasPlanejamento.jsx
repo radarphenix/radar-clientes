@@ -17,6 +17,9 @@ usuarioId,
 reabrirRota,
 usuariosPerfis,
 alterarResponsavelRota,
+reenviarAvisoWhatsAppCliente,
+permiteAvisoWhatsAppRotaGrupoAtual,
+finalizarRota,
 }) {
   return (
   <div className="painel-planejamento-rota">
@@ -93,6 +96,16 @@ alterarResponsavelRota,
           onClick={() => fecharRota(rotaSelecionada)}
         >
           Fechar rota
+        </button>
+      )}
+
+      {(rotaSelecionada.status === "FECHADA" || rotaSelecionada.status === "EM_ANDAMENTO") && (
+        <button
+          type="button"
+          className="btn-rota-acao"
+          onClick={() => finalizarRota(rotaSelecionada)}
+        >
+          Finalizar rota
         </button>
       )}
     </>
@@ -182,16 +195,30 @@ alterarResponsavelRota,
                   <span>
                     {cliente?.cidade || "-"} / {cliente?.uf || "-"}
                   </span>
+                  {item.aviso_whatsapp_em && (
+                    <span className="badge-aviso-whatsapp">Avisado no WhatsApp</span>
+                  )}
                 </div>
 
                 {rotaSelecionada.status !== "FINALIZADA" && (
-  <button
-    type="button"
-    className="btn-mini-status remover"
-    onClick={() => removerClienteDaRota(item)}
-  >
-    Remover
-  </button>
+  <div className="acoes-planejamento-rota">
+    <button
+      type="button"
+      className="btn-mini-status whatsapp"
+      disabled={!permiteAvisoWhatsAppRotaGrupoAtual}
+      onClick={() => reenviarAvisoWhatsAppCliente(item)}
+    >
+      {item.aviso_whatsapp_em ? "Reenviar aviso" : "Primeiro aviso"}
+    </button>
+
+    <button
+      type="button"
+      className="btn-mini-status remover"
+      onClick={() => removerClienteDaRota(item)}
+    >
+      Remover
+    </button>
+  </div>
 )}
               </div>
             );

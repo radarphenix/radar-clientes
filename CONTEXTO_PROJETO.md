@@ -1,0 +1,222 @@
+# CONTEXTO_PROJETO
+
+## Regras Operacionais (Copilot + Codex)
+
+- Nao realizar push para GitHub sem solicitacao explicita do usuario.
+- Antes de qualquer alteracao de codigo, criar backup local com data/hora em `.codex-backups/`.
+- Manter este arquivo atualizado ao final de cada bloco de trabalho relevante.
+- Sempre atualizar `MANUAL_USUARIO.md` quando alteracoes funcionais forem concluidas com sucesso.
+
+## Snapshot Atual
+
+- Data: 2026-07-03
+- Branch atual: `main`
+- Situacao de sincronizacao: branch local alinhada com `origin/main` (sem commits locais pendentes de push no momento da atualizacao).
+- Backup pre-alteracoes mais recente: `.codex-backups/20260703_113000_full_width_desktop_header`
+- Migration de Amostras aplicada no Supabase remoto via `supabase db push --linked` em 2026-07-03.
+- Ajuste de contraste global aplicado em `src/app-global.css` e `src/index.css` para melhorar leitura de titulos e campos de busca.
+- Cabecalho de contexto padronizado em `src/App.jsx` com estilo compartilhado em `src/app-global.css` para clientes, amostras, dashboard, administracao e alterar senha.
+
+## Mudancas Locais Relevantes Identificadas
+
+- Frontend:
+  - `src/App.jsx`
+  - `src/amostras.css`
+  - `src/Rotas.jsx`
+  - `src/RotasPlanejamento.jsx`
+  - `src/RotasOperacao.jsx`
+  - `src/admin.css`
+  - `src/clientes.css`
+  - `MANUAL_USUARIO.md`
+- Supabase:
+  - `supabase/migrations/20260629190000_configuracoes_grupos_whatsapp_rotas.sql`
+  - `supabase/migrations/20260629234500_configuracoes_grupos_menu_amostras.sql`
+
+## Proximo Foco Sugerido
+
+- [Concluido neste bloco] Revisao de layout mobile:
+  - `src/app-global.css` recebeu base responsiva para reduzir padding, evitar estouro horizontal e padronizar box sizing
+  - `src/home.css` ganhou versao mobile do topo/home com logo, acoes e titulo em fluxo responsivo, alem de cards de menu e dashboard mais compactos
+  - `src/clientes.css` ajustou busca, botoes e cards de clientes para listas mais leves no celular
+  - `src/rotas.css` refinou cards de rotas, topo de rota aberta, barra de acoes, planejamento e operacao para evitar largura fixa/estouro em telas pequenas
+  - `src/admin.css`, `src/amostras.css` e `src/login.css` receberam ajustes de padding, raio, grids e campos para melhorar leitura no celular
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Ajuste de topo mobile e navegacao interna:
+  - `src/App.jsx` passou a usar estado interno no `window.history` para que o botao voltar do navegador retorne para a tela anterior do Radar
+  - `src/App.jsx` ganhou botao geral `Voltar` em telas internas, usando o historico interno quando disponivel e o menu como fallback
+  - botao mobile de menu passou a usar icone `Menu` do `lucide-react`, deixando de depender de caractere textual
+  - `src/home.css` voltou a exibir o usuario logado no topo mobile, com texto truncado para evitar quebra do layout
+  - `src/app-global.css` recebeu estilos do botao geral de voltar
+  - backup criado em `.codex-backups/20260703_092000_mobile_nav`
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Revisao de layout desktop inspirada no portal anexado:
+  - `src/App.jsx` ganhou menu lateral desktop persistente com atalhos para Inicio, Clientes, Proximos, Rotas, Dashboard, Amostras, Alterar senha e Administracao
+  - `src/App.jsx` calcula iniciais do usuario logado para avatar visual no topo desktop
+  - `src/home.css` passou a ter layout desktop com barra superior fixa azul, menu lateral branco, conteudo deslocado e dashboard/cards com aparencia de portal corporativo
+  - `src/app-global.css` recebeu regras desktop para area central, paineis, margens, botao voltar e fundo da aplicacao
+  - regras desktop ficam em `@media (min-width: 901px)` para preservar os ajustes mobile recentes
+  - backup criado em `.codex-backups/20260703_094500_desktop_layout`
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Correcao de identidade visual Phenix no desktop:
+  - ajuste solicitado apos validacao visual: o anexo deve servir como referencia de estrutura, nao como copia de CSS/estilo
+  - `src/home.css` recolocou identidade Phenix no desktop com azul institucional, acentos laranja, logo em destaque, sidebar propria e cards menos colados ao modelo externo
+  - `src/app-global.css` ajustou fundo e paineis desktop para dialogar com a identidade do Radar/Phenix
+  - regras permanecem restritas ao desktop para preservar os ajustes mobile
+  - backup criado em `.codex-backups/20260703_101500_phenix_desktop_identity`
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Ajuste do topo desktop para a identidade visual Phenix correta:
+  - referencia visual validada pelo usuario: card azul Phenix com logo branco, usuario/perfil em branco e botoes contornados translucidos
+  - `src/home.css` ajustou o header desktop para virar um bloco azul arredondado com logo Phenix sem fundo, titulo/subtitulo em branco e acoes no canto direito
+  - `src/app-global.css` ajustou o respiro superior desktop para acomodar o header Phenix
+  - sidebar desktop foi reposicionada para iniciar abaixo do novo bloco visual
+  - backup criado em `.codex-backups/20260703_103500_phenix_brand_header`
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Alinhamento do desktop ao layout enviado com identidade Phenix:
+  - ajuste de direcao: manter o layout da captura enviada pelo usuario, aplicando a identidade visual Phenix dentro dele
+  - `src/app-global.css` ajustou o canvas desktop para sidebar de 280px, area util iniciando em 310px e cards abaixo do header
+  - `src/home.css` ajustou medidas do header Phenix, margem lateral, grid de cards, sidebar e espaçamentos para aproximar o layout da captura
+  - backup criado em `.codex-backups/20260703_105500_match_phenix_layout`
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Ajuste fino da sidebar desktop no estilo do anexo:
+  - removido o texto "Portal comercial" da area de titulo da sidebar
+  - estado ativo/hover dos botoes da sidebar deixou de usar destaque laranja e passou para azul escuro Phenix (`#032b63`)
+  - backup criado em `.codex-backups/20260703_111500_desktop_sidebar_phenix`
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Topo desktop em largura total:
+  - ajuste solicitado: no desktop a parte superior deve ocupar a pagina inteira, com icone/logo da empresa bem a esquerda, titulo centralizado e usuario/botoes a direita
+  - `src/home.css` mudou o header desktop de bloco dentro do conteudo para barra fixa full-width
+  - `src/home.css` reposicionou a sidebar para iniciar abaixo do topo full-width
+  - `src/app-global.css` reduziu o respiro superior do conteudo para a nova altura do header
+  - backup criado em `.codex-backups/20260703_113000_full_width_desktop_header`
+  - validacao tecnica: `npm.cmd run build` executado com sucesso em 2026-07-03
+- [Concluido neste bloco] Nova area Amostras:
+  - `src/App.jsx` ganhou tela `amostras`, persistida em `TELAS_PERSISTIDAS`, usando o cliente Supabase existente
+  - consulta a tabela `public.amostras_phenix`, ordenando por `updated_at desc` e `id_amostra_oracle desc`
+  - filtros por cliente, produto, fornecedor, maquina e tipo de amostra
+  - lista responsiva com total encontrado, loading, erro e lista vazia
+  - visualizacao refinada em 2026-07-10 para linhas compactas de largura total, com os principais dados visiveis e expansao `Ver detalhes` no proprio item
+  - refinamento posterior removeu reticencias/cortes e manteve visiveis todos os dados operacionais, deixando no expansor apenas campos complementares e de auditoria
+  - cabecalho final de cada linha: codigo e descricao da empresa em uma unica linha (reticencias apenas no nome quando necessario), codigo e produto na linha 2 e somente `#numero` no canto superior direito
+  - resumo operacional em grade 3x2: `Tipo | Maquina | Fornecedor` e `Papel | Duracao | Gramatura`; posicao, espessura e CFM ficam no expansor
+  - menu principal exibe Amostras somente para grupos liberados
+  - cards de clientes exibem atalho Amostras para grupos liberados e abrem a tela com filtro inicial do cliente
+  - painel administrativo ganhou configuracao de acesso a Amostras por grupo (`admin`, `tecnico`, `representante`)
+  - `src/amostras.css` criado para estilos dedicados e `src/clientes.css` ajustado para comportar o novo botao no card
+  - migration local `supabase/migrations/20260629234500_configuracoes_grupos_menu_amostras.sql` adiciona `permite_menu_amostras` em `configuracoes_grupos`
+  - `MANUAL_USUARIO.md` atualizado com a nova tela e a regra administrativa
+- [Concluido neste bloco] Configuracao de envio de WhatsApp nas rotas por grupo de usuario:
+  - migration local `supabase/migrations/20260629190000_configuracoes_grupos_whatsapp_rotas.sql` criada com tabela `configuracoes_grupos`, seed de perfis (`admin`, `tecnico`, `representante`) e policies RLS
+  - `src/App.jsx` agora carrega configuracao por grupo e aplica bloqueio funcional em `Avisar proximo cliente` e `Primeiro aviso/Reenviar aviso`
+  - `src/App.jsx` ganhou painel administrativo para habilitar/desabilitar envio por grupo com salvar/recarregar
+  - `src/Rotas.jsx`, `src/RotasOperacao.jsx` e `src/RotasPlanejamento.jsx` passaram a refletir a permissao com botoes desabilitados e aviso visual
+  - `src/admin.css` ganhou estilos da secao de configuracao por grupo
+  - `MANUAL_USUARIO.md` atualizado com a nova secao de administracao e regra de negocio por grupo
+- [Concluido neste bloco] Ajuste da regra de visibilidade de clientes para perfil `representante`:
+  - `src/App.jsx` agora consulta `clientes_representantes` por `codigo_representante`
+  - consulta considera variantes do codigo do representante com e sem zeros a esquerda
+  - consulta de `clientes` considera variantes do `codigo_cliente` com e sem zeros a esquerda
+  - os `codigo_cliente` retornados sao deduplicados antes da consulta em `clientes`
+  - representantes sem vinculos recebem lista vazia sem quebrar a tela
+  - `clientes.codigo_representante` permanece no modelo e na importacao por compatibilidade
+  - admin continua visualizando todos os clientes
+- [Concluido e validado manualmente] Migration criada em `supabase/migrations/20260622234500_clientes_representantes_rls.sql`:
+  - libera `select` em `clientes_representantes` para usuarios autenticados via RLS
+  - permite representante ler vinculos da nova tabela pelo proprio `codigo_representante`
+  - adiciona policy em `clientes` para leitura por vinculo em `clientes_representantes`
+  - mantem compatibilidade com `clientes.codigo_representante`
+  - validacao manual: login com usuario representante passou a trazer clientes
+  - validacao manual: `select count` na tabela de vinculos retornou o mesmo total exibido no Radar
+- [Concluido neste bloco] Endurecimento de validacoes e robustez do fluxo em `src/App.jsx`:
+  - validacao de e-mail para cadastro/edicao de usuario
+  - normalizacao de e-mail (trim + lowercase)
+  - validacoes adicionais na alteracao de senha interna (minimo 6, senha diferente da atual)
+  - protecao de estado com `try/finally` para evitar tela travada em "Alterando..."
+  - limpeza de estado visual de senha provisoria ao limpar formulario
+- Proximo passo recomendado:
+  - [Concluido neste bloco] Modelo padrao para importacao manual de clientes no painel administrativo:
+    - `src/App.jsx` ganhou geracao de `modelo_importacao_clientes_radar.xlsx` via `xlsx`
+    - modelo usa as colunas que a importacao manual ja consome (`CD_EMPRESA`, `NOME_COMPLETO`, `FANTASIA`, endereco, contato, status e `CD_REPRESENTANT`)
+    - arquivo gerado tem aba `CLIENTES` com exemplo preenchido e aba `INSTRUCOES`
+    - painel administrativo agora exibe botao para baixar o modelo ao lado da selecao da planilha
+    - `src/admin.css` recebeu estilos para os controles de importacao
+  - [Concluido neste bloco] Ajuste do modelo/importacao manual para multiplos representantes:
+    - modelo passou a incluir `CD_REPRESENTANTES` para informar mais de um representante no mesmo cliente
+    - importacao manual deduplica e grava vinculos em `clientes_representantes`
+    - `CD_REPRESENTANT` continua sendo usado como representante principal/compatibilidade em `clientes`
+    - layout da area de importacao foi reorganizado em painel com acoes separadas
+    - refinamento visual posterior alinhou a area administrativa a esquerda, exibiu metricas em blocos compactos e removeu o peso visual do card interno de importacao
+    - migration local `supabase/migrations/20260624223500_clientes_representantes_admin_write.sql` libera escrita admin em `clientes_representantes`
+  - [Concluido neste bloco] Primeiro fluxo de aviso de visita por WhatsApp em Rotas:
+    - `src/App.jsx` ganhou montagem de mensagem padrao para visita programada na semana
+    - barra de acoes da rota ganhou botao `Avisar clientes`, abrindo o WhatsApp do proximo cliente pendente sem aviso
+    - aviso e registrado no item da rota com data, usuario e mensagem
+    - telas de operacao/planejamento exibem selo para cliente ja avisado
+    - migration local `supabase/migrations/20260624232000_rota_clientes_aviso_whatsapp.sql` adiciona campos de auditoria em `rota_clientes`
+    - ajuste posterior removeu o nome da rota da mensagem, adicionou assinatura `Att, usuario - Phenix`, moveu o botao para painel proprio de comunicacao e evitou popup tecnico quando a migration ainda nao foi aplicada no remoto
+    - migrations aplicadas no Supabase remoto via `supabase.cmd db push --linked`: RLS/vinculos de representantes, escrita admin em `clientes_representantes` e campos `aviso_whatsapp_*` em `rota_clientes`
+  - [Concluido neste bloco] Evolucao do aviso WhatsApp com status e historico de eventos:
+    - `src/App.jsx` passou a registrar status `ENVIADO_ABERTURA` ao abrir o WhatsApp, mantendo a regra atual de considerar abertura como envio
+    - `src/App.jsx` passou a inserir historico por evento em `rota_clientes_whatsapp_historico` com rota, cliente, usuario, telefone, mensagem e horario
+    - `src/App.jsx` manteve fallback amigavel para ambientes sem migration aplicada (sem travar fluxo do usuario)
+    - migration local `supabase/migrations/20260624235500_rota_clientes_whatsapp_status_historico.sql` adiciona `aviso_whatsapp_status` em `rota_clientes` e cria tabela historica com RLS
+    - migration aplicada com sucesso no Supabase remoto via `supabase db push --linked` apos ajustes de compatibilidade:
+      - correcao de tipos de chave para `bigint` no historico (`rota_cliente_id`, `rota_id`, `cliente_id`)
+      - policy passou a usar `public.radar_perfil_atual_tipo()` em vez de depender de `public.usuarios_perfis`
+  - [Concluido neste bloco] Visualizacao de historico WhatsApp na tela de rota e ajuste de layout:
+    - `src/App.jsx` passou a carregar historico da tabela `rota_clientes_whatsapp_historico` ao abrir rota
+    - `src/App.jsx` agora mantem lista local de historico para refletir imediatamente novos envios na tela
+    - `src/Rotas.jsx` ganhou painel `Historico de envios do WhatsApp` com data/hora, status, cliente e telefone
+    - `src/RotasTopoDetalhe.jsx` recebeu container dedicado para o botao `Finalizar rota` quando status e `EM_ANDAMENTO`
+    - `src/rotas.css` recebeu estilos do painel de historico e do botao/topo para evitar deslocamento visual
+  - [Concluido neste bloco] Refinamento de usabilidade do fluxo WhatsApp e da tela em andamento:
+    - `src/Rotas.jsx` trocou historico fixo em tela por botao `Ver historico` com popup/modal
+    - `src/Rotas.jsx` moveu o botao `Finalizar rota` para painel abaixo da comunicacao
+    - `src/App.jsx` ganhou funcao `reenviarAvisoWhatsAppCliente` para reenvio por item especifico da rota
+    - `src/RotasOperacao.jsx` ganhou botao `Reenviar WhatsApp` nos cards de proximos clientes
+    - `src/RotasPlanejamento.jsx` ganhou botao `Reenviar WhatsApp` na lista de clientes planejados
+    - `src/rotas.css` recebeu estilos do modal de historico, botao secundario e botoes de reenvio
+  - [Concluido neste bloco] Ajustes finos de layout limpo e regra de reenvio:
+    - `src/Rotas.jsx` moveu o botao `Finalizar rota` para o fim do conteudo da rota, evitando deslocamento visual no topo
+    - `src/RotasOperacao.jsx` agora so permite acionar `Reenviar WhatsApp` quando ja existe `aviso_whatsapp_em`
+    - `src/RotasPlanejamento.jsx` agora so permite acionar `Reenviar WhatsApp` quando ja existe `aviso_whatsapp_em`
+    - `src/rotas.css` suavizou o visual dos botoes de reenvio (estilo neutro com contorno) e ampliou a coluna de acoes no planejamento para evitar corte de texto
+  - [Concluido neste bloco] Ajuste de usabilidade solicitado no fluxo de aviso/finalizacao:
+    - `src/RotasOperacao.jsx` passou a exibir botao sempre habilitado com rotulo dinamico: `Primeiro aviso` ou `Reenviar aviso`
+    - `src/RotasPlanejamento.jsx` passou a exibir botao sempre habilitado com rotulo dinamico: `Primeiro aviso` ou `Reenviar aviso`
+    - `src/RotasBarraAcoes.jsx` passou a exibir `Finalizar rota` no mesmo bloco de acoes quando status e `FECHADA` ou `EM_ANDAMENTO`
+    - `src/RotasPlanejamento.jsx` passou a exibir `Finalizar rota` no mesmo bloco principal onde fica `Fechar rota`
+    - `src/Rotas.jsx` removeu `Finalizar rota` do rodape da tela para evitar deslocamento visual
+  - [Concluido neste bloco] Documentacao de usuario por tela:
+    - criado `MANUAL_USUARIO.md` com descricao completa de telas, botoes, funcoes e regras de negocio
+    - manual definido como documento interno local (nao publicado online)
+    - regra operacional adicionada para manter `MANUAL_USUARIO.md` sempre atualizado apos alteracoes funcionais bem-sucedidas
+  - [Concluido neste bloco] Ajustes de robustez em `supabase/functions/criar-usuario/index.ts`:
+    - validacao de JSON de entrada com retorno 400 em payload invalido
+    - validacao de formato de e-mail
+    - validacao de tipo de perfil permitido (`admin`, `tecnico`, `representante`)
+    - correcao da validacao de `codigo_representante` para impedir vazio mascarado como `000000`
+  - [Concluido neste bloco] Mensagens amigaveis para usuario final:
+    - mapeamento de erros tecnicos de autenticacao no `src/App.jsx` para mensagens claras (login, recuperacao e troca de senha)
+    - mapeamento de erros de criacao de usuario no `src/App.jsx` (e-mail duplicado, permissao, validacoes)
+    - mensagens amigaveis na edge function `supabase/functions/criar-usuario/index.ts`
+  - Status da validacao de cenarios do fluxo `criar-usuario`:
+    - cobertura de regras no codigo revisada para: sucesso, e-mail duplicado, representante sem codigo e usuario sem perfil admin
+    - pendente apenas validacao E2E com ambiente Supabase autenticado (execucao real)
+  - [Concluido em 2026-07-10] Menu lateral desktop ajustado para notebooks:
+    - removido o titulo duplicado `Radar Clientes` do topo da barra lateral
+    - reduzidos os espacamentos verticais para manter todas as opcoes visiveis em telas de menor altura
+    - logo Phenix do cabecalho transformado em atalho acessivel para a pagina inicial
+    - build de producao validado com sucesso (`npm.cmd run build`)
+  - [Concluido em 2026-07-10] Cards da visao de clientes compactados:
+    - card fechado exibe nome em tamanho reduzido, codigo, cidade, distancia e endereco compacto
+    - controle `Ver detalhes` expande telefone, WhatsApp, representante, tipo, prioridade e status
+    - acoes `Waze`, `WhatsApp`, `Acomp.` e `Amostras` permanecem visiveis em uma unica linha de botoes pequenos no desktop
+    - no mobile, as acoes sao exibidas em duas colunas (dois botoes por linha)
+    - removida regra conflitante de telas ate 380px que voltava as acoes para uma coluna; botoes mobile reduzidos para 34px de altura
+  - [Concluido em 2026-07-10] Dashboard redefinido em formato compacto:
+    - indicadores horizontais com icones de 30px, rotulo e numero na mesma faixa
+    - cinco indicadores por linha no desktop, tres em larguras intermediarias e dois no mobile
+    - ranking e rotas pendentes reorganizados em listas menores dentro de paineis discretos
+    - build e lint validados
+    - tipografia, espacamentos, bordas e sombra suavizados sem remover dados
+    - layout mobile mantido em coluna e build de producao validado

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "./supabaseClient";
 import "./app-global.css";
 import "./home.css";
 import "./clientes.css";
+import "./amostras.css";
 import "./login.css";
 import Login from "./Login.jsx";
 import "./admin.css";
@@ -25,20 +26,302 @@ import {
   UserCheck,
   AlertTriangle,
   Trophy,
-  CalendarDays,
+  Eye,
+  EyeOff,
+  Download,
+  Upload,
+  ClipboardList,
+  Menu,
+  ArrowLeft,
 } from "lucide-react";
 
+function detectarLinkRecuperacao() {
+  return (
+    window.location.href.includes("type=recovery") ||
+    window.location.hash.includes("access_token") ||
+    window.location.hash.includes("refresh_token")
+  );
+}
+
+const TELAS_PERSISTIDAS = new Set([
+  "home",
+  "clientes",
+  "proximos",
+  "rotas",
+  "dashboard",
+  "amostras",
+  "alterarSenha",
+  "admin",
+]);
+
+const TELA_ATUAL_STORAGE_KEY = "radarClientes:telaAtual";
+const ROTA_SELECIONADA_STORAGE_KEY = "radarClientes:rotaSelecionadaId";
+
+function carregarTelaSalva() {
+  const telaSalva = window.localStorage.getItem(TELA_ATUAL_STORAGE_KEY);
+
+  return TELAS_PERSISTIDAS.has(telaSalva) ? telaSalva : "home";
+}
+
+function emailValido(valor) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(valor || "").trim());
+}
+
+function extrairMensagemErro(erro) {
+  if (!erro) {
+    return "";
+  }
+
+  if (typeof erro === "string") {
+    return erro;
+  }
+
+  if (typeof erro?.message === "string") {
+    return erro.message;
+  }
+
+  return String(erro);
+}
+
+function mensagemAmigavelAuth(erro, contexto = "geral") {
+  const mensagemOriginal = extrairMensagemErro(erro);
+  const texto = mensagemOriginal.toLowerCase();
+
+  if (texto.includes("invalid login credentials")) {
+    return "E-mail ou senha incorretos. Confira os dados e tente novamente.";
+  }
+
+  if (texto.includes("email not confirmed")) {
+    return "Seu e-mail ainda nao foi confirmado. Verifique sua caixa de entrada.";
+  }
+
+  if (texto.includes("too many requests")) {
+    return "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.";
+  }
+
+  if (texto.includes("same password")) {
+    return "A nova senha deve ser diferente da senha atual.";
+  }
+
+  if (
+    texto.includes("expired") ||
+    texto.includes("otp") ||
+    texto.includes("token")
+  ) {
+    return "Seu link de recuperacao expirou. Solicite um novo link para continuar.";
+  }
+
+  if (contexto === "login") {
+    return "Nao foi possivel entrar agora. Tente novamente em instantes.";
+  }
+
+  if (contexto === "recuperacao") {
+    return "Nao foi possivel enviar o e-mail de recuperacao agora. Tente novamente.";
+  }
+
+  if (contexto === "senha") {
+    return "Nao foi possivel atualizar a senha agora. Tente novamente em instantes.";
+  }
+
+  return "Nao foi possivel concluir esta acao no momento. Tente novamente.";
+}
+
+function mensagemAmigavelCriacaoUsuario(erro) {
+  const mensagemOriginal = extrairMensagemErro(erro);
+  const texto = mensagemOriginal.toLowerCase();
+
+  if (
+    texto.includes("already registered") ||
+    texto.includes("ja existe um usuario")
+  ) {
+    return "Este e-mail ja esta cadastrado no sistema.";
+  }
+
+  if (texto.includes("somente administrador")) {
+    return "Voce nao tem permissao para criar usuarios.";
+  }
+
+  if (texto.includes("codigo do representante")) {
+    return "Informe o codigo do representante para concluir o cadastro.";
+  }
+
+  if (texto.includes("e-mail invalido") || texto.includes("email invalido")) {
+    return "O e-mail informado e invalido. Revise e tente novamente.";
+  }
+
+  if (texto.includes("senha provisoria") || texto.includes("password")) {
+    return "A senha provisoria precisa ter pelo menos 6 caracteres.";
+  }
+
+  return "Nao foi possivel salvar o usuario agora. Verifique os dados e tente novamente.";
+}
+
+function montarVariantesCodigoNumerico(codigo) {
+  const codigoOriginal = String(codigo || "").trim();
+  const somenteDigitos = codigoOriginal.replace(/\D/g, "");
+  const semZeros = somenteDigitos.replace(/^0+/, "") || somenteDigitos;
+  const variantes = [
+    codigoOriginal,
+    somenteDigitos,
+    somenteDigitos.padStart(6, "0"),
+    semZeros,
+    semZeros.padStart(6, "0"),
+  ];
+
+  return [...new Set(variantes.filter(Boolean))];
+}
+
+const TIPOS_PERFIL_WHATSAPP_ROTA = ["admin", "tecnico", "representante"];
+const TIPOS_PERFIL_MENU_AMOSTRAS = ["admin", "tecnico", "representante"];
+
+const CAMPOS_AMOSTRAS = [
+  "id",
+  "id_amostra_oracle",
+  "cd_cliente",
+  "nome_cliente",
+  "cd_produto",
+  "descricao_produto",
+  "fornecedor_concorrente",
+  "posicao",
+  "maquina",
+  "tempo_duracao_dias",
+  "cfm",
+  "gramatura",
+  "espessura",
+  "tipo_papel",
+  "tipo_amostra",
+  "observacoes",
+  "created_by",
+  "created_at",
+  "updated_by",
+  "updated_at",
+  "synced_at",
+];
+
+const CAMPOS_DETALHE_AMOSTRA = [
+  ["id", "ID"],
+  ["id_amostra_oracle", "ID amostra Oracle"],
+  ["cd_cliente", "Codigo cliente"],
+  ["nome_cliente", "Cliente"],
+  ["cd_produto", "Codigo produto"],
+  ["descricao_produto", "Produto"],
+  ["fornecedor_concorrente", "Fornecedor concorrente"],
+  ["posicao", "Posicao"],
+  ["maquina", "Maquina"],
+  ["tempo_duracao_dias", "Tempo duracao dias"],
+  ["cfm", "CFM"],
+  ["gramatura", "Gramatura"],
+  ["espessura", "Espessura"],
+  ["tipo_papel", "Tipo papel"],
+  ["tipo_amostra", "Tipo amostra"],
+  ["observacoes", "Observacoes"],
+  ["created_by", "Criado por"],
+  ["created_at", "Criado em"],
+  ["updated_by", "Atualizado por"],
+  ["updated_at", "Atualizado em"],
+  ["synced_at", "Sincronizado em"],
+];
+
+function construirConfiguracaoWhatsAppPadrao() {
+  return TIPOS_PERFIL_WHATSAPP_ROTA.reduce((acumulado, tipoPerfil) => {
+    acumulado[tipoPerfil] = {
+      tipo_perfil: tipoPerfil,
+      permite_aviso_whatsapp_rota: true,
+    };
+
+    return acumulado;
+  }, {});
+}
+
+function construirConfiguracaoAmostrasPadrao() {
+  return TIPOS_PERFIL_MENU_AMOSTRAS.reduce((acumulado, tipoPerfil) => {
+    acumulado[tipoPerfil] = {
+      tipo_perfil: tipoPerfil,
+      permite_menu_amostras: tipoPerfil === "admin",
+    };
+
+    return acumulado;
+  }, {});
+}
+
+function limparTextoFiltro(valor) {
+  return String(valor || "")
+    .trim()
+    .replace(/[%_,]/g, " ");
+}
+
+function formatarValorAmostra(campo, valor) {
+  if (valor === null || valor === undefined || valor === "") {
+    return "-";
+  }
+
+  if (["created_at", "updated_at", "synced_at"].includes(campo)) {
+    const data = new Date(valor);
+
+    if (!Number.isNaN(data.getTime())) {
+      return data.toLocaleString("pt-BR");
+    }
+  }
+
+  return String(valor);
+}
+
+function SecaoContexto({
+  icone: Icone,
+  titulo,
+  descricao,
+  badge,
+  className = "",
+}) {
+  return (
+    <div className={`secao-contexto ${className}`.trim()}>
+      <div className="secao-contexto-principal">
+        <div className="secao-contexto-icone" aria-hidden="true">
+          <Icone size={22} />
+        </div>
+
+        <div className="secao-contexto-texto">
+          <h2>{titulo}</h2>
+          {descricao && <p>{descricao}</p>}
+        </div>
+      </div>
+
+      {badge && <strong className="secao-contexto-badge">{badge}</strong>}
+    </div>
+  );
+}
+
 function App() {
+  const ignorarProximoHistoricoRef = useRef(false);
+  const ultimaTelaHistoricoRef = useRef(null);
+  const navegacoesInternasRef = useRef(0);
   const [session, setSession] = useState(null);
   const [perfil, setPerfil] = useState(null);
+  const [mensagemLogin, setMensagemLogin] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [senhaAtualInterna, setSenhaAtualInterna] = useState("");
-const [novaSenhaInterna, setNovaSenhaInterna] = useState("");
-const [confirmarSenhaInterna, setConfirmarSenhaInterna] = useState("");
-const [alterandoSenhaInterna, setAlterandoSenhaInterna] = useState(false);
+  const [novaSenhaInterna, setNovaSenhaInterna] = useState("");
+  const [confirmarSenhaInterna, setConfirmarSenhaInterna] = useState("");
+  const [alterandoSenhaInterna, setAlterandoSenhaInterna] = useState(false);
+  const [mostrarSenhaAtualInterna, setMostrarSenhaAtualInterna] =
+    useState(false);
+  const [mostrarNovaSenhaInterna, setMostrarNovaSenhaInterna] = useState(false);
+  const [mostrarConfirmarSenhaInterna, setMostrarConfirmarSenhaInterna] =
+    useState(false);
   const [clientes, setClientes] = useState([]);
   const [filtro, setFiltro] = useState("");
+  const [amostras, setAmostras] = useState([]);
+  const [totalAmostrasEncontradas, setTotalAmostrasEncontradas] = useState(0);
+  const [filtrosAmostras, setFiltrosAmostras] = useState({
+    cliente: "",
+    produto: "",
+    fornecedor: "",
+    maquina: "",
+    tipo: "",
+  });
+  const [carregandoAmostras, setCarregandoAmostras] = useState(false);
+  const [erroAmostras, setErroAmostras] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [importando, setImportando] = useState(false);
   const [resumoGeo, setResumoGeo] = useState(null);
@@ -50,8 +333,9 @@ const [alterandoSenhaInterna, setAlterandoSenhaInterna] = useState(false);
   const [clienteVisita, setClienteVisita] = useState(null);
   const [observacaoVisita, setObservacaoVisita] = useState("");
   const [gravandoVisita, setGravandoVisita] = useState(false);
-  const [telaAtual, setTelaAtual] = useState("home");
+  const [telaAtual, setTelaAtual] = useState(carregarTelaSalva);
   const [clientesDaRota, setClientesDaRota] = useState([]);
+  const [historicoWhatsAppRota, setHistoricoWhatsAppRota] = useState([]);
   const [buscaClienteRota, setBuscaClienteRota] = useState("");
   const [rotas, setRotas] = useState([]);
   const [nomeNovaRota, setNomeNovaRota] = useState("");
@@ -59,41 +343,49 @@ const [alterandoSenhaInterna, setAlterandoSenhaInterna] = useState(false);
   const [filtroResponsavelRotas, setFiltroResponsavelRotas] = useState("");
   const [filtroStatusRotas, setFiltroStatusRotas] = useState("");
   const [rotaSelecionada, setRotaSelecionada] = useState(null);
-  const [modoReordenarRota, setModoReordenarRota] = useState(false);
-  const [sequenciasEditadas, setSequenciasEditadas] = useState({});
-  const [modoRecuperacaoSenha, setModoRecuperacaoSenha] = useState(false);
-const [novaSenha, setNovaSenha] = useState("");
-const [confirmarNovaSenha, setConfirmarNovaSenha] = useState("");
-const [origemOrdenacaoRota, setOrigemOrdenacaoRota] = useState("");
-const [modalCidadeAberto, setModalCidadeAberto] = useState(false);
-const [ultimaCidadeBuscada, setUltimaCidadeBuscada] = useState("");
-const [textoCidadeBusca, setTextoCidadeBusca] = useState("");
+  const [modoRecuperacaoSenha, setModoRecuperacaoSenha] = useState(
+    detectarLinkRecuperacao,
+  );
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState("");
+  const [origemOrdenacaoRota, setOrigemOrdenacaoRota] = useState("");
+  const [modalCidadeAberto, setModalCidadeAberto] = useState(false);
+  const [ultimaCidadeBuscada, setUltimaCidadeBuscada] = useState("");
+  const [textoCidadeBusca, setTextoCidadeBusca] = useState("");
 
-const [sugestoesCidade, setSugestoesCidade] = useState([]);
+  const [sugestoesCidade, setSugestoesCidade] = useState([]);
 
-const [callbackCidadeSelecionada, setCallbackCidadeSelecionada] = useState(null);
+  const [callbackCidadeSelecionada, setCallbackCidadeSelecionada] =
+    useState(null);
 
-const [carregandoCidade, setCarregandoCidade] = useState(false);
+  const [carregandoCidade, setCarregandoCidade] = useState(false);
   useEffect(() => {
-
-    if (
-      perfil?.tipo_perfil === "admin"
-    ) {
+    if (perfil?.tipo_perfil === "admin") {
       carregarUsuariosPerfis(perfil);
     }
-
   }, [perfil]);
 
-  async function carregarPerfil(userId) {
-
-  }
   const [usuariosPerfis, setUsuariosPerfis] = useState([]);
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
-  const [clientesProximosAtivo, setClientesProximosAtivo] = useState(false);
+  const [salvandoUsuario, setSalvandoUsuario] = useState(false);
+  const [carregandoConfiguracoesWhatsApp, setCarregandoConfiguracoesWhatsApp] =
+    useState(false);
+  const [salvandoConfiguracoesWhatsApp, setSalvandoConfiguracoesWhatsApp] =
+    useState(false);
+  const [configuracoesWhatsAppPorGrupo, setConfiguracoesWhatsAppPorGrupo] =
+    useState(construirConfiguracaoWhatsAppPadrao);
+  const [carregandoConfiguracoesAmostras, setCarregandoConfiguracoesAmostras] =
+    useState(false);
+  const [salvandoConfiguracoesAmostras, setSalvandoConfiguracoesAmostras] =
+    useState(false);
+  const [configuracoesAmostrasPorGrupo, setConfiguracoesAmostrasPorGrupo] =
+    useState(construirConfiguracaoAmostrasPadrao);
+  const [mostrarSenhaProvisoria, setMostrarSenhaProvisoria] = useState(false);
   const [usuarioPerfilForm, setUsuarioPerfilForm] = useState({
     nome: "",
     email: "",
     user_id: "",
+    senha_provisoria: "",
     tipo_perfil: "representante",
     codigo_representante: "",
     ativo: true,
@@ -129,66 +421,237 @@ const [carregandoCidade, setCarregandoCidade] = useState(false);
   useEffect(() => {
     iniciarSessao();
 
-const hash = window.location.hash;
+    const { data } = supabase.auth.onAuthStateChange((event, sessionAtual) => {
+      const estaEmRecuperacao = detectarLinkRecuperacao();
 
-if (
-  window.location.href.includes("type=recovery") ||
-  window.location.hash.includes("access_token") ||
-  window.location.hash.includes("refresh_token")
-) {
-  setModoRecuperacaoSenha(true);
-}
+      if (estaEmRecuperacao) {
+        setModoRecuperacaoSenha(true);
+      }
 
-    const { data } = supabase.auth.onAuthStateChange((_event, sessionAtual) => {
-  const estaEmRecuperacao =
-    window.location.href.includes("type=recovery") ||
-    window.location.hash.includes("access_token") ||
-    window.location.hash.includes("refresh_token");
+      setSession(sessionAtual);
 
-  if (estaEmRecuperacao) {
-    setModoRecuperacaoSenha(true);
-  }
+      if (sessionAtual?.user) {
+        if (
+          event === "SIGNED_IN" &&
+          !estaEmRecuperacao &&
+          !window.localStorage.getItem(TELA_ATUAL_STORAGE_KEY)
+        ) {
+          setTelaAtual("home");
+          setRotaSelecionada(null);
+          setClientesDaRota([]);
+          setBuscaClienteRota("");
+          setModoProximos(false);
+          setLocalizacaoUsuario(null);
+          setOrigemOrdenacaoRota("");
+        }
 
-  setSession(sessionAtual);
+        carregarPerfil(sessionAtual.user.id);
+      } else if (event === "SIGNED_OUT") {
+        setPerfil(null);
+        setClientes([]);
+        setRotas([]);
+        setRotaSelecionada(null);
+        setClientesDaRota([]);
+        setHistoricoWhatsAppRota([]);
+        setConfiguracoesWhatsAppPorGrupo(construirConfiguracaoWhatsAppPadrao());
+        setConfiguracoesAmostrasPorGrupo(construirConfiguracaoAmostrasPadrao());
+        setAmostras([]);
+        setErroAmostras("");
+        window.localStorage.removeItem(TELA_ATUAL_STORAGE_KEY);
+        window.localStorage.removeItem(ROTA_SELECIONADA_STORAGE_KEY);
 
-  if (sessionAtual?.user) {
-    if (!estaEmRecuperacao) {
-      setTelaAtual("home");
-    }
-
-    setRotaSelecionada(null);
-    setClientesDaRota([]);
-    setBuscaClienteRota("");
-    setModoProximos(false);
-    setLocalizacaoUsuario(null);
-    setOrigemOrdenacaoRota("");
-
-    carregarPerfil(sessionAtual.user.id);
-  } else {
-    setPerfil(null);
-    setClientes([]);
-    setRotas([]);
-    setRotaSelecionada(null);
-    setClientesDaRota([]);
-
-    if (!estaEmRecuperacao) {
-      setTelaAtual("home");
-    }
-  }
-});
+        if (!estaEmRecuperacao) {
+          setTelaAtual("home");
+        }
+      }
+    });
 
     return () => {
       data.subscription.unsubscribe();
     };
+    // Mantem a assinatura de auth criada uma unica vez na montagem.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-useEffect(() => {
-  const timer = setTimeout(() => {
-    carregarSugestoesCidade(textoCidadeBusca);
-  }, 400);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      carregarSugestoesCidade(textoCidadeBusca);
+    }, 400);
 
-  return () => clearTimeout(timer);
-}, [textoCidadeBusca, ultimaCidadeBuscada]);
+    return () => clearTimeout(timer);
+    // A funcao chamada usa o estado atual da busca e evita repetir o mesmo termo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [textoCidadeBusca, ultimaCidadeBuscada]);
+
+  useEffect(() => {
+    window.localStorage.setItem(TELA_ATUAL_STORAGE_KEY, telaAtual);
+  }, [telaAtual]);
+
+  useEffect(() => {
+    const estadoAtual = window.history.state;
+    const urlAtual = window.location.href;
+
+    if (estadoAtual?.radarClientes && TELAS_PERSISTIDAS.has(estadoAtual.tela)) {
+      ultimaTelaHistoricoRef.current = estadoAtual.tela;
+      ignorarProximoHistoricoRef.current = true;
+      setTelaAtual(estadoAtual.tela);
+    } else if (telaAtual !== "home") {
+      window.history.replaceState(
+        { radarClientes: true, tela: "home" },
+        "",
+        urlAtual,
+      );
+      window.history.pushState(
+        { radarClientes: true, tela: telaAtual },
+        "",
+        urlAtual,
+      );
+      ultimaTelaHistoricoRef.current = telaAtual;
+      navegacoesInternasRef.current = 1;
+    } else {
+      window.history.replaceState(
+        { radarClientes: true, tela: telaAtual },
+        "",
+        urlAtual,
+      );
+      ultimaTelaHistoricoRef.current = telaAtual;
+    }
+
+    function tratarVoltarNavegador(evento) {
+      const telaHistorico = evento.state?.tela;
+
+      if (evento.state?.radarClientes && TELAS_PERSISTIDAS.has(telaHistorico)) {
+        ignorarProximoHistoricoRef.current = true;
+        ultimaTelaHistoricoRef.current = telaHistorico;
+        navegacoesInternasRef.current = Math.max(
+          0,
+          navegacoesInternasRef.current - 1,
+        );
+        setTelaAtual(telaHistorico);
+        return;
+      }
+
+      ignorarProximoHistoricoRef.current = true;
+      ultimaTelaHistoricoRef.current = "home";
+      navegacoesInternasRef.current = 0;
+      setTelaAtual("home");
+      window.history.pushState(
+        { radarClientes: true, tela: "home" },
+        "",
+        window.location.href,
+      );
+    }
+
+    window.addEventListener("popstate", tratarVoltarNavegador);
+
+    return () => {
+      window.removeEventListener("popstate", tratarVoltarNavegador);
+    };
+    // Configura o historico interno uma unica vez por montagem do app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user || !TELAS_PERSISTIDAS.has(telaAtual)) {
+      return;
+    }
+
+    if (ignorarProximoHistoricoRef.current) {
+      ignorarProximoHistoricoRef.current = false;
+      ultimaTelaHistoricoRef.current = telaAtual;
+      return;
+    }
+
+    if (ultimaTelaHistoricoRef.current === telaAtual) {
+      return;
+    }
+
+    window.history.pushState(
+      { radarClientes: true, tela: telaAtual },
+      "",
+      window.location.href,
+    );
+    ultimaTelaHistoricoRef.current = telaAtual;
+    navegacoesInternasRef.current += 1;
+  }, [session?.user, telaAtual]);
+
+  useEffect(() => {
+    if (rotaSelecionada?.id) {
+      window.localStorage.setItem(
+        ROTA_SELECIONADA_STORAGE_KEY,
+        String(rotaSelecionada.id),
+      );
+    }
+  }, [rotaSelecionada]);
+
+  useEffect(() => {
+    if (
+      session?.user &&
+      perfil &&
+      telaAtual === "rotas" &&
+      rotas.length === 0
+    ) {
+      carregarRotas();
+    }
+    // Recarrega as rotas quando a tela restaurada ja abre direto em Rotas.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, perfil, telaAtual, rotas.length]);
+
+  useEffect(() => {
+    if (telaAtual !== "rotas" || rotaSelecionada || rotas.length === 0) {
+      return;
+    }
+
+    const rotaSalvaId = window.localStorage.getItem(
+      ROTA_SELECIONADA_STORAGE_KEY,
+    );
+
+    if (!rotaSalvaId) {
+      return;
+    }
+
+    const rotaSalva = rotas.find((rota) => String(rota.id) === rotaSalvaId);
+
+    if (rotaSalva) {
+      abrirRota(rotaSalva);
+    }
+  }, [telaAtual, rotaSelecionada, rotas]);
+
+  useEffect(() => {
+    if (
+      telaAtual === "rotas" &&
+      rotaSelecionada?.id &&
+      clientesDaRota.length === 0
+    ) {
+      abrirRota(rotaSelecionada);
+    }
+    // Garante os itens da rota quando a rota aberta foi restaurada apos F5.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telaAtual, rotaSelecionada?.id, clientesDaRota.length]);
+
+  const permiteAvisoWhatsAppRotaGrupoAtual =
+    configuracoesWhatsAppPorGrupo?.[perfil?.tipo_perfil]
+      ?.permite_aviso_whatsapp_rota ?? true;
+
+  const permiteMenuAmostrasGrupoAtual =
+    configuracoesAmostrasPorGrupo?.[perfil?.tipo_perfil]
+      ?.permite_menu_amostras === true;
+
+  useEffect(() => {
+    if (!perfil || telaAtual !== "amostras") {
+      return;
+    }
+
+    if (!permiteMenuAmostrasGrupoAtual) {
+      return;
+    }
+
+    if (!amostras.length && !carregandoAmostras) {
+      carregarAmostras(filtrosAmostras);
+    }
+    // Mantem a tela restaurada abastecida sem recarregar a cada digitacao dos filtros.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perfil, telaAtual, permiteMenuAmostrasGrupoAtual]);
 
   async function iniciarSessao() {
     const { data } = await supabase.auth.getSession();
@@ -210,7 +673,7 @@ useEffect(() => {
     });
 
     if (error) {
-      alert("Login não realizado: " + error.message);
+      alert(mensagemAmigavelAuth(error, "login"));
       return;
     }
 
@@ -219,131 +682,151 @@ useEffect(() => {
   }
 
   async function enviarRecuperacaoSenha() {
-  if (!email.trim()) {
-    alert("Informe seu e-mail para receber o link de recuperação.");
-    return;
+    if (!email.trim()) {
+      alert("Informe seu e-mail para receber o link de recuperação.");
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin,
+    });
+
+    if (error) {
+      alert(mensagemAmigavelAuth(error, "recuperacao"));
+      return;
+    }
+
+    alert("Enviamos um e-mail com as instruções para alterar sua senha.");
+  }
+  async function salvarNovaSenha() {
+    if (!novaSenha.trim()) {
+      alert("Informe a nova senha.");
+      return;
+    }
+
+    if (novaSenha !== confirmarNovaSenha) {
+      alert("As senhas não conferem.");
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: novaSenha,
+    });
+
+    if (error) {
+      alert(mensagemAmigavelAuth(error, "senha"));
+      return;
+    }
+
+    alert("Senha alterada com sucesso.");
+
+    setModoRecuperacaoSenha(false);
+
+    setNovaSenha("");
+    setConfirmarNovaSenha("");
+
+    window.location.hash = "";
   }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: window.location.origin,
-  });
+  async function alterarSenhaInterna() {
+    const senhaAtual = senhaAtualInterna.trim();
+    const senhaNova = novaSenhaInterna.trim();
+    const senhaConfirmacao = confirmarSenhaInterna.trim();
+    const emailUsuarioAtual = String(session?.user?.email || "").trim();
 
-  if (error) {
-    alert("Não foi possível enviar o e-mail de recuperação: " + error.message);
-    return;
+    if (!emailUsuarioAtual) {
+      alert("Não foi possível identificar o e-mail do usuário atual.");
+      return;
+    }
+
+    if (!senhaAtual) {
+      alert("Informe a senha atual.");
+      return;
+    }
+
+    if (!senhaNova) {
+      alert("Informe a nova senha.");
+      return;
+    }
+
+    if (senhaNova.length < 6) {
+      alert("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (senhaNova !== senhaConfirmacao) {
+      alert("A nova senha e a confirmação não conferem.");
+      return;
+    }
+
+    if (senhaAtual === senhaNova) {
+      alert("A nova senha deve ser diferente da senha atual.");
+      return;
+    }
+
+    setAlterandoSenhaInterna(true);
+
+    try {
+      const { error: erroLogin } = await supabase.auth.signInWithPassword({
+        email: emailUsuarioAtual,
+        password: senhaAtual,
+      });
+
+      if (erroLogin) {
+        alert("Senha atual inválida.");
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: senhaNova,
+      });
+
+      if (error) {
+        alert(mensagemAmigavelAuth(error, "senha"));
+        return;
+      }
+
+      alert("Senha alterada com sucesso.");
+
+      setSenhaAtualInterna("");
+      setNovaSenhaInterna("");
+      setConfirmarSenhaInterna("");
+    } finally {
+      setAlterandoSenhaInterna(false);
+    }
   }
-
-  alert("Enviamos um e-mail com as instruções para alterar sua senha.");
-}
-async function salvarNovaSenha() {
-  if (!novaSenha.trim()) {
-    alert("Informe a nova senha.");
-    return;
-  }
-
-  if (novaSenha !== confirmarNovaSenha) {
-    alert("As senhas não conferem.");
-    return;
-  }
-
-  const { error } = await supabase.auth.updateUser({
-    password: novaSenha,
-  });
-
-  if (error) {
-    alert("Não foi possível alterar a senha: " + error.message);
-    return;
-  }
-
-  alert("Senha alterada com sucesso.");
-
-  setModoRecuperacaoSenha(false);
-
-  setNovaSenha("");
-  setConfirmarNovaSenha("");
-
-  window.location.hash = "";
-}
-
-async function alterarSenhaInterna() {
-  if (!senhaAtualInterna.trim()) {
-    alert("Informe a senha atual.");
-    return;
-  }
-
-  if (!novaSenhaInterna.trim()) {
-    alert("Informe a nova senha.");
-    return;
-  }
-
-  if (novaSenhaInterna !== confirmarSenhaInterna) {
-    alert("A nova senha e a confirmação não conferem.");
-    return;
-  }
-
-  setAlterandoSenhaInterna(true);
-
-  const { error: erroLogin } = await supabase.auth.signInWithPassword({
-    email: session.user.email,
-    password: senhaAtualInterna,
-  });
-
-  if (erroLogin) {
-    alert("Senha atual inválida.");
-    setAlterandoSenhaInterna(false);
-    return;
-  }
-
-  const { error } = await supabase.auth.updateUser({
-    password: novaSenhaInterna,
-  });
-
-  if (error) {
-    alert("Não foi possível alterar a senha: " + error.message);
-    setAlterandoSenhaInterna(false);
-    return;
-  }
-
-  alert("Senha alterada com sucesso.");
-
-  setSenhaAtualInterna("");
-  setNovaSenhaInterna("");
-  setConfirmarSenhaInterna("");
-
-  setAlterandoSenhaInterna(false);
-}
 
   async function sair() {
+    await supabase.auth.signOut();
 
-  await supabase.auth.signOut();
+    setSession(null);
 
-  setSession(null);
+    setPerfil(null);
 
-  setPerfil(null);
+    setClientes([]);
 
-  setClientes([]);
+    setRotas([]);
 
-  setRotas([]);
+    setClientesDaRota([]);
 
-  setClientesDaRota([]);
+    setRotaSelecionada(null);
 
-  setRotaSelecionada(null);
+    setBuscaClienteRota("");
 
-  setBuscaClienteRota("");
+    setNomeNovaRota("");
 
-  setNomeNovaRota("");
+    setTelaAtual("home");
+    window.localStorage.removeItem(TELA_ATUAL_STORAGE_KEY);
+    window.localStorage.removeItem(ROTA_SELECIONADA_STORAGE_KEY);
 
-  setTelaAtual("home");
+    setModoProximos(false);
 
-  setModoProximos(false);
+    setLocalizacaoUsuario(null);
 
-  setLocalizacaoUsuario(null);
+    setOrigemOrdenacaoRota("");
 
-  setOrigemOrdenacaoRota("");
-
-  setUsuarioResponsavelRota("");
-
-}
+    setUsuarioResponsavelRota("");
+  }
 
   async function carregarPerfil(userId) {
     const { data, error } = await supabase
@@ -351,46 +834,104 @@ async function alterarSenhaInterna() {
       .select("*")
       .eq("user_id", userId)
       .eq("ativo", true)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      alert("Falha ao carregar perfil: " + error.message);
-      return;
+      setMensagemLogin("Não foi possível validar seu perfil de acesso.");
+      await supabase.auth.signOut();
+      setSession(null);
+      setPerfil(null);
+      setCarregando(false);
+      return false;
     }
 
+    if (!data) {
+      setMensagemLogin("Usuário inativo ou sem perfil autorizado.");
+      await supabase.auth.signOut();
+      setSession(null);
+      setPerfil(null);
+      setCarregando(false);
+      return false;
+    }
+
+    setMensagemLogin("");
     setPerfil(data);
     setUsuarioResponsavelRota(userId);
+    await carregarConfiguracoesWhatsAppGrupos(data);
+    await carregarConfiguracoesAmostrasGrupos(data);
     await carregarUsuariosPerfis();
     await carregarClientes(data);
+    return true;
   }
 
   async function carregarClientes(perfilUsuario) {
-  setCarregando(true);
+    setCarregando(true);
 
-  let consulta = supabase
-    .from("clientes")
-    .select("*")
-    .order("cliente", { ascending: true });
+    let consulta = supabase
+      .from("clientes")
+      .select("*")
+      .order("cliente", { ascending: true });
 
-  if (perfilUsuario.tipo_perfil === "representante") {
-    consulta = consulta.eq(
-      "codigo_representante",
-      perfilUsuario.codigo_representante,
-    );
-  }
+    if (perfilUsuario.tipo_perfil === "representante") {
+      const codigosRepresentante = montarVariantesCodigoNumerico(
+        perfilUsuario.codigo_representante,
+      );
 
-  const { data: clientesData, error } = await consulta;
+      if (!codigosRepresentante.length) {
+        setClientes([]);
+        carregarResumoGeo();
+        setCarregando(false);
+        return;
+      }
 
-  if (error) {
-    alert("Falha ao carregar clientes: " + error.message);
-    setClientes([]);
-    setCarregando(false);
-    return;
-  }
+      const { data: vinculosRepresentante, error: erroVinculos } =
+        await supabase
+          .from("clientes_representantes")
+          .select("codigo_cliente")
+          .in("codigo_representante", codigosRepresentante);
 
-  const { data: geosData, error: erroGeo } = await supabase
-    .from("clientes_geolocalizacao")
-    .select(`
+      if (erroVinculos) {
+        alert(
+          "Falha ao carregar vinculos do representante: " +
+            erroVinculos.message,
+        );
+        setClientes([]);
+        setCarregando(false);
+        return;
+      }
+
+      const codigosClientes = [
+        ...new Set(
+          (vinculosRepresentante || [])
+            .flatMap((vinculo) =>
+              montarVariantesCodigoNumerico(vinculo.codigo_cliente),
+            )
+            .filter(Boolean),
+        ),
+      ];
+
+      if (!codigosClientes.length) {
+        setClientes([]);
+        carregarResumoGeo();
+        setCarregando(false);
+        return;
+      }
+
+      consulta = consulta.in("codigo_cliente", codigosClientes);
+    }
+
+    const { data: clientesData, error } = await consulta;
+
+    if (error) {
+      alert("Falha ao carregar clientes: " + error.message);
+      setClientes([]);
+      setCarregando(false);
+      return;
+    }
+
+    const { data: geosData, error: erroGeo } = await supabase.from(
+      "clientes_geolocalizacao",
+    ).select(`
       codigo_cliente,
       latitude,
       longitude,
@@ -398,69 +939,62 @@ async function alterarSenhaInterna() {
       geocodificado_em
     `);
 
-  if (erroGeo) {
-    alert("Falha ao carregar geolocalização: " + erroGeo.message);
-    setClientes(clientesData || []);
+    if (erroGeo) {
+      alert("Falha ao carregar geolocalização: " + erroGeo.message);
+      setClientes(clientesData || []);
+      setCarregando(false);
+      return;
+    }
+
+    const mapaGeo = {};
+
+    (geosData || []).forEach((geo) => {
+      mapaGeo[String(geo.codigo_cliente)] = geo;
+    });
+
+    const clientesComGeo = (clientesData || []).map((cliente) => {
+      const geo = mapaGeo[String(cliente.codigo_cliente)] || null;
+
+      return {
+        ...cliente,
+
+        latitude: geo?.latitude ?? cliente.latitude ?? null,
+
+        longitude: geo?.longitude ?? cliente.longitude ?? null,
+
+        erro_geocodificacao:
+          geo?.erro_geocodificacao ?? cliente.erro_geocodificacao ?? null,
+
+        geocodificado_em:
+          geo?.geocodificado_em ?? cliente.geocodificado_em ?? null,
+      };
+    });
+
+    setClientes(clientesComGeo);
+
+    carregarResumoGeo();
+
     setCarregando(false);
-    return;
   }
-
-  const mapaGeo = {};
-
-  (geosData || []).forEach((geo) => {
-    mapaGeo[String(geo.codigo_cliente)] = geo;
-  });
-
-  const clientesComGeo = (clientesData || []).map((cliente) => {
-    const geo =
-      mapaGeo[String(cliente.codigo_cliente)] || null;
-
-    return {
-      ...cliente,
-
-      latitude:
-        geo?.latitude ?? cliente.latitude ?? null,
-
-      longitude:
-        geo?.longitude ?? cliente.longitude ?? null,
-
-      erro_geocodificacao:
-        geo?.erro_geocodificacao ??
-        cliente.erro_geocodificacao ??
-        null,
-
-      geocodificado_em:
-        geo?.geocodificado_em ??
-        cliente.geocodificado_em ??
-        null,
-    };
-  });
-
-  setClientes(clientesComGeo);
-
-  carregarResumoGeo();
-
-  setCarregando(false);
-}
 
   function abrirModalCidade(callback) {
-  setTextoCidadeBusca("");
-  setSugestoesCidade([]);
-  setCallbackCidadeSelecionada(() => callback);
-  setModalCidadeAberto(true);
-}
-
-function selecionarCidade(item) {
-  setModalCidadeAberto(false);
-
-  setTextoCidadeBusca("");
-
-  setSugestoesCidade([]);
-
-  if (callbackCidadeSelecionada) {
-    callbackCidadeSelecionada(item);
+    setTextoCidadeBusca("");
+    setSugestoesCidade([]);
+    setCallbackCidadeSelecionada(() => callback);
+    setModalCidadeAberto(true);
   }
-}
+
+  function selecionarCidade(item) {
+    setModalCidadeAberto(false);
+
+    setTextoCidadeBusca("");
+
+    setSugestoesCidade([]);
+
+    if (callbackCidadeSelecionada) {
+      callbackCidadeSelecionada(item);
+    }
+  }
 
   function montarEnderecoCompleto(linha) {
     return [
@@ -475,7 +1009,115 @@ function selecionarCidade(item) {
       .join(", ");
   }
 
+  const colunasModeloImportacaoClientes = [
+    "CD_EMPRESA",
+    "NOME_COMPLETO",
+    "FANTASIA",
+    "ENDERECO",
+    "NUMERO",
+    "BAIRRO",
+    "MUNICIPIO",
+    "UF",
+    "CEP",
+    "FONE",
+    "FAX_FONE",
+    "DIVISAO",
+    "TIPO_DE_EMPRESA",
+    "CONCEITO",
+    "ATIVO",
+    "CD_REPRESENTANT",
+    "CD_REPRESENTANTES",
+  ];
+
+  function baixarModeloImportacaoClientes() {
+    const exemploCliente = {
+      CD_EMPRESA: "000001",
+      NOME_COMPLETO: "CLIENTE EXEMPLO LTDA",
+      FANTASIA: "CLIENTE EXEMPLO",
+      ENDERECO: "RUA EXEMPLO",
+      NUMERO: "100",
+      BAIRRO: "CENTRO",
+      MUNICIPIO: "CIDADE",
+      UF: "SP",
+      CEP: "00000-000",
+      FONE: "(00) 0000-0000",
+      FAX_FONE: "(00) 90000-0000",
+      DIVISAO: "VAREJO",
+      TIPO_DE_EMPRESA: "CLIENTE",
+      CONCEITO: "A",
+      ATIVO: "A",
+      CD_REPRESENTANT: "000001",
+      CD_REPRESENTANTES: "000001;000002",
+    };
+
+    const workbook = XLSX.utils.book_new();
+    const planilhaModelo = XLSX.utils.json_to_sheet([exemploCliente], {
+      header: colunasModeloImportacaoClientes,
+    });
+
+    planilhaModelo["!cols"] = colunasModeloImportacaoClientes.map((coluna) => ({
+      wch: Math.max(coluna.length + 2, 14),
+    }));
+
+    const planilhaInstrucoes = XLSX.utils.aoa_to_sheet([
+      ["Campo", "Uso na importacao"],
+      ["CD_EMPRESA", "Obrigatorio. Codigo unico do cliente no Supabase."],
+      [
+        "NOME_COMPLETO",
+        "Obrigatorio quando FANTASIA nao estiver preenchido. Nome principal do cliente.",
+      ],
+      [
+        "FANTASIA",
+        "Usado como nome alternativo e tambem como observacao do cliente.",
+      ],
+      [
+        "ENDERECO, NUMERO, BAIRRO, MUNICIPIO, UF, CEP",
+        "Montam o endereco completo e ajudam na geolocalizacao.",
+      ],
+      ["FONE", "Telefone principal."],
+      ["FAX_FONE", "WhatsApp. Se vazio, a importacao usa FONE."],
+      ["DIVISAO ou TIPO_DE_EMPRESA", "Tipo/categoria do cliente."],
+      ["CONCEITO", "Prioridade do cliente."],
+      ["ATIVO", "Status do cliente. Use A para ativo."],
+      [
+        "CD_REPRESENTANT",
+        "Codigo principal do representante. Mantido por compatibilidade com o fluxo atual.",
+      ],
+      [
+        "CD_REPRESENTANTES",
+        "Codigos dos representantes vinculados ao cliente. Separe multiplos codigos por ponto e virgula, virgula, barra ou quebra de linha.",
+      ],
+    ]);
+
+    planilhaInstrucoes["!cols"] = [{ wch: 34 }, { wch: 78 }];
+
+    XLSX.utils.book_append_sheet(workbook, planilhaModelo, "CLIENTES");
+    XLSX.utils.book_append_sheet(workbook, planilhaInstrucoes, "INSTRUCOES");
+    XLSX.writeFile(workbook, "modelo_importacao_clientes_radar.xlsx");
+  }
+
+  function extrairCodigosRepresentantesLinha(linha) {
+    const textoCodigos = [
+      linha.CD_REPRESENTANT,
+      linha.CD_REPRESENTANTE,
+      linha.CD_REPRESENTANTES,
+    ]
+      .filter((valor) => valor !== undefined && valor !== null)
+      .join(";");
+
+    return [
+      ...new Set(
+        textoCodigos
+          .split(/[;,/|\r\n]+/)
+          .map((codigo) => String(codigo || "").trim())
+          .filter(Boolean),
+      ),
+    ];
+  }
+
   function converterLinhaCliente(linha) {
+    const codigosRepresentantes = extrairCodigosRepresentantesLinha(linha);
+
     return {
       codigo_cliente: String(linha.CD_EMPRESA || "").trim(),
       cliente: String(linha.NOME_COMPLETO || linha.FANTASIA || "").trim(),
@@ -492,7 +1134,7 @@ function selecionarCidade(item) {
       tipo: String(linha.DIVISAO || linha.TIPO_DE_EMPRESA || "").trim(),
       prioridade: String(linha.CONCEITO || "").trim(),
       status: String(linha.ATIVO || "A").trim(),
-      codigo_representante: String(linha.CD_REPRESENTANT || "").trim(),
+      codigo_representante: codigosRepresentantes[0] || "",
       observacao: String(linha.FANTASIA || "").trim(),
       updated_at: new Date().toISOString(),
     };
@@ -526,15 +1168,45 @@ function selecionarCidade(item) {
         defval: "",
       });
 
-      const clientesImportados = linhas
-        .map(converterLinhaCliente)
-        .filter((item) => item.codigo_cliente && item.cliente);
+      const registrosImportados = linhas
+        .map((linha) => ({
+          cliente: converterLinhaCliente(linha),
+          codigosRepresentantes: extrairCodigosRepresentantesLinha(linha),
+        }))
+        .filter((item) => item.cliente.codigo_cliente && item.cliente.cliente);
+
+      const clientesImportados = registrosImportados.map(
+        (item) => item.cliente,
+      );
 
       if (!clientesImportados.length) {
         alert("Nenhum cliente válido encontrado na planilha.");
         setImportando(false);
         return;
       }
+
+      const vinculosRepresentantes = [
+        ...new Map(
+          registrosImportados
+            .flatMap((item) =>
+              item.codigosRepresentantes.map((codigoRepresentante) => ({
+                codigo_cliente: item.cliente.codigo_cliente,
+                codigo_representante: codigoRepresentante,
+              })),
+            )
+            .map((vinculo) => [
+              `${vinculo.codigo_cliente}|${vinculo.codigo_representante}`,
+              vinculo,
+            ]),
+        ).values(),
+      ];
+
+      const { error: erroLimpezaVinculos } = await supabase
+        .from("clientes_representantes")
+        .delete()
+        .neq("codigo_cliente", "__RADAR_NENHUM__");
+
+      if (erroLimpezaVinculos) throw erroLimpezaVinculos;
 
       const { error: erroLimpeza } = await supabase
         .from("clientes")
@@ -553,6 +1225,18 @@ function selecionarCidade(item) {
           .insert(lote);
 
         if (erroInsert) throw erroInsert;
+      }
+
+      for (let i = 0; i < vinculosRepresentantes.length; i += tamanhoLote) {
+        const lote = vinculosRepresentantes.slice(i, i + tamanhoLote);
+
+        if (!lote.length) continue;
+
+        const { error: erroInsertVinculos } = await supabase
+          .from("clientes_representantes")
+          .insert(lote);
+
+        if (erroInsertVinculos) throw erroInsertVinculos;
       }
 
       await supabase.from("importacoes").insert({
@@ -634,117 +1318,68 @@ function selecionarCidade(item) {
     throw new Error("Endereço não localizado");
   }
 
-async function buscarCoordenadasPorCidade(cidadeInformada) {
-  try {
-    const cidade = String(cidadeInformada || "").trim();
-
-    if (!cidade) {
-      alert("Cidade não informada.");
-      return null;
+  async function buscarSugestoesCidade(texto) {
+    if (!texto || texto.trim().length < 3) {
+      return [];
     }
-
-    const textoBusca = cidade.toLowerCase().includes("brasil")
-      ? cidade
-      : `${cidade}, Rio Grande do Sul, Brasil`;
 
     const url =
-      "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
-      encodeURIComponent(textoBusca);
+      `https://nominatim.openstreetmap.org/search?` +
+      `format=json` +
+      `&addressdetails=1` +
+      `&limit=5` +
+      `&countrycodes=br` +
+      `&q=${encodeURIComponent(texto.trim())}`;
 
-    const resposta = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    if (!resposta.ok) {
-      alert("Não foi possível consultar a cidade.");
-      return null;
-    }
-
+    const resposta = await fetch(url);
     const dados = await resposta.json();
 
-    if (!Array.isArray(dados) || dados.length === 0) {
-      alert("Cidade não localizada. Tente informar cidade e UF. Ex: Parobé RS");
-      return null;
+    return dados.map((item) => {
+      const cidade =
+        item.address?.city ||
+        item.address?.town ||
+        item.address?.village ||
+        item.address?.municipality ||
+        item.address?.county ||
+        "";
+
+      const estado = item.address?.state || "";
+
+      return {
+        nome: cidade && estado ? `${cidade} - ${estado}` : item.display_name,
+        latitude: Number(item.lat),
+        longitude: Number(item.lon),
+        display_name: item.display_name,
+      };
+    });
+  }
+
+  async function carregarSugestoesCidade(texto) {
+    const termo = String(texto || "").trim();
+
+    if (termo.length < 3) {
+      setSugestoesCidade([]);
+      setUltimaCidadeBuscada("");
+      return;
     }
 
-    return {
-      latitude: Number(dados[0].lat),
-      longitude: Number(dados[0].lon),
-      municipio_origem: cidade,
-    };
-  } catch (erro) {
-    console.error("Erro ao buscar cidade:", erro);
-    alert("Falha ao localizar cidade: " + erro.message);
-    return null;
+    if (termo === ultimaCidadeBuscada) {
+      return;
+    }
+
+    try {
+      setCarregandoCidade(true);
+      setUltimaCidadeBuscada(termo);
+
+      const resultados = await buscarSugestoesCidade(termo);
+
+      setSugestoesCidade(resultados);
+    } catch (erro) {
+      console.error("Erro ao buscar cidades:", erro);
+    } finally {
+      setCarregandoCidade(false);
+    }
   }
-}
-
-async function buscarSugestoesCidade(texto) {
-  if (!texto || texto.trim().length < 3) {
-    return [];
-  }
-
-  const url =
-    `https://nominatim.openstreetmap.org/search?` +
-    `format=json` +
-    `&addressdetails=1` +
-    `&limit=5` +
-    `&countrycodes=br` +
-    `&q=${encodeURIComponent(texto.trim())}`;
-
-  const resposta = await fetch(url);
-  const dados = await resposta.json();
-
-  return dados.map((item) => {
-    const cidade =
-      item.address?.city ||
-      item.address?.town ||
-      item.address?.village ||
-      item.address?.municipality ||
-      item.address?.county ||
-      "";
-
-    const estado = item.address?.state || "";
-
-    return {
-      nome: cidade && estado ? `${cidade} - ${estado}` : item.display_name,
-      latitude: Number(item.lat),
-      longitude: Number(item.lon),
-      display_name: item.display_name,
-    };
-  });
-}
-
-async function carregarSugestoesCidade(texto) {
-  const termo = String(texto || "").trim();
-
-  if (termo.length < 3) {
-    setSugestoesCidade([]);
-    setUltimaCidadeBuscada("");
-    return;
-  }
-
-  if (termo === ultimaCidadeBuscada) {
-    return;
-  }
-
-  try {
-    setCarregandoCidade(true);
-    setUltimaCidadeBuscada(termo);
-
-    const resultados = await buscarSugestoesCidade(termo);
-
-    setSugestoesCidade(resultados);
-  } catch (erro) {
-    console.error("Erro ao buscar cidades:", erro);
-  } finally {
-    setCarregandoCidade(false);
-  }
-}
-
-
 
   function abrirMaps(cliente) {
     if (!cliente?.latitude || !cliente?.longitude) {
@@ -783,119 +1418,424 @@ async function carregarSugestoesCidade(texto) {
     window.open(`https://wa.me/55${telefone}`, "_blank");
   }
 
-  const clientesFiltrados = useMemo(() => {
-  let lista = clientes.filter((item) => {
-    const termo = filtro.toLowerCase();
-
-    return (
-      item.cliente?.toLowerCase().includes(termo) ||
-      item.codigo_cliente?.toLowerCase().includes(termo) ||
-      item.cidade?.toLowerCase().includes(termo) ||
-      item.uf?.toLowerCase().includes(termo) ||
-      item.telefone?.toLowerCase().includes(termo) ||
-      item.whatsapp?.toLowerCase().includes(termo) ||
-      item.tipo?.toLowerCase().includes(termo) ||
-      item.prioridade?.toLowerCase().includes(termo) ||
-      item.status?.toLowerCase().includes(termo)
+  function normalizarTelefoneWhatsApp(item) {
+    const telefone = (item?.whatsapp || item?.telefone || "").replace(
+      /\D/g,
+      "",
     );
-  });
 
-  if (modoProximos && localizacaoUsuario) {
-    lista = lista
-      .filter((item) => item.latitude !== null && item.longitude !== null)
-      .map((item) => ({
-        ...item,
-        distancia_km: calcularDistanciaKm(
-          localizacaoUsuario.latitude,
-          localizacaoUsuario.longitude,
-          Number(item.latitude),
-          Number(item.longitude)
-        ),
-      }))
-      .filter((item) => item.distancia_km <= raioKm)
-      .sort((a, b) => a.distancia_km - b.distancia_km);
+    if (!telefone) {
+      return "";
+    }
+
+    return telefone.startsWith("55") ? telefone : `55${telefone}`;
   }
 
-  return lista;
-}, [clientes, filtro, modoProximos, localizacaoUsuario, raioKm]);
+  function montarMensagemAvisoVisita(cliente) {
+    const nomeCliente = cliente?.cliente || "tudo bem";
+    const nomeUsuario = perfil?.nome || session?.user?.email || "Equipe";
 
-const indicadoresDashboard = useMemo(() => {
-  const totalRotas = rotas.length;
+    return `Ola, ${nomeCliente}. Passando para avisar que temos uma visita programada para esta semana, conforme combinado. Qualquer ajuste, pode nos chamar por aqui.\n\nAtt,\n${nomeUsuario} - Phenix`;
+  }
 
-  const abertas = rotas.filter((rota) => rota.status === "ABERTA").length;
-  const fechadas = rotas.filter((rota) => rota.status === "FECHADA").length;
-  const emAndamento = rotas.filter((rota) => rota.status === "EM_ANDAMENTO").length;
-  const finalizadas = rotas.filter((rota) => rota.status === "FINALIZADA").length;
+  function adicionarEventoHistoricoWhatsApp(evento) {
+    setHistoricoWhatsAppRota((eventos) => {
+      const chaveEvento = evento?.id
+        ? String(evento.id)
+        : `local-${evento?.rota_cliente_id}-${evento?.enviado_em}`;
 
-  const totalClientesRotas = rotas.reduce(
-    (total, rota) => total + Number(rota.total_clientes || 0),
-    0
-  );
+      const eventoExiste = eventos.some((item) => {
+        const chaveItem = item?.id
+          ? String(item.id)
+          : `local-${item?.rota_cliente_id}-${item?.enviado_em}`;
 
-  const totalVisitados = rotas.reduce(
-    (total, rota) => total + Number(rota.total_visitados || 0),
-    0
-  );
+        return chaveItem === chaveEvento;
+      });
 
-  const totalPendentes = rotas.reduce(
-    (total, rota) => total + Number(rota.total_pendentes || 0),
-    0
-  );
+      if (eventoExiste) {
+        return eventos;
+      }
 
-  const percentualConclusao =
-  totalClientesRotas > 0
-    ? Math.round((totalVisitados / totalClientesRotas) * 100)
-    : 0;
-
-    const rankingResponsaveis = rotas.reduce((lista, rota) => {
-  const nome = rota.responsavel_nome || "Sem responsável";
-
-  const existente = lista.find((item) => item.nome === nome);
-
-  if (existente) {
-    existente.totalRotas += 1;
-    existente.totalClientes += Number(rota.total_clientes || 0);
-    existente.totalVisitados += Number(rota.total_visitados || 0);
-    existente.totalPendentes += Number(rota.total_pendentes || 0);
-  } else {
-    lista.push({
-      nome,
-      totalRotas: 1,
-      totalClientes: Number(rota.total_clientes || 0),
-      totalVisitados: Number(rota.total_visitados || 0),
-      totalPendentes: Number(rota.total_pendentes || 0),
+      return [evento, ...eventos].slice(0, 30);
     });
   }
 
-  return lista;
-}, []);
+  async function registrarHistoricoAvisoWhatsApp(
+    itemAvisado,
+    cliente,
+    telefone,
+    avisoEm,
+    mensagem,
+  ) {
+    const eventoBase = {
+      rota_cliente_id: itemAvisado.id,
+      rota_id: rotaSelecionada.id,
+      cliente_id: itemAvisado.cliente_id,
+      criado_por: session.user.id,
+      evento: "ABERTURA_WHATSAPP",
+      status: "ENVIADO_ABERTURA",
+      telefone,
+      mensagem,
+      enviado_em: avisoEm,
+      criado_em: avisoEm,
+      cliente_nome: cliente?.cliente || null,
+    };
 
-rankingResponsaveis.sort((a, b) => b.totalVisitados - a.totalVisitados);
+    const { data, error } = await supabase
+      .from("rota_clientes_whatsapp_historico")
+      .insert(eventoBase)
+      .select(
+        "id, rota_cliente_id, rota_id, cliente_id, criado_por, evento, status, telefone, mensagem, cliente_nome, enviado_em, criado_em",
+      );
 
-const rotasCriticas = rotas
-  .filter(
-    (rota) =>
-      ["ABERTA", "FECHADA", "EM_ANDAMENTO"].includes(rota.status) &&
-      Number(rota.total_pendentes || 0) > 0
-  )
-  .sort((a, b) => Number(b.total_pendentes || 0) - Number(a.total_pendentes || 0))
-  .slice(0, 5);
+    if (!error) {
+      adicionarEventoHistoricoWhatsApp(data?.[0] || eventoBase);
+      return;
+    }
 
-  return {
-    totalRotas,
-    abertas,
-    fechadas,
-    emAndamento,
-    finalizadas,
-    totalClientes: clientes.length,
-    totalClientesRotas,
-    totalVisitados,
-    totalPendentes,
-    percentualConclusao,
-    rankingResponsaveis,
-    rotasCriticas,
-  };
-}, [rotas, clientes]);
+    const mensagemErro = String(error.message || "").toLowerCase();
+
+    if (
+      mensagemErro.includes("schema cache") ||
+      mensagemErro.includes("does not exist") ||
+      mensagemErro.includes("rota_clientes_whatsapp_historico") ||
+      mensagemErro.includes("cliente_nome")
+    ) {
+      adicionarEventoHistoricoWhatsApp(eventoBase);
+      return;
+    }
+
+    adicionarEventoHistoricoWhatsApp(eventoBase);
+    console.warn("Falha ao registrar historico de WhatsApp:", error.message);
+  }
+
+  async function carregarHistoricoWhatsAppRota(rotaId) {
+    if (!rotaId) {
+      setHistoricoWhatsAppRota([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("rota_clientes_whatsapp_historico")
+      .select(
+        "id, rota_cliente_id, rota_id, cliente_id, criado_por, evento, status, telefone, mensagem, cliente_nome, enviado_em, criado_em",
+      )
+      .eq("rota_id", rotaId)
+      .order("enviado_em", { ascending: false })
+      .limit(30);
+
+    if (!error) {
+      setHistoricoWhatsAppRota(data || []);
+      return;
+    }
+
+    const mensagemErro = String(error.message || "").toLowerCase();
+
+    if (
+      mensagemErro.includes("schema cache") ||
+      mensagemErro.includes("does not exist") ||
+      mensagemErro.includes("rota_clientes_whatsapp_historico")
+    ) {
+      setHistoricoWhatsAppRota([]);
+      return;
+    }
+
+    setHistoricoWhatsAppRota([]);
+    console.warn("Falha ao carregar historico de WhatsApp:", error.message);
+  }
+
+  function marcarAvisoWhatsAppLocal(itemAvisado, avisoEm, mensagem) {
+    setClientesDaRota((itens) =>
+      itens.map((item) =>
+        item.id === itemAvisado.id
+          ? {
+              ...item,
+              aviso_whatsapp_em: avisoEm,
+              aviso_whatsapp_por: session.user.id,
+              aviso_whatsapp_mensagem: mensagem,
+              aviso_whatsapp_status: "ENVIADO_ABERTURA",
+            }
+          : item,
+      ),
+    );
+  }
+
+  async function avisarProximoClienteRota() {
+    if (!permiteAvisoWhatsAppRotaGrupoAtual) {
+      alert(
+        "O envio de aviso por WhatsApp nas rotas esta desativado para o seu grupo de usuario.",
+      );
+      return;
+    }
+
+    if (!rotaSelecionada?.id) {
+      alert("Abra uma rota antes de avisar os clientes.");
+      return;
+    }
+
+    const itensPendentes = clientesDaRota.filter(
+      (item) =>
+        (item.status === "PENDENTE" || !item.status) && !item.aviso_whatsapp_em,
+    );
+
+    if (!itensPendentes.length) {
+      alert("Todos os clientes pendentes desta rota ja foram avisados.");
+      return;
+    }
+
+    const itemComContato = itensPendentes.find((item) => {
+      const cliente = clientes.find((cli) => cli.id === item.cliente_id);
+      return normalizarTelefoneWhatsApp(cliente);
+    });
+
+    if (!itemComContato) {
+      alert(
+        "Nenhum cliente pendente sem aviso possui WhatsApp ou telefone cadastrado.",
+      );
+      return;
+    }
+
+    const cliente = clientes.find(
+      (cli) => cli.id === itemComContato.cliente_id,
+    );
+    const telefone = normalizarTelefoneWhatsApp(cliente);
+    const mensagem = montarMensagemAvisoVisita(cliente);
+    const avisoEm = new Date().toISOString();
+
+    window.open(
+      `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`,
+      "_blank",
+    );
+
+    await registrarHistoricoAvisoWhatsApp(
+      itemComContato,
+      cliente,
+      telefone,
+      avisoEm,
+      mensagem,
+    );
+
+    const { error } = await supabase
+      .from("rota_clientes")
+      .update({
+        aviso_whatsapp_em: avisoEm,
+        aviso_whatsapp_por: session.user.id,
+        aviso_whatsapp_mensagem: mensagem,
+        aviso_whatsapp_status: "ENVIADO_ABERTURA",
+      })
+      .eq("id", itemComContato.id);
+
+    if (error) {
+      const mensagemErro = String(error.message || "").toLowerCase();
+
+      if (
+        mensagemErro.includes("schema cache") ||
+        mensagemErro.includes("aviso_whatsapp_em") ||
+        mensagemErro.includes("aviso_whatsapp_status")
+      ) {
+        marcarAvisoWhatsAppLocal(itemComContato, avisoEm, mensagem);
+        return;
+      }
+
+      alert("WhatsApp aberto, mas nao foi possivel registrar o aviso.");
+      return;
+    }
+
+    marcarAvisoWhatsAppLocal(itemComContato, avisoEm, mensagem);
+  }
+
+  async function reenviarAvisoWhatsAppCliente(itemRota) {
+    if (!permiteAvisoWhatsAppRotaGrupoAtual) {
+      alert(
+        "O envio de aviso por WhatsApp nas rotas esta desativado para o seu grupo de usuario.",
+      );
+      return;
+    }
+
+    if (!itemRota?.id) {
+      alert("Cliente da rota nao identificado para reenvio.");
+      return;
+    }
+
+    const cliente = clientes.find((cli) => cli.id === itemRota.cliente_id);
+
+    if (!cliente) {
+      alert("Cliente nao encontrado para este item da rota.");
+      return;
+    }
+
+    const telefone = normalizarTelefoneWhatsApp(cliente);
+
+    if (!telefone) {
+      alert("Cliente sem WhatsApp ou telefone cadastrado.");
+      return;
+    }
+
+    const mensagem = montarMensagemAvisoVisita(cliente);
+    const avisoEm = new Date().toISOString();
+
+    window.open(
+      `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`,
+      "_blank",
+    );
+
+    await registrarHistoricoAvisoWhatsApp(
+      itemRota,
+      cliente,
+      telefone,
+      avisoEm,
+      mensagem,
+    );
+
+    const { error } = await supabase
+      .from("rota_clientes")
+      .update({
+        aviso_whatsapp_em: avisoEm,
+        aviso_whatsapp_por: session.user.id,
+        aviso_whatsapp_mensagem: mensagem,
+        aviso_whatsapp_status: "ENVIADO_ABERTURA",
+      })
+      .eq("id", itemRota.id);
+
+    if (error) {
+      const mensagemErro = String(error.message || "").toLowerCase();
+
+      if (
+        mensagemErro.includes("schema cache") ||
+        mensagemErro.includes("aviso_whatsapp_em") ||
+        mensagemErro.includes("aviso_whatsapp_status")
+      ) {
+        marcarAvisoWhatsAppLocal(itemRota, avisoEm, mensagem);
+        return;
+      }
+
+      alert("WhatsApp aberto, mas nao foi possivel registrar o reenvio.");
+      return;
+    }
+
+    marcarAvisoWhatsAppLocal(itemRota, avisoEm, mensagem);
+  }
+
+  const clientesFiltrados = useMemo(() => {
+    let lista = clientes.filter((item) => {
+      const termo = filtro.toLowerCase();
+
+      return (
+        item.cliente?.toLowerCase().includes(termo) ||
+        item.codigo_cliente?.toLowerCase().includes(termo) ||
+        item.cidade?.toLowerCase().includes(termo) ||
+        item.uf?.toLowerCase().includes(termo) ||
+        item.telefone?.toLowerCase().includes(termo) ||
+        item.whatsapp?.toLowerCase().includes(termo) ||
+        item.tipo?.toLowerCase().includes(termo) ||
+        item.prioridade?.toLowerCase().includes(termo) ||
+        item.status?.toLowerCase().includes(termo)
+      );
+    });
+
+    if (modoProximos && localizacaoUsuario) {
+      lista = lista
+        .filter((item) => item.latitude !== null && item.longitude !== null)
+        .map((item) => ({
+          ...item,
+          distancia_km: calcularDistanciaKm(
+            localizacaoUsuario.latitude,
+            localizacaoUsuario.longitude,
+            Number(item.latitude),
+            Number(item.longitude),
+          ),
+        }))
+        .filter((item) => item.distancia_km <= raioKm)
+        .sort((a, b) => a.distancia_km - b.distancia_km);
+    }
+
+    return lista;
+  }, [clientes, filtro, modoProximos, localizacaoUsuario, raioKm]);
+
+  const indicadoresDashboard = useMemo(() => {
+    const totalRotas = rotas.length;
+
+    const abertas = rotas.filter((rota) => rota.status === "ABERTA").length;
+    const fechadas = rotas.filter((rota) => rota.status === "FECHADA").length;
+    const emAndamento = rotas.filter(
+      (rota) => rota.status === "EM_ANDAMENTO",
+    ).length;
+    const finalizadas = rotas.filter(
+      (rota) => rota.status === "FINALIZADA",
+    ).length;
+
+    const totalClientesRotas = rotas.reduce(
+      (total, rota) => total + Number(rota.total_clientes || 0),
+      0,
+    );
+
+    const totalVisitados = rotas.reduce(
+      (total, rota) => total + Number(rota.total_visitados || 0),
+      0,
+    );
+
+    const totalPendentes = rotas.reduce(
+      (total, rota) => total + Number(rota.total_pendentes || 0),
+      0,
+    );
+
+    const percentualConclusao =
+      totalClientesRotas > 0
+        ? Math.round((totalVisitados / totalClientesRotas) * 100)
+        : 0;
+
+    const rankingResponsaveis = rotas.reduce((lista, rota) => {
+      const nome = rota.responsavel_nome || "Sem responsável";
+
+      const existente = lista.find((item) => item.nome === nome);
+
+      if (existente) {
+        existente.totalRotas += 1;
+        existente.totalClientes += Number(rota.total_clientes || 0);
+        existente.totalVisitados += Number(rota.total_visitados || 0);
+        existente.totalPendentes += Number(rota.total_pendentes || 0);
+      } else {
+        lista.push({
+          nome,
+          totalRotas: 1,
+          totalClientes: Number(rota.total_clientes || 0),
+          totalVisitados: Number(rota.total_visitados || 0),
+          totalPendentes: Number(rota.total_pendentes || 0),
+        });
+      }
+
+      return lista;
+    }, []);
+
+    rankingResponsaveis.sort((a, b) => b.totalVisitados - a.totalVisitados);
+
+    const rotasCriticas = rotas
+      .filter(
+        (rota) =>
+          ["ABERTA", "FECHADA", "EM_ANDAMENTO"].includes(rota.status) &&
+          Number(rota.total_pendentes || 0) > 0,
+      )
+      .sort(
+        (a, b) =>
+          Number(b.total_pendentes || 0) - Number(a.total_pendentes || 0),
+      )
+      .slice(0, 5);
+
+    return {
+      totalRotas,
+      abertas,
+      fechadas,
+      emAndamento,
+      finalizadas,
+      totalClientes: clientes.length,
+      totalClientesRotas,
+      totalVisitados,
+      totalPendentes,
+      percentualConclusao,
+      rankingResponsaveis,
+      rotasCriticas,
+    };
+  }, [rotas, clientes]);
 
   async function atualizarCoordenadasPendentes() {
     if (perfil.tipo_perfil !== "admin") {
@@ -986,7 +1926,7 @@ const rotasCriticas = rotas
 
   async function buscarClientesProximos() {
     const usarLocalizacaoAtual = confirm(
-      "Deseja usar sua localização atual?\n\nOK = Usar localização atual\nCancelar = Informar cidade manualmente"
+      "Deseja usar sua localização atual?\n\nOK = Usar localização atual\nCancelar = Informar cidade manualmente",
     );
 
     if (usarLocalizacaoAtual) {
@@ -1039,24 +1979,30 @@ const rotasCriticas = rotas
     });
   }
 
-function limparModoProximos() {
-  setModoProximos(false);
-  setLocalizacaoUsuario(null);
-  setClientesProximosAtivo(false);
-  setOrigemOrdenacaoRota("");
-}
+  function limparModoProximos() {
+    setModoProximos(false);
+    setLocalizacaoUsuario(null);
+    setOrigemOrdenacaoRota("");
+  }
 
-function abrirRotasPorStatus(status) {
-  setFiltroStatusRotas(status);
-  setFiltroResponsavelRotas("");
-  setTelaAtual("rotas");
-  carregarRotas();
-}
+  function abrirRotasPorStatus(status) {
+    setFiltroStatusRotas(status);
+    setFiltroResponsavelRotas("");
+    setTelaAtual("rotas");
+    carregarRotas();
+  }
 
-  function abrirModalVisita(cliente) {
-    setClienteVisita(cliente);
-    setObservacaoVisita("");
-    setModalVisita(true);
+  function voltarTelaAnterior() {
+    if (telaAtual === "home") {
+      return;
+    }
+
+    if (navegacoesInternasRef.current > 0) {
+      window.history.back();
+      return;
+    }
+
+    setTelaAtual("home");
   }
 
   function fecharModalVisita() {
@@ -1110,76 +2056,15 @@ function abrirRotasPorStatus(status) {
     );
   }
 
-  async function abrirTelaProximos() {
-    setTelaAtual("proximos");
-    setRaioKm(50);
-
-    if (!navigator.geolocation) {
-      alert("Geolocalização não disponível.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (posicao) => {
-        setLocalizacaoUsuario({
-          latitude: posicao.coords.latitude,
-          longitude: posicao.coords.longitude,
-        });
-
-        setModoProximos(true);
-      },
-      () => {
-        alert("Não foi possível obter localização.");
-      },
-    );
-  }
-
-  const dashboardCards = (
-    <div className="dashboard-grid">
-      <div
-        className="dashboard-card"
-        onClick={() => {
-          setTelaAtual("clientes");
-          setModoProximos(false);
-          setLocalizacaoUsuario(null);
-        }}
-      ></div>
-
-      <div
-        className="dashboard-card"
-        onClick={() => {
-          setTelaAtual("proximos");
-          setRaioKm(50);
-          buscarClientesProximos();
-        }}
-      ></div>
-
-      <div
-        className="dashboard-card"
-        onClick={() => setTelaAtual("rotas")}
-      ></div>
-
-      {perfil?.tipo_perfil === "admin" && (
-        <div
-          className="dashboard-card"
-          onClick={() => setTelaAtual("admin")}
-        ></div>
-      )}
-    </div>
-  );
-
   async function carregarRotas() {
-   let consultaRotas = supabase
-  .from("rotas")
-  .select("*")
-  .order("created_at", { ascending: false });
+    let consultaRotas = supabase
+      .from("rotas")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (perfil?.tipo_perfil !== "admin") {
-  consultaRotas = consultaRotas.eq(
-    "usuario_responsavel",
-    session.user.id
-  );
-}
+      consultaRotas = consultaRotas.eq("usuario_responsavel", session.user.id);
+    }
 
     const { data: rotasData, error } = await consultaRotas;
 
@@ -1200,87 +2085,89 @@ function abrirRotasPorStatus(status) {
     const listaUsuarios = usuariosPerfis || [];
 
     const rotasComResumo = (rotasData || []).map((rota) => {
-  const itens = (itensRota || []).filter(
-    (item) => item.rota_id === rota.id,
-  );
+      const itens = (itensRota || []).filter(
+        (item) => item.rota_id === rota.id,
+      );
 
-  const responsavel = listaUsuarios.find(
-    (usuario) => usuario.user_id === rota.usuario_responsavel
-  );
+      const responsavel = listaUsuarios.find(
+        (usuario) => usuario.user_id === rota.usuario_responsavel,
+      );
 
-  return {
-    ...rota,
-    responsavel_nome: responsavel?.nome || "",
-    total_clientes: itens.length,
-    total_visitados: itens.filter(
-      (item) => item.status === "VISITADO" || item.visitado === true,
-    ).length,
-    total_cancelados: itens.filter((item) => item.status === "CANCELADO")
-      .length,
-    total_pendentes: itens.filter(
-      (item) =>
-        item.status === "PENDENTE" ||
-        item.status === null ||
-        item.status === undefined,
-    ).length,
-  };
-});
+      return {
+        ...rota,
+        responsavel_nome: responsavel?.nome || "",
+        total_clientes: itens.length,
+        total_visitados: itens.filter(
+          (item) => item.status === "VISITADO" || item.visitado === true,
+        ).length,
+        total_cancelados: itens.filter((item) => item.status === "CANCELADO")
+          .length,
+        total_pendentes: itens.filter(
+          (item) =>
+            item.status === "PENDENTE" ||
+            item.status === null ||
+            item.status === undefined,
+        ).length,
+      };
+    });
 
     setRotas(rotasComResumo);
   }
 
-async function alterarResponsavelRota(rota, novoResponsavel) {
-  const usuarioNovo = usuariosPerfis.find(
-    (usuario) => usuario.user_id === novoResponsavel
-  );
+  async function alterarResponsavelRota(rota, novoResponsavel) {
+    const usuarioNovo = usuariosPerfis.find(
+      (usuario) => usuario.user_id === novoResponsavel,
+    );
 
-  const novoNomeResponsavel = usuarioNovo?.nome || "";
+    const novoNomeResponsavel = usuarioNovo?.nome || "";
 
-  const { error } = await supabase
-    .from("rotas")
-    .update({
-      usuario_responsavel: novoResponsavel,
-    })
-    .eq("id", rota.id);
+    const { error } = await supabase
+      .from("rotas")
+      .update({
+        usuario_responsavel: novoResponsavel,
+      })
+      .eq("id", rota.id);
 
-  if (error) {
-    alert("Erro ao alterar responsável: " + error.message);
-    return;
-  }
-
-  setRotas((rotasAnteriores) =>
-    rotasAnteriores.map((item) =>
-      item.id === rota.id
-        ? {
-            ...item,
-            usuario_responsavel: novoResponsavel,
-            responsavel_nome: novoNomeResponsavel,
-          }
-        : item
-    )
-  );
-
-  setRotaSelecionada((rotaAtual) => {
-    if (!rotaAtual || rotaAtual.id !== rota.id) {
-      return rotaAtual;
+    if (error) {
+      alert("Erro ao alterar responsável: " + error.message);
+      return;
     }
 
-    return {
-      ...rotaAtual,
-      usuario_responsavel: novoResponsavel,
-      responsavel_nome: novoNomeResponsavel,
-    };
-  });
-}
+    setRotas((rotasAnteriores) =>
+      rotasAnteriores.map((item) =>
+        item.id === rota.id
+          ? {
+              ...item,
+              usuario_responsavel: novoResponsavel,
+              responsavel_nome: novoNomeResponsavel,
+            }
+          : item,
+      ),
+    );
+
+    setRotaSelecionada((rotaAtual) => {
+      if (!rotaAtual || rotaAtual.id !== rota.id) {
+        return rotaAtual;
+      }
+
+      return {
+        ...rotaAtual,
+        usuario_responsavel: novoResponsavel,
+        responsavel_nome: novoNomeResponsavel,
+      };
+    });
+  }
 
   async function abrirRota(rota) {
     if (!rota) {
       setRotaSelecionada(null);
       setClientesDaRota([]);
-      setClientesProximosAtivo(true);
+      setHistoricoWhatsAppRota([]);
+      window.localStorage.removeItem(ROTA_SELECIONADA_STORAGE_KEY);
       return;
     }
     setRotaSelecionada(rota);
+    window.localStorage.setItem(ROTA_SELECIONADA_STORAGE_KEY, String(rota.id));
 
     const { data, error } = await supabase
       .from("rota_clientes")
@@ -1294,6 +2181,7 @@ async function alterarResponsavelRota(rota, novoResponsavel) {
     }
 
     setClientesDaRota(data || []);
+    await carregarHistoricoWhatsAppRota(rota.id);
   }
 
   async function abrirRotaCompleta(rota) {
@@ -1303,8 +2191,6 @@ async function alterarResponsavelRota(rota, novoResponsavel) {
       .select("*")
       .eq("rota_id", rota.id)
       .order("sequencia", { ascending: true });
-    console.log("Clientes da rota:", data);
-    console.log("Erro rota completa:", error);
 
     if (error) {
       alert("Falha ao carregar clientes da rota: " + error.message);
@@ -1401,19 +2287,19 @@ async function alterarResponsavelRota(rota, novoResponsavel) {
     }
 
     const { error } = await supabase.from("rotas").insert({
-  nome: nomeNovaRota.trim(),
+      nome: nomeNovaRota.trim(),
 
-  user_id: session.user.id,
+      user_id: session.user.id,
 
-  criado_por: session.user.id,
+      criado_por: session.user.id,
 
-  usuario_responsavel:
-  perfil?.tipo_perfil === "admin"
-    ? usuarioResponsavelRota
-    : session.user.id,
+      usuario_responsavel:
+        perfil?.tipo_perfil === "admin"
+          ? usuarioResponsavelRota
+          : session.user.id,
 
-  status: "ABERTA",
-});
+      status: "ABERTA",
+    });
 
     if (error) {
       alert("Erro ao criar rota");
@@ -1430,26 +2316,17 @@ async function alterarResponsavelRota(rota, novoResponsavel) {
 
     if (!confirmar) return;
 
-    const { data: itensExcluidos, error: erroItens } = await supabase
+    const { error: erroItens } = await supabase
       .from("rota_clientes")
       .delete()
-      .eq("rota_id", rota.id)
-      .select();
-
-    console.log("Itens excluídos:", itensExcluidos);
+      .eq("rota_id", rota.id);
 
     if (erroItens) {
       alert("Falha ao excluir clientes da rota: " + erroItens.message);
       return;
     }
 
-    const { data: rotaExcluida, error } = await supabase
-      .from("rotas")
-      .delete()
-      .eq("id", rota.id)
-      .select();
-
-    console.log("Rota excluída:", rotaExcluida);
+    const { error } = await supabase.from("rotas").delete().eq("id", rota.id);
 
     if (error) {
       alert("Falha ao excluir rota: " + error.message);
@@ -1491,97 +2368,101 @@ async function alterarResponsavelRota(rota, novoResponsavel) {
     await carregarRotas();
   }
 
- async function alterarStatusClienteRota(itemRota, novoStatus) {
-  if (!itemRota || !itemRota.id) {
-    alert("Cliente da rota não identificado.");
-    return;
-  }
+  async function alterarStatusClienteRota(itemRota, novoStatus) {
+    if (!itemRota || !itemRota.id) {
+      alert("Cliente da rota não identificado.");
+      return;
+    }
 
-  if (rotaSelecionada?.status === "ABERTA") {
-    alert("Para registrar visita, primeiro feche a rota.");
-    return;
-  }
+    if (rotaSelecionada?.status === "ABERTA") {
+      alert("Para registrar visita, primeiro feche a rota.");
+      return;
+    }
 
-  if (rotaSelecionada?.status === "FINALIZADA") {
-    alert("Rota finalizada. Para alterar clientes, reabra a rota.");
-    return;
-  }
+    if (rotaSelecionada?.status === "FINALIZADA") {
+      alert("Rota finalizada. Para alterar clientes, reabra a rota.");
+      return;
+    }
 
-  const { error } = await supabase
-    .from("rota_clientes")
-    .update({
-      status: novoStatus,
-      visitado: novoStatus === "VISITADO",
-    })
-    .eq("id", itemRota.id);
+    const { error } = await supabase
+      .from("rota_clientes")
+      .update({
+        status: novoStatus,
+        visitado: novoStatus === "VISITADO",
+      })
+      .eq("id", itemRota.id);
 
-  if (error) {
-    alert("Falha ao atualizar status: " + error.message);
-    return;
-  }
+    if (error) {
+      alert("Falha ao atualizar status: " + error.message);
+      return;
+    }
 
-  const rotaId = itemRota.rota_id || rotaSelecionada?.id;
+    const rotaId = itemRota.rota_id || rotaSelecionada?.id;
 
-  const { data: itensAtualizados, error: erroConsulta } = await supabase
-    .from("rota_clientes")
-    .select("id, status")
-    .eq("rota_id", rotaId);
+    const { data: itensAtualizados, error: erroConsulta } = await supabase
+      .from("rota_clientes")
+      .select("id, status")
+      .eq("rota_id", rotaId);
 
-  if (erroConsulta) {
-    alert("Status atualizado, mas houve falha ao validar a rota.");
-    return;
-  }
+    if (erroConsulta) {
+      alert("Status atualizado, mas houve falha ao validar a rota.");
+      return;
+    }
 
-  const temPendente = (itensAtualizados || []).some(
-    (linha) => linha.status === "PENDENTE" || !linha.status
-  );
+    const temPendente = (itensAtualizados || []).some(
+      (linha) => linha.status === "PENDENTE" || !linha.status,
+    );
 
-  const temMovimento = (itensAtualizados || []).some(
-    (linha) => linha.status === "VISITADO" || linha.status === "CANCELADO"
-  );
+    const temMovimento = (itensAtualizados || []).some(
+      (linha) => linha.status === "VISITADO" || linha.status === "CANCELADO",
+    );
 
-  let novoStatusRota = rotaSelecionada?.status || "FECHADA";
-  let dataFinalizacao = rotaSelecionada?.finalizada_em || null;
+    let novoStatusRota;
+    let dataFinalizacao;
 
-  if (!temPendente) {
-    novoStatusRota = "FINALIZADA";
-    dataFinalizacao = new Date().toISOString();
-  } else if (temMovimento) {
-    novoStatusRota = "EM_ANDAMENTO";
-    dataFinalizacao = null;
-  } else {
-    novoStatusRota = "FECHADA";
-    dataFinalizacao = null;
-  }
+    if (!temPendente) {
+      novoStatusRota = "FINALIZADA";
+      dataFinalizacao = new Date().toISOString();
+    } else if (temMovimento) {
+      novoStatusRota = "EM_ANDAMENTO";
+      dataFinalizacao = null;
+    } else {
+      novoStatusRota = "FECHADA";
+      dataFinalizacao = null;
+    }
 
-  const { error: erroRota } = await supabase
-    .from("rotas")
-    .update({
+    const { error: erroRota } = await supabase
+      .from("rotas")
+      .update({
+        status: novoStatusRota,
+        finalizada_em: dataFinalizacao,
+      })
+      .eq("id", rotaId);
+
+    if (erroRota) {
+      alert(
+        "Status do cliente atualizado, mas houve falha ao atualizar a rota.",
+      );
+      return;
+    }
+
+    const rotaAtualizada = {
+      ...rotaSelecionada,
       status: novoStatusRota,
       finalizada_em: dataFinalizacao,
-    })
-    .eq("id", rotaId);
+    };
 
-  if (erroRota) {
-    alert("Status do cliente atualizado, mas houve falha ao atualizar a rota.");
-    return;
+    setRotaSelecionada(rotaAtualizada);
+
+    await abrirRota(rotaAtualizada);
+    await carregarRotas();
+
+    if (novoStatusRota === "FINALIZADA") {
+      alert(
+        "Todos os clientes foram concluídos. Rota finalizada automaticamente.",
+      );
+    }
   }
-
-  const rotaAtualizada = {
-    ...rotaSelecionada,
-    status: novoStatusRota,
-    finalizada_em: dataFinalizacao,
-  };
-
-  setRotaSelecionada(rotaAtualizada);
-
-  await abrirRota(rotaAtualizada);
-  await carregarRotas();
-
-  if (novoStatusRota === "FINALIZADA") {
-    alert("Todos os clientes foram concluídos. Rota finalizada automaticamente.");
-  }
-}
 
   async function alterarSequenciaClienteRota(itemRota, novaSequencia) {
     if (!itemRota || !itemRota.id) {
@@ -1624,99 +2505,64 @@ async function alterarResponsavelRota(rota, novoResponsavel) {
     await carregarRotas();
   }
 
-  async function salvarSequenciaRota() {
-    const valores = Object.values(sequenciasEditadas);
-
-    if (valores.some((valor) => !valor || Number(valor) <= 0)) {
-      alert(
-        "Todas as sequências devem ser preenchidas com número maior que zero.",
-      );
-      return;
-    }
-
-    const unicos = new Set(valores.map((valor) => Number(valor)));
-
-    if (unicos.size !== valores.length) {
-      alert("Não é permitido repetir sequência.");
-      return;
-    }
-
-    for (const item of clientesDaRota) {
-      const novaSequencia = Number(sequenciasEditadas[item.id]);
-
-      const { error } = await supabase
-        .from("rota_clientes")
-        .update({ sequencia: novaSequencia })
-        .eq("id", item.id);
-
-      if (error) {
-        alert("Falha ao salvar sequência: " + error.message);
-        return;
-      }
-    }
-
-    setModoReordenarRota(false);
-    await abrirRota(rotaSelecionada);
-  }
-
   async function fecharRota(rota) {
-  if (!rota?.id) return;
+    if (!rota?.id) return;
 
-  const { data: itensDaRota, error: erroConsulta } = await supabase
-    .from("rota_clientes")
-    .select("id, status")
-    .eq("rota_id", rota.id);
+    const { data: itensDaRota, error: erroConsulta } = await supabase
+      .from("rota_clientes")
+      .select("id, status")
+      .eq("rota_id", rota.id);
 
-  if (erroConsulta) {
-    alert("Falha ao validar clientes da rota: " + erroConsulta.message);
-    return;
-  }
+    if (erroConsulta) {
+      alert("Falha ao validar clientes da rota: " + erroConsulta.message);
+      return;
+    }
 
-  const temPendente = (itensDaRota || []).some(
-    (item) => item.status === "PENDENTE" || !item.status
-  );
+    const temPendente = (itensDaRota || []).some(
+      (item) => item.status === "PENDENTE" || !item.status,
+    );
 
-  const novoStatus = temPendente ? "FECHADA" : "FINALIZADA";
-  const dataFinalizacao =
-    novoStatus === "FINALIZADA" ? new Date().toISOString() : null;
+    const novoStatus = temPendente ? "FECHADA" : "FINALIZADA";
+    const dataFinalizacao =
+      novoStatus === "FINALIZADA" ? new Date().toISOString() : null;
 
-  const confirmar = confirm(
-    novoStatus === "FINALIZADA"
-      ? "A rota não possui clientes pendentes. Deseja fechar e finalizar automaticamente?"
-      : "Deseja fechar esta rota?"
-  );
+    const confirmar = confirm(
+      novoStatus === "FINALIZADA"
+        ? "A rota não possui clientes pendentes. Deseja fechar e finalizar automaticamente?"
+        : "Deseja fechar esta rota?",
+    );
 
-  if (!confirmar) return;
+    if (!confirmar) return;
 
-  const { error } = await supabase
-    .from("rotas")
-    .update({
+    const { error } = await supabase
+      .from("rotas")
+      .update({
+        status: novoStatus,
+        finalizada_em: dataFinalizacao,
+      })
+      .eq("id", rota.id);
+
+    if (error) {
+      alert("Falha ao fechar rota: " + error.message);
+      return;
+    }
+
+    const rotaAtualizada = {
+      ...rota,
       status: novoStatus,
       finalizada_em: dataFinalizacao,
-    })
-    .eq("id", rota.id);
+    };
 
-  if (error) {
-    alert("Falha ao fechar rota: " + error.message);
-    return;
+    setRotaSelecionada(rotaAtualizada);
+
+    await carregarRotas();
+
+    alert(
+      novoStatus === "FINALIZADA"
+        ? "Rota finalizada automaticamente, pois não possui clientes pendentes."
+        : "Rota fechada com sucesso.",
+    );
   }
-
-  const rotaAtualizada = {
-    ...rota,
-    status: novoStatus,
-    finalizada_em: dataFinalizacao,
-  };
-
-  setRotaSelecionada(rotaAtualizada);
-
-  await carregarRotas();
-
-  alert(
-    novoStatus === "FINALIZADA"
-      ? "Rota finalizada automaticamente, pois não possui clientes pendentes."
-      : "Rota fechada com sucesso."
-  );
-}
 
   async function iniciarRota(rota) {
     if (!rota?.id) return;
@@ -1743,115 +2589,108 @@ async function alterarResponsavelRota(rota, novoResponsavel) {
     await carregarRotas();
   }
 
- async function finalizarRota(rota) {
-  if (!rota?.id) return;
+  async function finalizarRota(rota) {
+    if (!rota?.id) return;
 
-  const { data: itensRota, error: erroBusca } = await supabase
-    .from("rota_clientes")
-    .select("id, status")
-    .eq("rota_id", rota.id);
+    const { data: itensRota, error: erroBusca } = await supabase
+      .from("rota_clientes")
+      .select("id, status")
+      .eq("rota_id", rota.id);
 
-  if (erroBusca) {
-    alert("Falha ao validar clientes da rota: " + erroBusca.message);
-    return;
-  }
+    if (erroBusca) {
+      alert("Falha ao validar clientes da rota: " + erroBusca.message);
+      return;
+    }
 
-  const pendentes = (itensRota || []).filter(
-    (item) => item.status === "PENDENTE" || !item.status
-  );
+    const pendentes = (itensRota || []).filter(
+      (item) => item.status === "PENDENTE" || !item.status,
+    );
 
-  if (pendentes.length > 0) {
-    alert("Ainda existem clientes pendentes na rota.");
-    return;
-  }
+    if (pendentes.length > 0) {
+      alert("Ainda existem clientes pendentes na rota.");
+      return;
+    }
 
-  const confirmar = confirm("Deseja finalizar esta rota?");
+    const confirmar = confirm("Deseja finalizar esta rota?");
 
-  if (!confirmar) return;
+    if (!confirmar) return;
 
-  const dataFinalizacao = new Date().toISOString();
+    const dataFinalizacao = new Date().toISOString();
 
-  const { error } = await supabase
-    .from("rotas")
-    .update({
+    const { error } = await supabase
+      .from("rotas")
+      .update({
+        status: "FINALIZADA",
+        finalizada_em: dataFinalizacao,
+      })
+      .eq("id", rota.id);
+    if (error) {
+      alert("Falha ao finalizar rota: " + error.message);
+      return;
+    }
+
+    const rotaFinalizada = {
+      ...rota,
       status: "FINALIZADA",
       finalizada_em: dataFinalizacao,
-    })
-    .eq("id", rota.id);
-    
-    console.log("Update finalizada:", {
-  rotaId: rota.id,
-  status: "FINALIZADA",
-  error,
-});
+    };
 
-  if (error) {
-    alert("Falha ao finalizar rota: " + error.message);
-    return;
+    setRotaSelecionada(rotaFinalizada);
+
+    await carregarRotas();
+
+    alert("Rota finalizada com sucesso.");
   }
 
-  const rotaFinalizada = {
-  ...rota,
-  status: "FINALIZADA",
-  finalizada_em: dataFinalizacao,
-};
+  async function reabrirRota(rota) {
+    if (!rota?.id) return;
 
-setRotaSelecionada(rotaFinalizada);
+    const confirmar = confirm("Deseja reabrir esta rota?");
 
-await carregarRotas();
+    if (!confirmar) return;
 
-alert("Rota finalizada com sucesso.");
-}
+    const dataHora = new Date().toLocaleString("pt-BR");
+    const statusOrigem = rota.status || "SEM_STATUS";
 
-async function reabrirRota(rota) {
-  if (!rota?.id) return;
+    let novoStatus = "ABERTA";
 
-  const confirmar = confirm("Deseja reabrir esta rota?");
+    if (statusOrigem === "FINALIZADA") {
+      novoStatus = "FECHADA";
+    }
 
-  if (!confirmar) return;
+    const novaObservacao =
+      (rota.observacao || "") +
+      `\n[${dataHora}] Rota reaberta de ${statusOrigem} para ${novoStatus} por ${
+        perfil?.nome || "usuário"
+      }.`;
 
-  const dataHora = new Date().toLocaleString("pt-BR");
-  const statusOrigem = rota.status || "SEM_STATUS";
+    const { error } = await supabase
+      .from("rotas")
+      .update({
+        status: novoStatus,
+        observacao: novaObservacao,
+        finalizada_em: null,
+      })
+      .eq("id", rota.id);
 
-  let novoStatus = "ABERTA";
+    if (error) {
+      alert("Falha ao reabrir rota: " + error.message);
+      return;
+    }
 
-  if (statusOrigem === "FINALIZADA") {
-    novoStatus = "FECHADA";
-  }
-
-  const novaObservacao =
-    (rota.observacao || "") +
-    `\n[${dataHora}] Rota reaberta de ${statusOrigem} para ${novoStatus} por ${
-      perfil?.nome || "usuário"
-    }.`;
-
-  const { error } = await supabase
-    .from("rotas")
-    .update({
+    const rotaReaberta = {
+      ...rota,
       status: novoStatus,
       observacao: novaObservacao,
       finalizada_em: null,
-    })
-    .eq("id", rota.id);
+    };
 
-  if (error) {
-    alert("Falha ao reabrir rota: " + error.message);
-    return;
+    setRotaSelecionada(rotaReaberta);
+
+    await carregarRotas();
+
+    alert(`Rota reaberta como ${novoStatus}.`);
   }
-
-  const rotaReaberta = {
-    ...rota,
-    status: novoStatus,
-    observacao: novaObservacao,
-    finalizada_em: null,
-  };
-
-  setRotaSelecionada(rotaReaberta);
-
-  await carregarRotas();
-
-  alert(`Rota reaberta como ${novoStatus}.`);
-}
 
   async function executarOrdenacaoRotaPorDistancia(rota, origemOrdenacao) {
     if (!origemOrdenacao) {
@@ -1873,7 +2712,7 @@ async function reabrirRota(rota) {
           origemOrdenacao.latitude,
           origemOrdenacao.longitude,
           Number(cliente.latitude),
-          Number(cliente.longitude)
+          Number(cliente.longitude),
         );
 
         return {
@@ -1892,7 +2731,7 @@ async function reabrirRota(rota) {
     const confirmar = confirm(
       `Deseja reorganizar a sequência da rota com base na origem ${
         origemOrdenacao.municipio_origem || "selecionada"
-      }?`
+      }?`,
     );
 
     if (!confirmar) return;
@@ -1944,7 +2783,7 @@ async function reabrirRota(rota) {
     }
 
     const usarLocalizacaoAtual = confirm(
-      "Deseja ordenar usando sua localização atual?\n\nOK = Usar localização atual\nCancelar = Informar cidade manualmente"
+      "Deseja ordenar usando sua localização atual?\n\nOK = Usar localização atual\nCancelar = Informar cidade manualmente",
     );
 
     if (usarLocalizacaoAtual) {
@@ -1988,43 +2827,324 @@ async function reabrirRota(rota) {
     });
   }
 
-
   async function carregarUsuariosPerfis(perfilAtual) {
+    if (perfilAtual?.tipo_perfil !== "admin") {
+      return;
+    }
 
-  if (perfilAtual?.tipo_perfil !== "admin") {
-    return;
-  }
+    setCarregandoUsuarios(true);
 
-  setCarregandoUsuarios(true);
+    const { data, error } = await supabase
+      .from("perfis")
+      .select("*")
+      .order("nome", { ascending: true });
 
-  const { data, error } = await supabase
-    .from("perfis")
-    .select("*")
-    .order("nome", { ascending: true });
-    console.log("ERRO PERFIS:", error);
-    console.log("DATA PERFIS:", data);
+    if (error) {
+      alert(
+        "Nao foi possivel carregar a lista de usuarios agora. Tente novamente.",
+      );
+      setCarregandoUsuarios(false);
+      return;
+    }
 
-  if (error) {
-    alert("Falha ao carregar usuários: " + error.message);
+    setUsuariosPerfis(data || []);
+
     setCarregandoUsuarios(false);
-    return;
   }
 
-  console.log("Usuarios carregados:", data);
-  setUsuariosPerfis(data || []);
+  async function carregarConfiguracoesWhatsAppGrupos(perfilAtual) {
+    const perfilBase = perfilAtual || perfil;
+    const configuracaoPadrao = construirConfiguracaoWhatsAppPadrao();
 
-  setCarregandoUsuarios(false);
-}
+    setCarregandoConfiguracoesWhatsApp(true);
+
+    const { data, error } = await supabase
+      .from("configuracoes_grupos")
+      .select("tipo_perfil, permite_aviso_whatsapp_rota")
+      .in("tipo_perfil", TIPOS_PERFIL_WHATSAPP_ROTA)
+      .order("tipo_perfil", { ascending: true });
+
+    if (error) {
+      console.warn(
+        "Falha ao carregar configuracoes de grupo para WhatsApp:",
+        error.message,
+      );
+      setConfiguracoesWhatsAppPorGrupo(configuracaoPadrao);
+      setCarregandoConfiguracoesWhatsApp(false);
+      return;
+    }
+
+    const configuracaoAtualizada = {
+      ...configuracaoPadrao,
+    };
+
+    (data || []).forEach((item) => {
+      const tipoPerfil = String(item.tipo_perfil || "").trim();
+
+      if (!tipoPerfil) {
+        return;
+      }
+
+      configuracaoAtualizada[tipoPerfil] = {
+        tipo_perfil: tipoPerfil,
+        permite_aviso_whatsapp_rota: item.permite_aviso_whatsapp_rota !== false,
+      };
+    });
+
+    setConfiguracoesWhatsAppPorGrupo(configuracaoAtualizada);
+    setCarregandoConfiguracoesWhatsApp(false);
+
+    if (perfilBase?.tipo_perfil === "admin" && (!data || data.length === 0)) {
+      console.info(
+        "Configuracoes de WhatsApp por grupo nao encontradas. Usando padrao.",
+      );
+    }
+  }
+
+  function alterarPermissaoAvisoWhatsAppGrupo(tipoPerfil, permitido) {
+    setConfiguracoesWhatsAppPorGrupo((anterior) => ({
+      ...anterior,
+      [tipoPerfil]: {
+        tipo_perfil: tipoPerfil,
+        permite_aviso_whatsapp_rota: permitido,
+      },
+    }));
+  }
+
+  async function salvarConfiguracoesWhatsAppGrupos() {
+    if (perfil?.tipo_perfil !== "admin") {
+      alert("Somente administrador pode alterar essa configuracao.");
+      return;
+    }
+
+    const payload = TIPOS_PERFIL_WHATSAPP_ROTA.map((tipoPerfil) => ({
+      tipo_perfil: tipoPerfil,
+      permite_aviso_whatsapp_rota:
+        configuracoesWhatsAppPorGrupo?.[tipoPerfil]
+          ?.permite_aviso_whatsapp_rota !== false,
+      atualizado_por: session?.user?.id || null,
+      atualizado_em: new Date().toISOString(),
+    }));
+
+    setSalvandoConfiguracoesWhatsApp(true);
+
+    const { error } = await supabase
+      .from("configuracoes_grupos")
+      .upsert(payload, { onConflict: "tipo_perfil" });
+
+    if (error) {
+      alert("Nao foi possivel salvar a configuracao de WhatsApp por grupo.");
+      setSalvandoConfiguracoesWhatsApp(false);
+      return;
+    }
+
+    alert("Configuracao de WhatsApp por grupo salva com sucesso.");
+    setSalvandoConfiguracoesWhatsApp(false);
+    await carregarConfiguracoesWhatsAppGrupos(perfil);
+  }
+
+  async function carregarConfiguracoesAmostrasGrupos(perfilAtual) {
+    const perfilBase = perfilAtual || perfil;
+    const configuracaoPadrao = construirConfiguracaoAmostrasPadrao();
+
+    setCarregandoConfiguracoesAmostras(true);
+
+    const { data, error } = await supabase
+      .from("configuracoes_grupos")
+      .select("tipo_perfil, permite_menu_amostras")
+      .in("tipo_perfil", TIPOS_PERFIL_MENU_AMOSTRAS)
+      .order("tipo_perfil", { ascending: true });
+
+    if (error) {
+      console.warn(
+        "Falha ao carregar configuracoes de grupo para Amostras:",
+        error.message,
+      );
+      setConfiguracoesAmostrasPorGrupo(configuracaoPadrao);
+      setCarregandoConfiguracoesAmostras(false);
+      return;
+    }
+
+    const configuracaoAtualizada = {
+      ...configuracaoPadrao,
+    };
+
+    (data || []).forEach((item) => {
+      const tipoPerfil = String(item.tipo_perfil || "").trim();
+
+      if (!tipoPerfil) {
+        return;
+      }
+
+      configuracaoAtualizada[tipoPerfil] = {
+        tipo_perfil: tipoPerfil,
+        permite_menu_amostras: item.permite_menu_amostras === true,
+      };
+    });
+
+    setConfiguracoesAmostrasPorGrupo(configuracaoAtualizada);
+    setCarregandoConfiguracoesAmostras(false);
+
+    if (perfilBase?.tipo_perfil === "admin" && (!data || data.length === 0)) {
+      console.info(
+        "Configuracoes de Amostras por grupo nao encontradas. Usando padrao.",
+      );
+    }
+  }
+
+  function alterarPermissaoMenuAmostrasGrupo(tipoPerfil, permitido) {
+    setConfiguracoesAmostrasPorGrupo((anterior) => ({
+      ...anterior,
+      [tipoPerfil]: {
+        tipo_perfil: tipoPerfil,
+        permite_menu_amostras: permitido,
+      },
+    }));
+  }
+
+  async function salvarConfiguracoesAmostrasGrupos() {
+    if (perfil?.tipo_perfil !== "admin") {
+      alert("Somente administrador pode alterar essa configuracao.");
+      return;
+    }
+
+    const payload = TIPOS_PERFIL_MENU_AMOSTRAS.map((tipoPerfil) => ({
+      tipo_perfil: tipoPerfil,
+      permite_menu_amostras:
+        configuracoesAmostrasPorGrupo?.[tipoPerfil]?.permite_menu_amostras ===
+        true,
+      atualizado_por: session?.user?.id || null,
+      atualizado_em: new Date().toISOString(),
+    }));
+
+    setSalvandoConfiguracoesAmostras(true);
+
+    const { error } = await supabase
+      .from("configuracoes_grupos")
+      .upsert(payload, { onConflict: "tipo_perfil" });
+
+    if (error) {
+      alert("Nao foi possivel salvar a configuracao de Amostras por grupo.");
+      setSalvandoConfiguracoesAmostras(false);
+      return;
+    }
+
+    alert("Configuracao de Amostras por grupo salva com sucesso.");
+    setSalvandoConfiguracoesAmostras(false);
+    await carregarConfiguracoesAmostrasGrupos(perfil);
+  }
+
+  function montarConsultaAmostras(filtrosBase) {
+    let consulta = supabase
+      .from("amostras_phenix")
+      .select(CAMPOS_AMOSTRAS.join(", "), { count: "exact" })
+      .order("updated_at", { ascending: false, nullsFirst: false })
+      .order("id_amostra_oracle", { ascending: false, nullsFirst: false });
+
+    const cliente = limparTextoFiltro(filtrosBase.cliente);
+    const produto = limparTextoFiltro(filtrosBase.produto);
+    const fornecedor = limparTextoFiltro(filtrosBase.fornecedor);
+    const maquina = limparTextoFiltro(filtrosBase.maquina);
+    const tipo = limparTextoFiltro(filtrosBase.tipo);
+
+    if (cliente) {
+      consulta = consulta.or(
+        `cd_cliente.ilike.%${cliente}%,nome_cliente.ilike.%${cliente}%`,
+      );
+    }
+
+    if (produto) {
+      consulta = consulta.or(
+        `cd_produto.ilike.%${produto}%,descricao_produto.ilike.%${produto}%`,
+      );
+    }
+
+    if (fornecedor) {
+      consulta = consulta.ilike("fornecedor_concorrente", `%${fornecedor}%`);
+    }
+
+    if (maquina) {
+      consulta = consulta.ilike("maquina", `%${maquina}%`);
+    }
+
+    if (tipo) {
+      consulta = consulta.ilike("tipo_amostra", `%${tipo}%`);
+    }
+
+    return consulta;
+  }
+
+  async function carregarAmostras(filtrosBase = filtrosAmostras) {
+    if (!permiteMenuAmostrasGrupoAtual) {
+      setAmostras([]);
+      setTotalAmostrasEncontradas(0);
+      setErroAmostras("Seu perfil nao possui acesso ao menu Amostras.");
+      return;
+    }
+
+    setCarregandoAmostras(true);
+    setErroAmostras("");
+
+    const { data, error, count } = await montarConsultaAmostras(filtrosBase);
+
+    if (error) {
+      setAmostras([]);
+      setTotalAmostrasEncontradas(0);
+      setErroAmostras("Nao foi possivel carregar as amostras agora.");
+      console.error("Falha ao carregar amostras:", error);
+      setCarregandoAmostras(false);
+      return;
+    }
+
+    setAmostras(data || []);
+    setTotalAmostrasEncontradas(count ?? (data || []).length);
+    setCarregandoAmostras(false);
+  }
+
+  function abrirAmostrasComFiltros(filtrosIniciais = {}) {
+    if (!permiteMenuAmostrasGrupoAtual) {
+      alert("Seu perfil nao possui acesso ao menu Amostras.");
+      return;
+    }
+
+    const proximosFiltros = {
+      cliente: "",
+      produto: "",
+      fornecedor: "",
+      maquina: "",
+      tipo: "",
+      ...filtrosIniciais,
+    };
+
+    setFiltrosAmostras(proximosFiltros);
+    setTelaAtual("amostras");
+    carregarAmostras(proximosFiltros);
+  }
+
+  function limparFiltrosAmostras() {
+    const filtrosLimpos = {
+      cliente: "",
+      produto: "",
+      fornecedor: "",
+      maquina: "",
+      tipo: "",
+    };
+
+    setFiltrosAmostras(filtrosLimpos);
+    carregarAmostras(filtrosLimpos);
+  }
 
   function limparFormularioUsuarioPerfil() {
     setUsuarioPerfilForm({
       nome: "",
       email: "",
       user_id: "",
+      senha_provisoria: "",
       tipo_perfil: "representante",
       codigo_representante: "",
       ativo: true,
     });
+    setMostrarSenhaProvisoria(false);
   }
 
   async function salvarUsuarioPerfil() {
@@ -2038,13 +3158,15 @@ async function reabrirRota(rota) {
       return;
     }
 
-    if (!usuarioPerfilForm.email.trim()) {
+    const emailNormalizado = usuarioPerfilForm.email.trim().toLowerCase();
+
+    if (!emailNormalizado) {
       alert("Informe o e-mail do usuário.");
       return;
     }
 
-    if (!usuarioPerfilForm.user_id.trim()) {
-      alert("Informe o User ID do Supabase Auth.");
+    if (!emailValido(emailNormalizado)) {
+      alert("Informe um e-mail válido.");
       return;
     }
 
@@ -2056,10 +3178,17 @@ async function reabrirRota(rota) {
       return;
     }
 
+    if (
+      !usuarioPerfilForm.user_id.trim() &&
+      usuarioPerfilForm.senha_provisoria.trim().length < 6
+    ) {
+      alert("Informe uma senha provisória com pelo menos 6 caracteres.");
+      return;
+    }
+
     const payload = {
       nome: usuarioPerfilForm.nome.trim(),
-      email: usuarioPerfilForm.email.trim(),
-      user_id: usuarioPerfilForm.user_id.trim(),
+      email: emailNormalizado,
       tipo_perfil: usuarioPerfilForm.tipo_perfil,
       codigo_representante:
         usuarioPerfilForm.tipo_perfil === "representante"
@@ -2071,48 +3200,141 @@ async function reabrirRota(rota) {
       ativo: usuarioPerfilForm.ativo,
     };
 
-    const { error } = await supabase;
+    setSalvandoUsuario(true);
 
-    if (error) {
-      alert("Falha ao salvar usuário: " + error.message);
+    try {
+      let emailSenhaEnviado = false;
+
+      if (usuarioPerfilForm.user_id.trim()) {
+        const { error } = await supabase.from("perfis").upsert(
+          {
+            ...payload,
+            user_id: usuarioPerfilForm.user_id.trim(),
+          },
+          { onConflict: "user_id" },
+        );
+
+        if (error) {
+          throw error;
+        }
+      } else {
+        const { data, error } = await supabase.functions.invoke(
+          "criar-usuario",
+          {
+            body: {
+              ...payload,
+              senha_provisoria: usuarioPerfilForm.senha_provisoria.trim(),
+            },
+          },
+        );
+
+        if (error) {
+          throw new Error(data?.error || error.message);
+        }
+
+        const { error: erroEmailSenha } =
+          await supabase.auth.resetPasswordForEmail(payload.email, {
+            redirectTo: window.location.origin,
+          });
+
+        if (erroEmailSenha) {
+          alert(
+            "Usuario criado com sucesso, mas o envio do e-mail de senha falhou. Tente reenviar em 'Atualizar senha'.",
+          );
+        } else {
+          emailSenhaEnviado = true;
+        }
+      }
+
+      alert(
+        usuarioPerfilForm.user_id.trim()
+          ? "Usuário salvo com sucesso."
+          : emailSenhaEnviado
+            ? "Usuário criado com sucesso. O e-mail para definir a senha foi enviado."
+            : "Usuário criado com sucesso.",
+      );
+      limparFormularioUsuarioPerfil();
+      await carregarUsuariosPerfis(perfil);
+    } catch (error) {
+      console.error("Falha ao salvar usuario:", error);
+      alert(mensagemAmigavelCriacaoUsuario(error));
+    } finally {
+      setSalvandoUsuario(false);
+    }
+  }
+
+  async function enviarAtualizacaoSenha(usuario) {
+    if (perfil?.tipo_perfil !== "admin") {
+      alert("Somente administrador pode atualizar senha de usuários.");
       return;
     }
 
-    alert("Usuário salvo com sucesso.");
+    const emailUsuario = String(usuario?.email || "").trim();
 
-    limparFormularioUsuarioPerfil();
-    
+    if (!emailUsuario) {
+      alert("Usuário sem e-mail cadastrado.");
+      return;
+    }
+
+    const confirmar = confirm(
+      `Enviar e-mail de redefinição de senha para ${emailUsuario}?`,
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(emailUsuario, {
+      redirectTo: window.location.origin,
+    });
+
+    if (error) {
+      alert(mensagemAmigavelAuth(error, "recuperacao"));
+      return;
+    }
+
+    alert("E-mail de atualização de senha enviado com sucesso.");
   }
 
+  const linkRecuperacaoExpirado =
+    window.location.href.includes("otp_expired") ||
+    window.location.href.includes("access_denied");
 
-const linkRecuperacaoExpirado =
-  window.location.href.includes("otp_expired") ||
-  window.location.href.includes("access_denied");
+  const modoLinkRecuperacao =
+    window.location.href.includes("type=recovery") && !linkRecuperacaoExpirado;
 
-const modoLinkRecuperacao =
-  window.location.href.includes("type=recovery") &&
-  !linkRecuperacaoExpirado;
+  const mensagemLoginAtual = linkRecuperacaoExpirado
+    ? "Seu link de recuperacao expirou. Solicite um novo link para continuar."
+    : mensagemLogin;
 
+  const nomeUsuarioTopo = perfil?.nome || session?.user?.email || "Usuario";
+  const iniciaisUsuarioTopo = nomeUsuarioTopo
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0])
+    .join("")
+    .toUpperCase();
 
-
-if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
-  return (
-    <Login
-      email={email}
-      setEmail={setEmail}
-      senha={senha}
-      setSenha={setSenha}
-      login={login}
-      enviarRecuperacaoSenha={enviarRecuperacaoSenha}
-      modoRecuperacaoSenha={modoLinkRecuperacao || modoRecuperacaoSenha}
-      novaSenha={novaSenha}
-      setNovaSenha={setNovaSenha}
-      confirmarNovaSenha={confirmarNovaSenha}
-      setConfirmarNovaSenha={setConfirmarNovaSenha}
-      salvarNovaSenha={salvarNovaSenha}
-    />
-  );
-}
+  if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
+    return (
+      <Login
+        email={email}
+        setEmail={setEmail}
+        senha={senha}
+        setSenha={setSenha}
+        login={login}
+        enviarRecuperacaoSenha={enviarRecuperacaoSenha}
+        modoRecuperacaoSenha={modoLinkRecuperacao || modoRecuperacaoSenha}
+        novaSenha={novaSenha}
+        setNovaSenha={setNovaSenha}
+        confirmarNovaSenha={confirmarNovaSenha}
+        setConfirmarNovaSenha={setConfirmarNovaSenha}
+        salvarNovaSenha={salvarNovaSenha}
+        mensagemLogin={mensagemLoginAtual}
+      />
+    );
+  }
 
   if (!perfil) {
     return (
@@ -2126,15 +3348,25 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
     <div className="app">
       <header className="home-topo">
         <div className="home-topo-overlay">
-          <img
+          <button
+            type="button"
             className="home-logo-phenix"
-            src="https://phenixonline.com.br/wp-content/uploads/2021/05/Logo-Branco-1.png"
-            alt="Phenix"
-          />
+            onClick={() => setTelaAtual("home")}
+            aria-label="Voltar para a página inicial"
+            title="Voltar para o início"
+          >
+            <img
+              src="https://phenixonline.com.br/wp-content/uploads/2021/05/Logo-Branco-1.png"
+              alt="Phenix"
+            />
+          </button>
 
           <div className="home-acoes-topo">
-            <div className="usuario-logado-topo">
-              <span>{perfil?.nome || session?.user?.email}</span>
+            <div
+              className="usuario-logado-topo"
+              data-initials={iniciaisUsuarioTopo}
+            >
+              <span>{nomeUsuarioTopo}</span>
               <small>{perfil?.tipo_perfil}</small>
             </div>
             {telaAtual !== "home" && (
@@ -2142,8 +3374,10 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
                 type="button"
                 className="home-botao-menu"
                 onClick={() => setTelaAtual("home")}
+                aria-label="Abrir menu"
               >
-                ☰ Menu
+                <Menu size={18} />
+                Menu
               </button>
             )}
 
@@ -2159,6 +3393,117 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
           </div>
         </div>
       </header>
+
+      <aside className="desktop-sidebar" aria-label="Menu principal">
+        <nav className="desktop-sidebar-nav">
+          <button
+            type="button"
+            className={telaAtual === "home" ? "ativo" : ""}
+            onClick={() => setTelaAtual("home")}
+          >
+            <Menu size={20} />
+            Início
+          </button>
+
+          <button
+            type="button"
+            className={telaAtual === "clientes" ? "ativo" : ""}
+            onClick={() => {
+              setTelaAtual("clientes");
+              setModoProximos(false);
+              setLocalizacaoUsuario(null);
+              setOrigemOrdenacaoRota("");
+            }}
+          >
+            <Users size={20} />
+            Clientes
+          </button>
+
+          <button
+            type="button"
+            className={telaAtual === "proximos" ? "ativo" : ""}
+            onClick={() => {
+              setTelaAtual("proximos");
+              setRaioKm(50);
+              buscarClientesProximos();
+            }}
+          >
+            <MapPin size={20} />
+            Próximos
+          </button>
+
+          <button
+            type="button"
+            className={telaAtual === "rotas" ? "ativo" : ""}
+            onClick={() => {
+              setTelaAtual("rotas");
+              carregarRotas();
+            }}
+          >
+            <Route size={20} />
+            Rotas
+          </button>
+
+          <button
+            type="button"
+            className={telaAtual === "dashboard" ? "ativo" : ""}
+            onClick={() => {
+              setTelaAtual("dashboard");
+              carregarRotas();
+            }}
+          >
+            <BarChart3 size={20} />
+            Dashboard
+          </button>
+
+          {permiteMenuAmostrasGrupoAtual && (
+            <button
+              type="button"
+              className={telaAtual === "amostras" ? "ativo" : ""}
+              onClick={() => abrirAmostrasComFiltros()}
+            >
+              <ClipboardList size={20} />
+              Amostras
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={telaAtual === "alterarSenha" ? "ativo" : ""}
+            onClick={() => setTelaAtual("alterarSenha")}
+          >
+            <Settings size={20} />
+            Alterar senha
+          </button>
+
+          {perfil?.tipo_perfil === "admin" && (
+            <button
+              type="button"
+              className={telaAtual === "admin" ? "ativo" : ""}
+              onClick={() => {
+                setTelaAtual("admin");
+                carregarUsuariosPerfis();
+              }}
+            >
+              <Settings size={20} />
+              Administração
+            </button>
+          )}
+        </nav>
+      </aside>
+
+      {telaAtual !== "home" && (
+        <div className="navegacao-tela">
+          <button
+            type="button"
+            className="botao-voltar-tela"
+            onClick={voltarTelaAnterior}
+          >
+            <ArrowLeft size={18} />
+            Voltar
+          </button>
+        </div>
+      )}
 
       {telaAtual === "home" && (
         <>
@@ -2242,23 +3587,41 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
               <ChevronRight size={28} />
             </button>
 
-<button
-  className="home-card-menu"
-  onClick={() => {
-    setTelaAtual("alterarSenha");
-  }}
->
-  <div className="home-icone-menu">
-    <Settings size={42} />
-  </div>
+            {permiteMenuAmostrasGrupoAtual && (
+              <button
+                className="home-card-menu"
+                onClick={() => abrirAmostrasComFiltros()}
+              >
+                <div className="home-icone-menu">
+                  <ClipboardList size={42} />
+                </div>
 
-  <div className="home-conteudo-menu">
-    <h3>Alterar senha</h3>
-    <p>Atualize sua senha de acesso</p>
-  </div>
+                <div className="home-conteudo-menu">
+                  <h3>Amostras</h3>
+                  <p>Consulta tecnica de amostras de clientes</p>
+                </div>
 
-  <ChevronRight size={28} />
-</button>
+                <ChevronRight size={28} />
+              </button>
+            )}
+
+            <button
+              className="home-card-menu"
+              onClick={() => {
+                setTelaAtual("alterarSenha");
+              }}
+            >
+              <div className="home-icone-menu">
+                <Settings size={42} />
+              </div>
+
+              <div className="home-conteudo-menu">
+                <h3>Alterar senha</h3>
+                <p>Atualize sua senha de acesso</p>
+              </div>
+
+              <ChevronRight size={28} />
+            </button>
 
             {perfil?.tipo_perfil === "admin" && (
               <button
@@ -2284,70 +3647,135 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
         </>
       )}
 
-{telaAtual === "alterarSenha" && (
-  <section className="painel-admin">
-    <h2>Alterar senha</h2>
-
-    <div className="admin-bloco">
-      <p>Informe sua senha atual e defina uma nova senha de acesso.</p>
-
-      <div className="admin-form-usuarios">
-        <div>
-          <label>Senha atual</label>
-          <input
-            type="password"
-            value={senhaAtualInterna}
-            onChange={(e) => setSenhaAtualInterna(e.target.value)}
+      {telaAtual === "alterarSenha" && (
+        <section className="painel-admin">
+          <SecaoContexto
+            icone={Settings}
+            titulo="Alterar senha"
+            descricao="Atualize sua senha de acesso com segurança."
           />
-        </div>
 
-        <div>
-          <label>Nova senha</label>
-          <input
-            type="password"
-            value={novaSenhaInterna}
-            onChange={(e) => setNovaSenhaInterna(e.target.value)}
-          />
-        </div>
+          <div className="admin-bloco">
+            <p>Informe sua senha atual e defina uma nova senha de acesso.</p>
 
-        <div>
-          <label>Confirmar nova senha</label>
-          <input
-            type="password"
-            value={confirmarSenhaInterna}
-            onChange={(e) => setConfirmarSenhaInterna(e.target.value)}
-          />
-        </div>
-      </div>
+            <div className="admin-form-usuarios">
+              <div>
+                <label>Senha atual</label>
+                <div className="campo-senha">
+                  <input
+                    type={mostrarSenhaAtualInterna ? "text" : "password"}
+                    value={senhaAtualInterna}
+                    onChange={(e) => setSenhaAtualInterna(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMostrarSenhaAtualInterna((valor) => !valor)
+                    }
+                    aria-label={
+                      mostrarSenhaAtualInterna
+                        ? "Ocultar senha"
+                        : "Mostrar senha"
+                    }
+                  >
+                    {mostrarSenhaAtualInterna ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+              </div>
 
-      <div className="admin-acoes">
-        <button
-          type="button"
-          onClick={alterarSenhaInterna}
-          disabled={alterandoSenhaInterna}
-        >
-          {alterandoSenhaInterna ? "Alterando..." : "Alterar senha"}
-        </button>
+              <div>
+                <label>Nova senha</label>
+                <div className="campo-senha">
+                  <input
+                    type={mostrarNovaSenhaInterna ? "text" : "password"}
+                    value={novaSenhaInterna}
+                    onChange={(e) => setNovaSenhaInterna(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMostrarNovaSenhaInterna((valor) => !valor)
+                    }
+                    aria-label={
+                      mostrarNovaSenhaInterna
+                        ? "Ocultar senha"
+                        : "Mostrar senha"
+                    }
+                  >
+                    {mostrarNovaSenhaInterna ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+              </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setSenhaAtualInterna("");
-            setNovaSenhaInterna("");
-            setConfirmarSenhaInterna("");
-            setTelaAtual("home");
-          }}
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </section>
-)}
+              <div>
+                <label>Confirmar nova senha</label>
+                <div className="campo-senha">
+                  <input
+                    type={mostrarConfirmarSenhaInterna ? "text" : "password"}
+                    value={confirmarSenhaInterna}
+                    onChange={(e) => setConfirmarSenhaInterna(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMostrarConfirmarSenhaInterna((valor) => !valor)
+                    }
+                    aria-label={
+                      mostrarConfirmarSenhaInterna
+                        ? "Ocultar senha"
+                        : "Mostrar senha"
+                    }
+                  >
+                    {mostrarConfirmarSenhaInterna ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-acoes">
+              <button
+                type="button"
+                onClick={alterarSenhaInterna}
+                disabled={alterandoSenhaInterna}
+              >
+                {alterandoSenhaInterna ? "Alterando..." : "Alterar senha"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSenhaAtualInterna("");
+                  setNovaSenhaInterna("");
+                  setConfirmarSenhaInterna("");
+                  setTelaAtual("home");
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {perfil.tipo_perfil === "admin" && telaAtual === "admin" && (
         <section className="painel-admin">
-          <h2>Área Administrativa</h2>
+          <SecaoContexto
+            icone={Settings}
+            titulo="Área Administrativa"
+            descricao="Importação, perfis e permissões do sistema."
+          />
 
           <div className="admin-bloco">
             <h3>Importação de Clientes</h3>
@@ -2374,7 +3802,40 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
               </div>
             )}
 
-            <p>
+            <div className="admin-importacao-painel">
+              <div className="admin-importacao-info">
+                <strong>Planilha de clientes</strong>
+                <span>
+                  Use o modelo com a coluna CD_REPRESENTANTES para vincular mais
+                  de um representante.
+                </span>
+              </div>
+
+              <div className="admin-importacao-acoes">
+                <button
+                  type="button"
+                  className="admin-botao-secundario"
+                  onClick={baixarModeloImportacaoClientes}
+                  title="Baixar modelo padrao de importacao"
+                >
+                  <Download size={18} aria-hidden="true" />
+                  Baixar modelo
+                </button>
+
+                <label className="admin-arquivo-importacao">
+                  <Upload size={18} aria-hidden="true" />
+                  <span>Importar planilha</span>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={importarPlanilha}
+                    disabled={importando}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="admin-importacao-acoes admin-importacao-acoes-secundarias">
               <button
                 type="button"
                 onClick={atualizarCoordenadasPendentes}
@@ -2382,34 +3843,172 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
               >
                 Atualizar coordenadas pendentes
               </button>
-            </p>
+            </div>
 
             {geocodificando && <p>Atualizando coordenadas, aguarde...</p>}
-
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={importarPlanilha}
-              disabled={importando}
-            />
-
             {importando && <p>Importando clientes, aguarde...</p>}
           </div>
 
           <div className="admin-bloco">
-            <h3>Manutenção de Usuários</h3>
+            <div className="admin-bloco-topo">
+              <div>
+                <h3>WhatsApp por grupo de usuario</h3>
+                <p>
+                  Defina quais grupos podem enviar o aviso de visita nas rotas.
+                </p>
+              </div>
+            </div>
 
-            <p>Ajuste o perfil do usuário já criado no Supabase Auth.</p>
+            <div className="admin-config-whatsapp-grupos">
+              {TIPOS_PERFIL_WHATSAPP_ROTA.map((tipoPerfil) => {
+                const configuracao =
+                  configuracoesWhatsAppPorGrupo?.[tipoPerfil];
+                const permitido =
+                  configuracao?.permite_aviso_whatsapp_rota !== false;
 
-            <div
-  className="admin-form-usuarios"
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-    maxWidth: "400px",
-  }}
->
+                return (
+                  <label
+                    className="admin-config-whatsapp-item"
+                    key={tipoPerfil}
+                  >
+                    <div>
+                      <strong>{tipoPerfil}</strong>
+                      <span>
+                        {permitido
+                          ? "Envio de aviso WhatsApp habilitado para este grupo."
+                          : "Envio de aviso WhatsApp desabilitado para este grupo."}
+                      </span>
+                    </div>
+
+                    <input
+                      type="checkbox"
+                      checked={permitido}
+                      onChange={(e) =>
+                        alterarPermissaoAvisoWhatsAppGrupo(
+                          tipoPerfil,
+                          e.target.checked,
+                        )
+                      }
+                    />
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="admin-acoes">
+              <button
+                type="button"
+                onClick={salvarConfiguracoesWhatsAppGrupos}
+                disabled={
+                  salvandoConfiguracoesWhatsApp ||
+                  carregandoConfiguracoesWhatsApp
+                }
+              >
+                {salvandoConfiguracoesWhatsApp
+                  ? "Salvando configuracoes..."
+                  : "Salvar configuracao de grupos"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => carregarConfiguracoesWhatsAppGrupos(perfil)}
+                disabled={carregandoConfiguracoesWhatsApp}
+              >
+                {carregandoConfiguracoesWhatsApp
+                  ? "Atualizando..."
+                  : "Atualizar configuracao"}
+              </button>
+            </div>
+          </div>
+
+          <div className="admin-bloco">
+            <div className="admin-bloco-topo">
+              <div>
+                <h3>Amostras por grupo de usuario</h3>
+                <p>
+                  Defina quais grupos visualizam o menu Amostras e o atalho nos
+                  cards de clientes.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-config-whatsapp-grupos">
+              {TIPOS_PERFIL_MENU_AMOSTRAS.map((tipoPerfil) => {
+                const configuracao =
+                  configuracoesAmostrasPorGrupo?.[tipoPerfil];
+                const permitido = configuracao?.permite_menu_amostras === true;
+
+                return (
+                  <label
+                    className="admin-config-whatsapp-item"
+                    key={tipoPerfil}
+                  >
+                    <div>
+                      <strong>{tipoPerfil}</strong>
+                      <span>
+                        {permitido
+                          ? "Menu Amostras habilitado para este grupo."
+                          : "Menu Amostras oculto para este grupo."}
+                      </span>
+                    </div>
+
+                    <input
+                      type="checkbox"
+                      checked={permitido}
+                      onChange={(e) =>
+                        alterarPermissaoMenuAmostrasGrupo(
+                          tipoPerfil,
+                          e.target.checked,
+                        )
+                      }
+                    />
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="admin-acoes">
+              <button
+                type="button"
+                onClick={salvarConfiguracoesAmostrasGrupos}
+                disabled={
+                  salvandoConfiguracoesAmostras ||
+                  carregandoConfiguracoesAmostras
+                }
+              >
+                {salvandoConfiguracoesAmostras
+                  ? "Salvando configuracoes..."
+                  : "Salvar acesso a Amostras"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => carregarConfiguracoesAmostrasGrupos(perfil)}
+                disabled={carregandoConfiguracoesAmostras}
+              >
+                {carregandoConfiguracoesAmostras
+                  ? "Atualizando..."
+                  : "Atualizar acesso"}
+              </button>
+            </div>
+          </div>
+
+          <div className="admin-bloco">
+            <div className="admin-bloco-topo">
+              <div>
+                <h3>Usuários do sistema</h3>
+                <p>
+                  Crie o acesso do usuário e mantenha o perfil operacional em um
+                  só lugar.
+                </p>
+              </div>
+
+              {usuarioPerfilForm.user_id && (
+                <span className="admin-modo-edicao">Editando perfil</span>
+              )}
+            </div>
+
+            <div className="admin-form-usuarios">
               <div>
                 <label>Nome</label>
                 <input
@@ -2438,19 +4037,51 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
                 />
               </div>
 
-              <div>
-                <label>User ID Supabase</label>
-                <input
-                  type="text"
-                  value={usuarioPerfilForm.user_id}
-                  onChange={(e) =>
-                    setUsuarioPerfilForm({
-                      ...usuarioPerfilForm,
-                      user_id: e.target.value,
-                    })
-                  }
-                />
-              </div>
+              {usuarioPerfilForm.user_id ? (
+                <div>
+                  <label>User ID Supabase</label>
+                  <input
+                    type="text"
+                    value={usuarioPerfilForm.user_id}
+                    readOnly
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label>Senha provisória</label>
+                  <div className="campo-senha">
+                    <input
+                      type={mostrarSenhaProvisoria ? "text" : "password"}
+                      minLength={6}
+                      placeholder="Mínimo 6 caracteres"
+                      value={usuarioPerfilForm.senha_provisoria}
+                      onChange={(e) =>
+                        setUsuarioPerfilForm({
+                          ...usuarioPerfilForm,
+                          senha_provisoria: e.target.value,
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMostrarSenhaProvisoria((valor) => !valor)
+                      }
+                      aria-label={
+                        mostrarSenhaProvisoria
+                          ? "Ocultar senha"
+                          : "Mostrar senha"
+                      }
+                    >
+                      {mostrarSenhaProvisoria ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label>Tipo de perfil</label>
@@ -2509,8 +4140,16 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
             </div>
 
             <div className="admin-acoes">
-              <button type="button" onClick={salvarUsuarioPerfil}>
-                Salvar usuário
+              <button
+                type="button"
+                onClick={salvarUsuarioPerfil}
+                disabled={salvandoUsuario}
+              >
+                {salvandoUsuario
+                  ? "Salvando..."
+                  : usuarioPerfilForm.user_id
+                    ? "Atualizar perfil"
+                    : "Criar usuário"}
               </button>
 
               <button type="button" onClick={limparFormularioUsuarioPerfil}>
@@ -2557,22 +4196,33 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setUsuarioPerfilForm({
-                          nome: usuario.nome || "",
-                          email: usuario.email || "",
-                          user_id: usuario.user_id || "",
-                          tipo_perfil: usuario.tipo_perfil || "representante",
-                          codigo_representante:
-                            usuario.codigo_representante || "",
-                          ativo: usuario.ativo === true,
-                        })
-                      }
-                    >
-                      Editar
-                    </button>
+                    <div className="admin-card-acoes-usuario">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setUsuarioPerfilForm({
+                            nome: usuario.nome || "",
+                            email: usuario.email || "",
+                            user_id: usuario.user_id || "",
+                            senha_provisoria: "",
+                            tipo_perfil: usuario.tipo_perfil || "representante",
+                            codigo_representante:
+                              usuario.codigo_representante || "",
+                            ativo: usuario.ativo === true,
+                          })
+                        }
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        className="admin-botao-secundario"
+                        onClick={() => enviarAtualizacaoSenha(usuario)}
+                      >
+                        Atualizar senha
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -2584,7 +4234,16 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
       <main className="conteudo">
         {(telaAtual === "clientes" || telaAtual === "proximos") && (
           <section className="painel">
-            <h2>Clientes</h2>
+            <SecaoContexto
+              icone={Users}
+              titulo="Clientes"
+              descricao={
+                modoProximos
+                  ? "Busca por proximidade e raio configurável."
+                  : "Consulta completa de clientes."
+              }
+              badge={modoProximos ? `Raio ${raioKm} km` : null}
+            />
 
             <input
               className="campo-busca"
@@ -2595,24 +4254,24 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
             />
 
             <div className="clientes-toolbar">
-  {modoProximos ? (
-    <button type="button" onClick={limparModoProximos}>
-      Limpar proximidade
-    </button>
-  ) : (
-    <button type="button" onClick={buscarClientesProximos}>
-      Clientes próximos de mim
-    </button>
-  )}
-</div>
+              {modoProximos ? (
+                <button type="button" onClick={limparModoProximos}>
+                  Limpar proximidade
+                </button>
+              ) : (
+                <button type="button" onClick={buscarClientesProximos}>
+                  Clientes próximos de mim
+                </button>
+              )}
+            </div>
 
             {modoProximos && (
-             <div className="controle-raio controle-raio-card">
+              <div className="controle-raio controle-raio-card">
                 {origemOrdenacaoRota && (
-  <p className="origem-localizacao">
-    <strong>Origem da busca:</strong> {origemOrdenacaoRota}
-  </p>
-)}
+                  <p className="origem-localizacao">
+                    <strong>Origem da busca:</strong> {origemOrdenacaoRota}
+                  </p>
+                )}
                 <label>Raio de busca:</label>
 
                 <select
@@ -2636,49 +4295,57 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
               <div className="grid-clientes">
                 {clientesFiltrados.map((item) => (
                   <div className="card-cliente" key={item.id}>
-                    <h3>{item.cliente || "Cliente sem nome"}</h3>
+                    <div className="cliente-resumo">
+                      <h3>{item.cliente || "Cliente sem nome"}</h3>
 
-                    <p>
-                      <strong>Código:</strong> {item.codigo_cliente || "-"}
-                    </p>
+                      <div className="cliente-resumo-linha">
+                        <span>
+                          <strong>Código:</strong> {item.codigo_cliente || "-"}
+                        </span>
+                        <span>
+                          <strong>Cidade:</strong> {item.cidade || "-"} /{" "}
+                          {item.uf || "-"}
+                        </span>
+                        {item.distancia_km !== undefined && (
+                          <span>
+                            <strong>Distância:</strong>{" "}
+                            {item.distancia_km.toFixed(1)} km
+                          </span>
+                        )}
+                      </div>
 
-                    <p>
-                      <strong>Cidade:</strong> {item.cidade || "-"} /{" "}
-                      {item.uf || "-"}
-                      {item.distancia_km !== undefined
-                        ? ` | Distância: ${item.distancia_km.toFixed(1)} km`
-                        : ""}
-                    </p>
+                      <p className="cliente-resumo-endereco">
+                        <strong>Endereço:</strong>{" "}
+                        {item.endereco_completo || "-"}
+                      </p>
 
-                    <p>
-                      <strong>Endereço:</strong> {item.endereco_completo || "-"}
-                    </p>
-
-                    <p>
-                      <strong>Telefone:</strong> {item.telefone || "-"}
-                    </p>
-
-                    <p>
-                      <strong>WhatsApp:</strong> {item.whatsapp || "-"}
-                    </p>
-
-                    <p>
-                      <strong>Representante:</strong>{" "}
-                      {item.codigo_representante || "-"}
-                    </p>
-
-                    <p>
-                      <strong>Tipo:</strong> {item.tipo || "Não informado"}
-                    </p>
-
-                    <p>
-                      <strong>Prioridade:</strong>{" "}
-                      {item.prioridade || "Não informada"}
-                    </p>
-
-                    <p>
-                      <strong>Status:</strong> {item.status || "Não informado"}
-                    </p>
+                      <details className="cliente-detalhes">
+                        <summary>Ver detalhes</summary>
+                        <div className="cliente-dados">
+                          <p>
+                            <strong>Telefone:</strong> {item.telefone || "-"}
+                          </p>
+                          <p>
+                            <strong>WhatsApp:</strong> {item.whatsapp || "-"}
+                          </p>
+                          <p>
+                            <strong>Representante:</strong>{" "}
+                            {item.codigo_representante || "-"}
+                          </p>
+                          <p>
+                            <strong>Tipo:</strong> {item.tipo || "Não informado"}
+                          </p>
+                          <p>
+                            <strong>Prioridade:</strong>{" "}
+                            {item.prioridade || "Não informada"}
+                          </p>
+                          <p>
+                            <strong>Status:</strong>{" "}
+                            {item.status || "Não informado"}
+                          </p>
+                        </div>
+                      </details>
+                    </div>
 
                     <div className="acoes">
                       <button onClick={() => abrirMaps(item)}>Waze</button>
@@ -2703,6 +4370,21 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
                       >
                         Acomp.
                       </button>
+
+                      {permiteMenuAmostrasGrupoAtual && (
+                        <button
+                          type="button"
+                          className="botao-acao"
+                          onClick={() =>
+                            abrirAmostrasComFiltros({
+                              cliente:
+                                item.codigo_cliente || item.cliente || "",
+                            })
+                          }
+                        >
+                          Amostras
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -2711,178 +4393,403 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
           </section>
         )}
 
-       {telaAtual === "dashboard" && (
-  <section className="painel dashboard-painel">
-    <h2>Dashboard</h2>
+        {telaAtual === "amostras" && !permiteMenuAmostrasGrupoAtual && (
+          <section className="painel amostras-painel">
+            <SecaoContexto
+              icone={ClipboardList}
+              titulo="Amostras"
+              descricao="Seu perfil nao possui acesso a esta area."
+            />
 
-    <div className="dashboard-grupo">
-      <h3>
-        <Route size={22} />
-        Rotas
-      </h3>
+            <button type="button" onClick={() => setTelaAtual("home")}>
+              Voltar ao menu
+            </button>
+          </section>
+        )}
 
-      <div className="dashboard-indicadores">
-        <div className="dashboard-indicador">
-          <Route size={30} />
-          <span>Total de rotas</span>
-          <strong>{indicadoresDashboard.totalRotas}</strong>
-        </div>
+        {telaAtual === "amostras" && permiteMenuAmostrasGrupoAtual && (
+          <section className="painel amostras-painel">
+            <SecaoContexto
+              icone={ClipboardList}
+              titulo="Amostras"
+              descricao="Consulta da tabela amostras_phenix."
+              badge={`${totalAmostrasEncontradas} encontrada(s)`}
+            />
 
-        <div
-          className="dashboard-indicador dashboard-card-click"
-          onClick={() => abrirRotasPorStatus("ABERTA")}
-        >
-          <LockOpen size={30} />
-          <span>Abertas</span>
-          <strong>{indicadoresDashboard.abertas}</strong>
-        </div>
-
-        <div
-          className="dashboard-indicador dashboard-card-click"
-          onClick={() => abrirRotasPorStatus("FECHADA")}
-        >
-          <Flag size={30} />
-          <span>Fechadas</span>
-          <strong>{indicadoresDashboard.fechadas}</strong>
-        </div>
-
-        <div
-          className="dashboard-indicador dashboard-card-click"
-          onClick={() => abrirRotasPorStatus("EM_ANDAMENTO")}
-        >
-          <PlayCircle size={30} />
-          <span>Em andamento</span>
-          <strong>{indicadoresDashboard.emAndamento}</strong>
-        </div>
-
-        <div
-          className="dashboard-indicador dashboard-card-click"
-          onClick={() => abrirRotasPorStatus("FINALIZADA")}
-        >
-          <CheckCircle size={30} />
-          <span>Finalizadas</span>
-          <strong>{indicadoresDashboard.finalizadas}</strong>
-        </div>
-      </div>
-    </div>
-
-    <div className="dashboard-grupo">
-      <h3>
-        <Users size={22} />
-        Clientes
-      </h3>
-
-      <div className="dashboard-indicadores">
-        <div className="dashboard-indicador">
-          <Users size={30} />
-          <span>Clientes cadastrados</span>
-          <strong>{indicadoresDashboard.totalClientes}</strong>
-        </div>
-
-        <div className="dashboard-indicador">
-          <Route size={30} />
-          <span>Clientes em rotas</span>
-          <strong>{indicadoresDashboard.totalClientesRotas}</strong>
-        </div>
-
-        <div className="dashboard-indicador">
-          <UserCheck size={30} />
-          <span>Visitados</span>
-          <strong>{indicadoresDashboard.totalVisitados}</strong>
-        </div>
-
-        <div className="dashboard-indicador">
-          <AlertTriangle size={30} />
-          <span>Pendentes</span>
-          <strong>{indicadoresDashboard.totalPendentes}</strong>
-        </div>
-
-        <div className="dashboard-indicador dashboard-indicador-destaque">
-          <Flag size={30} />
-          <span>Conclusão das rotas</span>
-          <strong>{indicadoresDashboard.percentualConclusao}%</strong>
-        </div>
-      </div>
-    </div>
-
-    <div className="dashboard-duas-colunas">
-      <div className="dashboard-grupo">
-        <h3>
-          <Trophy size={22} />
-          Ranking por responsável
-        </h3>
-
-        <div className="dashboard-ranking">
-          {indicadoresDashboard.rankingResponsaveis.length === 0 ? (
-            <p>Nenhuma rota encontrada.</p>
-          ) : (
-            indicadoresDashboard.rankingResponsaveis.map((item) => (
-              <div className="dashboard-ranking-item" key={item.nome}>
-                <div>
-                  <strong>{item.nome}</strong>
-                  <span>
-                    {item.totalRotas} rota(s) · {item.totalClientes} cliente(s)
-                  </span>
-                </div>
-
-                <div>
-                  <strong>{item.totalVisitados}</strong>
-                  <span>visitados</span>
-                </div>
-
-                <div>
-                  <strong>{item.totalPendentes}</strong>
-                  <span>pendentes</span>
-                </div>
+            <div className="amostras-filtros">
+              <div>
+                <label>Cliente</label>
+                <input
+                  type="text"
+                  value={filtrosAmostras.cliente}
+                  onChange={(e) =>
+                    setFiltrosAmostras({
+                      ...filtrosAmostras,
+                      cliente: e.target.value,
+                    })
+                  }
+                  placeholder="Codigo ou nome"
+                />
               </div>
-            ))
-          )}
-        </div>
-      </div>
 
-      <div className="dashboard-grupo">
-        <h3>
-          <AlertTriangle size={22} />
-          Rotas com pendências
-        </h3>
+              <div>
+                <label>Produto</label>
+                <input
+                  type="text"
+                  value={filtrosAmostras.produto}
+                  onChange={(e) =>
+                    setFiltrosAmostras({
+                      ...filtrosAmostras,
+                      produto: e.target.value,
+                    })
+                  }
+                  placeholder="Codigo ou descricao"
+                />
+              </div>
 
-        <div className="dashboard-ranking">
-          {indicadoresDashboard.rotasCriticas.length === 0 ? (
-            <p>Nenhuma rota com pendência encontrada.</p>
-          ) : (
-            indicadoresDashboard.rotasCriticas.map((rota) => (
-              <div
-                className="dashboard-ranking-item dashboard-ranking-click"
-                key={rota.id}
-                onClick={() => {
-                  setTelaAtual("rotas");
-                  abrirRota(rota);
-                }}
+              <div>
+                <label>Fornecedor</label>
+                <input
+                  type="text"
+                  value={filtrosAmostras.fornecedor}
+                  onChange={(e) =>
+                    setFiltrosAmostras({
+                      ...filtrosAmostras,
+                      fornecedor: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label>Maquina</label>
+                <input
+                  type="text"
+                  value={filtrosAmostras.maquina}
+                  onChange={(e) =>
+                    setFiltrosAmostras({
+                      ...filtrosAmostras,
+                      maquina: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label>Tipo de amostra</label>
+                <input
+                  type="text"
+                  value={filtrosAmostras.tipo}
+                  onChange={(e) =>
+                    setFiltrosAmostras({
+                      ...filtrosAmostras,
+                      tipo: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="amostras-acoes">
+              <button
+                type="button"
+                onClick={() => carregarAmostras(filtrosAmostras)}
+                disabled={carregandoAmostras}
               >
-                <div>
-                  <strong>{rota.nome}</strong>
-                  <span>
-                    {rota.responsavel_nome || "Sem responsável"} · {rota.status}
-                  </span>
-                </div>
+                {carregandoAmostras ? "Buscando..." : "Aplicar filtros"}
+              </button>
 
-                <div>
-                  <strong>{rota.total_clientes || 0}</strong>
-                  <span>clientes</span>
-                </div>
+              <button
+                type="button"
+                className="amostras-botao-secundario"
+                onClick={limparFiltrosAmostras}
+                disabled={carregandoAmostras}
+              >
+                Limpar filtros
+              </button>
+            </div>
 
-                <div>
-                  <strong>{rota.total_pendentes || 0}</strong>
-                  <span>pendentes</span>
+            {erroAmostras && <p className="amostras-erro">{erroAmostras}</p>}
+
+            {carregandoAmostras ? (
+              <p className="amostras-status">Carregando amostras...</p>
+            ) : amostras.length === 0 ? (
+              <p className="amostras-status">Nenhuma amostra encontrada.</p>
+            ) : (
+              <div className="amostras-layout">
+                <div className="amostras-lista">
+                  {amostras.map((amostra) => (
+                    <details className="amostra-card" key={amostra.id}>
+                      <summary>
+                        <span className="amostra-card-principal">
+                          <span className="amostra-card-identificacao">
+                            <span>
+                              <strong>Codigo empresa:</strong>{" "}
+                              {amostra.cd_cliente || "-"}
+                            </span>
+                            <span className="amostra-card-descricao">
+                              {amostra.nome_cliente || "Cliente sem nome"}
+                            </span>
+                          </span>
+
+                          <span className="amostra-card-produto">
+                            <span>
+                              <strong>Codigo produto:</strong>{" "}
+                              {amostra.cd_produto || "-"}
+                            </span>
+                            <span>
+                              <strong>Produto:</strong>{" "}
+                              {amostra.descricao_produto || "Nao informado"}
+                            </span>
+                          </span>
+                        </span>
+
+                        <span className="amostra-card-campos">
+                          <small>
+                            <strong>Tipo:</strong>{" "}
+                            {amostra.tipo_amostra || "Nao informado"}
+                          </small>
+                          <small>
+                            <strong>Maquina:</strong>{" "}
+                            {amostra.maquina || "Nao informada"}
+                          </small>
+                          <small>
+                            <strong>Fornecedor:</strong>{" "}
+                            {amostra.fornecedor_concorrente || "Nao informado"}
+                          </small>
+                          <small>
+                            <strong>Papel:</strong>{" "}
+                            {amostra.tipo_papel || "Nao informado"}
+                          </small>
+                          <small>
+                            <strong>Duracao:</strong>{" "}
+                            {amostra.tempo_duracao_dias || "-"} dia(s)
+                          </small>
+                          <small>
+                            <strong>Gramatura:</strong>{" "}
+                            {amostra.gramatura || "-"}
+                          </small>
+                        </span>
+
+                        <small className="amostra-card-numero">
+                          #{amostra.id_amostra_oracle || amostra.id}
+                        </small>
+
+                        <span className="amostra-card-expandir">
+                          Ver detalhes
+                        </span>
+                      </summary>
+
+                      <dl className="amostra-card-detalhes">
+                        {CAMPOS_DETALHE_AMOSTRA.filter(
+                          ([campo]) =>
+                            ![
+                              "id",
+                              "id_amostra_oracle",
+                              "cd_cliente",
+                              "nome_cliente",
+                              "descricao_produto",
+                              "cd_produto",
+                              "fornecedor_concorrente",
+                              "maquina",
+                              "tempo_duracao_dias",
+                              "gramatura",
+                              "tipo_papel",
+                              "tipo_amostra",
+                            ].includes(campo),
+                        ).map(([campo, rotulo]) => (
+                          <div key={campo}>
+                            <dt>{rotulo}</dt>
+                            <dd>{formatarValorAmostra(campo, amostra[campo])}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </details>
+                  ))}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  </section>
-)}
+            )}
+          </section>
+        )}
+
+        {telaAtual === "dashboard" && (
+          <section className="painel dashboard-painel">
+            <SecaoContexto
+              icone={BarChart3}
+              titulo="Dashboard"
+              descricao="Indicadores de rotas e clientes."
+            />
+
+            <div className="dashboard-grupo">
+              <h3>
+                <Route size={22} />
+                Rotas
+              </h3>
+
+              <div className="dashboard-indicadores">
+                <div className="dashboard-indicador">
+                  <Route size={30} />
+                  <span>Total de rotas</span>
+                  <strong>{indicadoresDashboard.totalRotas}</strong>
+                </div>
+
+                <div
+                  className="dashboard-indicador dashboard-card-click"
+                  onClick={() => abrirRotasPorStatus("ABERTA")}
+                >
+                  <LockOpen size={30} />
+                  <span>Abertas</span>
+                  <strong>{indicadoresDashboard.abertas}</strong>
+                </div>
+
+                <div
+                  className="dashboard-indicador dashboard-card-click"
+                  onClick={() => abrirRotasPorStatus("FECHADA")}
+                >
+                  <Flag size={30} />
+                  <span>Fechadas</span>
+                  <strong>{indicadoresDashboard.fechadas}</strong>
+                </div>
+
+                <div
+                  className="dashboard-indicador dashboard-card-click"
+                  onClick={() => abrirRotasPorStatus("EM_ANDAMENTO")}
+                >
+                  <PlayCircle size={30} />
+                  <span>Em andamento</span>
+                  <strong>{indicadoresDashboard.emAndamento}</strong>
+                </div>
+
+                <div
+                  className="dashboard-indicador dashboard-card-click"
+                  onClick={() => abrirRotasPorStatus("FINALIZADA")}
+                >
+                  <CheckCircle size={30} />
+                  <span>Finalizadas</span>
+                  <strong>{indicadoresDashboard.finalizadas}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-grupo">
+              <h3>
+                <Users size={22} />
+                Clientes
+              </h3>
+
+              <div className="dashboard-indicadores">
+                <div className="dashboard-indicador">
+                  <Users size={30} />
+                  <span>Clientes cadastrados</span>
+                  <strong>{indicadoresDashboard.totalClientes}</strong>
+                </div>
+
+                <div className="dashboard-indicador">
+                  <Route size={30} />
+                  <span>Clientes em rotas</span>
+                  <strong>{indicadoresDashboard.totalClientesRotas}</strong>
+                </div>
+
+                <div className="dashboard-indicador">
+                  <UserCheck size={30} />
+                  <span>Visitados</span>
+                  <strong>{indicadoresDashboard.totalVisitados}</strong>
+                </div>
+
+                <div className="dashboard-indicador">
+                  <AlertTriangle size={30} />
+                  <span>Pendentes</span>
+                  <strong>{indicadoresDashboard.totalPendentes}</strong>
+                </div>
+
+                <div className="dashboard-indicador dashboard-indicador-destaque">
+                  <Flag size={30} />
+                  <span>Conclusão das rotas</span>
+                  <strong>{indicadoresDashboard.percentualConclusao}%</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-duas-colunas">
+              <div className="dashboard-grupo">
+                <h3>
+                  <Trophy size={22} />
+                  Ranking por responsável
+                </h3>
+
+                <div className="dashboard-ranking">
+                  {indicadoresDashboard.rankingResponsaveis.length === 0 ? (
+                    <p>Nenhuma rota encontrada.</p>
+                  ) : (
+                    indicadoresDashboard.rankingResponsaveis.map((item) => (
+                      <div className="dashboard-ranking-item" key={item.nome}>
+                        <div>
+                          <strong>{item.nome}</strong>
+                          <span>
+                            {item.totalRotas} rota(s) · {item.totalClientes}{" "}
+                            cliente(s)
+                          </span>
+                        </div>
+
+                        <div>
+                          <strong>{item.totalVisitados}</strong>
+                          <span>visitados</span>
+                        </div>
+
+                        <div>
+                          <strong>{item.totalPendentes}</strong>
+                          <span>pendentes</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="dashboard-grupo">
+                <h3>
+                  <AlertTriangle size={22} />
+                  Rotas com pendências
+                </h3>
+
+                <div className="dashboard-ranking">
+                  {indicadoresDashboard.rotasCriticas.length === 0 ? (
+                    <p>Nenhuma rota com pendência encontrada.</p>
+                  ) : (
+                    indicadoresDashboard.rotasCriticas.map((rota) => (
+                      <div
+                        className="dashboard-ranking-item dashboard-ranking-click"
+                        key={rota.id}
+                        onClick={() => {
+                          setTelaAtual("rotas");
+                          abrirRota(rota);
+                        }}
+                      >
+                        <div>
+                          <strong>{rota.nome}</strong>
+                          <span>
+                            {rota.responsavel_nome || "Sem responsável"} ·{" "}
+                            {rota.status}
+                          </span>
+                        </div>
+
+                        <div>
+                          <strong>{rota.total_clientes || 0}</strong>
+                          <span>clientes</span>
+                        </div>
+
+                        <div>
+                          <strong>{rota.total_pendentes || 0}</strong>
+                          <span>pendentes</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {telaAtual === "rotas" && (
           <Rotas
@@ -2896,6 +4803,7 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
             abrirRota={abrirRota}
             rotaSelecionada={rotaSelecionada}
             clientesDaRota={clientesDaRota}
+            historicoWhatsAppRota={historicoWhatsAppRota}
             buscaClienteRota={buscaClienteRota}
             setBuscaClienteRota={setBuscaClienteRota}
             clientes={clientes}
@@ -2917,12 +4825,17 @@ if (!session || modoLinkRecuperacao || modoRecuperacaoSenha) {
             usuarioId={session.user.id}
             calcularDistanciaKm={calcularDistanciaKm}
             abrirAcompanhamento={abrirAcompanhamento}
+            avisarProximoClienteRota={avisarProximoClienteRota}
+            reenviarAvisoWhatsAppCliente={reenviarAvisoWhatsAppCliente}
+            permiteAvisoWhatsAppRotaGrupoAtual={
+              permiteAvisoWhatsAppRotaGrupoAtual
+            }
             ordenarRotaPorDistancia={ordenarRotaPorDistancia}
             filtroResponsavelRotas={filtroResponsavelRotas}
-setFiltroResponsavelRotas={setFiltroResponsavelRotas}
-alterarResponsavelRota={alterarResponsavelRota}
-filtroStatusRotas={filtroStatusRotas}
-setFiltroStatusRotas={setFiltroStatusRotas}
+            setFiltroResponsavelRotas={setFiltroResponsavelRotas}
+            alterarResponsavelRota={alterarResponsavelRota}
+            filtroStatusRotas={filtroStatusRotas}
+            setFiltroStatusRotas={setFiltroStatusRotas}
           />
         )}
       </main>
@@ -2947,13 +4860,21 @@ setFiltroStatusRotas={setFiltroStatusRotas}
               <div className="cidade-carregando">Buscando cidades...</div>
             )}
 
-            {!carregandoCidade && textoCidadeBusca.trim().length > 0 && textoCidadeBusca.trim().length < 3 && (
-              <div className="cidade-ajuda">Digite mais caracteres para iniciar a busca.</div>
-            )}
+            {!carregandoCidade &&
+              textoCidadeBusca.trim().length > 0 &&
+              textoCidadeBusca.trim().length < 3 && (
+                <div className="cidade-ajuda">
+                  Digite mais caracteres para iniciar a busca.
+                </div>
+              )}
 
-            {!carregandoCidade && textoCidadeBusca.trim().length >= 3 && sugestoesCidade.length === 0 && (
-              <div className="cidade-ajuda">Nenhuma cidade encontrada. Tente informar cidade e UF.</div>
-            )}
+            {!carregandoCidade &&
+              textoCidadeBusca.trim().length >= 3 &&
+              sugestoesCidade.length === 0 && (
+                <div className="cidade-ajuda">
+                  Nenhuma cidade encontrada. Tente informar cidade e UF.
+                </div>
+              )}
 
             <div className="cidade-lista">
               {sugestoesCidade.map((item, index) => (

@@ -27,10 +27,117 @@ body {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
 }
 
+.conteudo h1,
+.conteudo h2,
+.conteudo h3,
+.painel h1,
+.painel h2,
+.painel h3,
+.painel-admin h1,
+.painel-admin h2,
+.painel-admin h3 {
+  color: #0f172a;
+}
+
 .painel h2,
 .painel-admin h2 {
   margin-top: 0;
-  text-align: center;
+  text-align: left;
+}
+
+.secao-contexto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.secao-contexto-principal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.secao-contexto-icone {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 14px;
+  background: #eef5ff;
+  color: #0057d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.secao-contexto-texto {
+  min-width: 0;
+}
+
+.secao-contexto .secao-contexto-texto h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.secao-contexto .secao-contexto-texto p {
+  margin: 3px 0 0 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.dashboard-painel .secao-contexto .secao-contexto-texto h2::before,
+.dashboard-painel .secao-contexto .secao-contexto-texto h2::after {
+  content: none;
+  display: none;
+}
+
+.secao-contexto-badge {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.painel input,
+.painel select,
+.painel textarea,
+.painel-admin input,
+.painel-admin select,
+.painel-admin textarea {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
+.painel input::placeholder,
+.painel textarea::placeholder,
+.painel-admin input::placeholder,
+.painel-admin textarea::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.painel input:focus,
+.painel select:focus,
+.painel textarea:focus,
+.painel-admin input:focus,
+.painel-admin select:focus,
+.painel-admin textarea:focus {
+  color: #0f172a;
 }
 
 button {
@@ -52,8 +159,153 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.navegacao-tela {
+  width: 100%;
+  max-width: 1180px;
+  margin: -28px auto 18px auto;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.botao-voltar-tela {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.botao-voltar-tela:hover {
+  background: #eff6ff;
+  color: #123f70;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+@media (min-width: 901px) {
+  body {
+    background: #edf4fb;
+  }
+
+  .app {
+    min-height: 100vh;
+    padding: 132px 30px 48px 310px;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(0, 87, 216, 0.04),
+        rgba(249, 115, 22, 0.03) 360px,
+        transparent 640px
+      ),
+      #edf4fb;
+  }
+
+  .conteudo,
+  .painel-admin,
+  .painel {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto 24px auto;
+  }
+
+  .painel-admin,
+  .painel {
+    border: 1px solid #dbe8f8;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  }
+
+  .painel h2,
+  .painel-admin h2 {
+    text-align: left;
+  }
+
+  .navegacao-tela {
+    max-width: 1280px;
+    margin: 0 auto 18px auto;
+  }
+
+  .botao-voltar-tela {
+    border-radius: 10px;
+    box-shadow: none;
+  }
+}
+
 @media (max-width: 700px) {
   .app {
-    padding: 15px;
+    padding: 10px;
+    overflow-x: hidden;
+  }
+
+  .conteudo,
+  .painel-admin,
+  .painel {
+    width: 100%;
+    max-width: none;
+    margin: 0 0 14px 0;
+  }
+
+  .painel-admin,
+  .painel {
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  }
+
+  .painel h2,
+  .painel-admin h2 {
+    font-size: 21px;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .secao-contexto {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .secao-contexto-badge {
+    width: 100%;
+    text-align: center;
+  }
+
+  button {
+    min-height: 42px;
+    padding: 9px 12px;
+  }
+
+  .navegacao-tela {
+    margin: -6px 0 10px 0;
+  }
+
+  .botao-voltar-tela {
+    width: 100%;
+    border-radius: 12px;
   }
 }

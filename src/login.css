@@ -69,6 +69,19 @@
   gap: 18px;
 }
 
+.login-alerta {
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  text-align: center;
+}
+
 .campo-login {
   display: flex;
   flex-direction: column;
@@ -89,11 +102,57 @@
   font-size: 15px;
   outline: none;
   box-sizing: border-box;
+  background: #ffffff;
+  color: #0f172a;
 }
 
 .campo-login input:focus {
   border-color: #0057d8;
   box-shadow: 0 0 0 4px rgba(0, 87, 216, 0.14);
+}
+
+.campo-login input:-webkit-autofill,
+.campo-login input:-webkit-autofill:hover,
+.campo-login input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.campo-senha {
+  position: relative;
+  width: 100%;
+}
+
+.campo-senha input {
+  width: 100%;
+  padding-right: 48px !important;
+}
+
+.campo-senha button {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.campo-senha button:hover {
+  background: #eef5ff !important;
+  color: #0057d8 !important;
 }
 
 .botao-login-premium {
@@ -113,26 +172,41 @@
 
 @media (max-width: 700px) {
   .login-page {
-    padding: 18px;
+    padding: 14px;
     align-items: flex-start;
-    padding-top: 54px;
+    padding-top: 24px;
   }
 
   .login-card-premium {
-    padding: 30px 22px;
-    border-radius: 24px;
+    padding: 24px 18px;
+    border-radius: 18px;
   }
 
   .login-logo-phenix {
-    width: 170px;
+    width: 150px;
+    margin-bottom: 18px;
   }
 
   .login-titulos h1 {
-    font-size: 31px;
+    font-size: 27px;
   }
 
   .login-titulos p {
     font-size: 14px;
+  }
+
+  .login-topo {
+    margin-bottom: 24px;
+  }
+
+  .login-form-premium {
+    gap: 14px;
+  }
+
+  .campo-login input,
+  .botao-login-premium {
+    height: 48px;
+    border-radius: 12px !important;
   }
 }
 .botao-recuperar-senha {

@@ -365,6 +365,25 @@
   color: #64748b !important;
 }
 
+.acoes-topo-rota {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 16px 0;
+}
+
+.btn-finalizar-rota-topo {
+  min-width: 168px;
+  height: 42px;
+  border-radius: 12px;
+  background: #2563eb;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.btn-finalizar-rota-topo:hover {
+  background: #1d4ed8;
+}
+
 .historico-rota {
   background: #ffffff;
   border-radius: 18px;
@@ -432,6 +451,213 @@
   cursor: pointer !important;
   position: relative;
   z-index: 5;
+}
+
+.painel-aviso-whatsapp-rota {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  margin: 0 0 16px 0;
+  padding: 14px 16px;
+  border: 1px solid #dbe7f3;
+  border-radius: 14px;
+  background: #f8fbff;
+}
+
+.painel-aviso-whatsapp-rota strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.painel-aviso-whatsapp-rota span {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.painel-aviso-whatsapp-rota button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border-radius: 10px;
+  background: #16a34a;
+  white-space: nowrap;
+}
+
+.painel-aviso-whatsapp-rota .btn-secundario-whatsapp {
+  background: #ffffff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.painel-aviso-whatsapp-rota .btn-secundario-whatsapp:hover {
+  background: #eff6ff;
+}
+
+.painel-aviso-whatsapp-rota button:hover {
+  background: #15803d;
+}
+
+.painel-aviso-whatsapp-rota .btn-secundario-whatsapp:hover {
+  background: #eff6ff;
+}
+
+.painel-aviso-whatsapp-rota button:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+}
+
+.painel-finalizar-rota {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 16px 0;
+}
+
+.painel-historico-whatsapp-rota {
+  margin: 0 0 18px 0;
+  padding: 14px 16px;
+  border: 1px solid #dbe7f3;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.painel-historico-whatsapp-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.painel-historico-whatsapp-topo strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.painel-historico-whatsapp-topo span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.painel-historico-whatsapp-vazio {
+  margin: 10px 0 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.lista-historico-whatsapp-rota {
+  margin-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.item-historico-whatsapp-rota {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.item-historico-whatsapp-rota:last-child {
+  border-bottom: none;
+}
+
+.item-historico-whatsapp-rota > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-historico-whatsapp-rota strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.item-historico-whatsapp-rota span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.item-historico-whatsapp-rota > div:last-child {
+  text-align: right;
+}
+
+.modal-historico-whatsapp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 90;
+}
+
+.modal-historico-whatsapp {
+  width: min(860px, 100%);
+  max-height: 82vh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #dbe7f3;
+  padding: 16px;
+}
+
+.modal-historico-whatsapp-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.modal-historico-whatsapp-topo h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.modal-historico-whatsapp-topo span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.btn-fechar-modal-historico {
+  background: #ffffff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  min-height: 36px;
+}
+
+.btn-fechar-modal-historico:hover {
+  background: #eff6ff;
+}
+
+.badge-aviso-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.linha-planejamento-rota .badge-aviso-whatsapp {
+  display: inline-flex;
+  color: #15803d;
+  font-size: 11px;
 }
 
 /* ===============================
@@ -740,6 +966,17 @@
   color: #64748b;
 }
 
+.linha-proximo-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.linha-proximo-status .btn-mini-status {
+  min-width: 156px;
+}
+
 .input-sequencia-mini {
   width: 42px !important;
   height: 36px !important;
@@ -791,7 +1028,7 @@
 
 .linha-planejamento-rota {
   display: grid;
-  grid-template-columns: 60px 1fr 110px;
+  grid-template-columns: 60px 1fr 200px;
   gap: 14px;
   align-items: center;
   padding: 14px;
@@ -904,8 +1141,32 @@
   background: #2563eb !important;
 }
 
+.btn-mini-status.whatsapp {
+  background: #ffffff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+.btn-mini-status.whatsapp:hover {
+  background: #eff6ff !important;
+}
+
+.btn-mini-status.whatsapp:disabled {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border: 1px solid #e2e8f0 !important;
+  cursor: not-allowed !important;
+}
+
 .btn-mini-status.remover {
   background: #be123c !important;
+}
+
+.acoes-planejamento-rota {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  justify-items: stretch;
 }
 
 /* ===============================
@@ -914,8 +1175,29 @@
 
   
 @media (max-width: 900px) {
+  .rotas-header-info {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .rotas-header-icone {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 12px;
+  }
+
+  .rotas-header-info h2 {
+    font-size: 19px;
+  }
+
+  .rotas-header-info p {
+    line-height: 1.35;
+  }
+
   .form-rota-premium {
     grid-template-columns: 1fr;
+    gap: 9px;
   }
 
   .form-rota-premium input,
@@ -938,12 +1220,12 @@
   }
 
   .tabela-rotas-linha {
-    padding: 16px;
+    padding: 14px;
     border: 1px solid #dbe7f5;
-    border-radius: 18px;
+    border-radius: 14px;
     background: #ffffff;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+    margin-bottom: 10px;
     overflow: hidden;
     box-sizing: border-box;
   }
@@ -960,7 +1242,7 @@
   .tabela-rotas-linha-topo {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
     align-items: stretch;
     width: 100%;
     max-width: 100%;
@@ -1000,7 +1282,7 @@
 
   .indicador-rota {
     width: 100%;
-    height: 48px;
+    height: 42px;
     min-width: 0;
     display: grid;
     grid-template-columns: 20px 1fr;
@@ -1028,7 +1310,7 @@
   .acoes-rota-premium {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
     margin-left: 0;
     padding-top: 12px;
@@ -1039,7 +1321,7 @@
   .acoes-rota-premium .btn-rota-excluir {
     width: 100%;
     min-width: 0;
-    height: 48px;
+    height: 42px;
     margin: 0;
     padding: 0 12px !important;
     border-radius: 10px;
@@ -1048,7 +1330,11 @@
 
   .topo-detalhe-rota {
     grid-template-columns: 1fr;
-    padding: 18px;
+    padding: 14px;
+    border-radius: 14px;
+    gap: 12px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   }
 
   .btn-voltar-rota {
@@ -1057,10 +1343,12 @@
 
   .info-topo-rota {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 
   .info-rota-box {
-    padding: 14px;
+    padding: 12px;
+    border-radius: 12px;
   }
 
   .info-rota-box strong {
@@ -1069,11 +1357,18 @@
 
   .historico-rota {
     flex-direction: column;
+    padding: 14px;
+    border-radius: 14px;
+    margin-bottom: 12px;
   }
 
   .barra-acoes-rota {
     grid-template-columns: 1fr !important;
-    padding: 16px;
+    padding: 14px;
+    border-radius: 14px;
+    gap: 10px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   }
 
   .barra-acoes-rota button,
@@ -1081,10 +1376,44 @@
     width: 100%;
   }
 
+  .painel-aviso-whatsapp-rota {
+    grid-template-columns: 1fr;
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .painel-historico-whatsapp-topo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .item-historico-whatsapp-rota {
+    grid-template-columns: 1fr;
+  }
+
+  .item-historico-whatsapp-rota > div:last-child {
+    text-align: left;
+  }
+
+  .painel-aviso-whatsapp-rota button {
+    width: 100%;
+  }
+
+  .modal-historico-whatsapp {
+    max-height: 88vh;
+    padding: 14px;
+  }
+
+  .modal-historico-whatsapp-topo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .grupo-botoes-rota {
     width: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .grupo-botoes-rota button {
@@ -1103,6 +1432,7 @@
 
   .cards-resumo-rota {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 
   .progresso-percentual {
@@ -1114,21 +1444,22 @@
   .cabecalho-operacao-rota {
     flex-direction: column;
     align-items: flex-start;
-    padding: 20px;
+    padding: 14px;
+    border-radius: 14px;
   }
 
   .cabecalho-operacao-rota h2 {
-    font-size: 24px;
+    font-size: 21px;
   }
 
   .cabecalho-operacao-rota p {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .cliente-atual-linha {
     flex-direction: column;
     align-items: flex-start;
-    padding: 18px;
+    padding: 14px;
   }
 
   .cliente-atual-pin {
@@ -1144,20 +1475,25 @@
 
  .cliente-atual-acoes-linha {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
 }
 
   .linha-proximo-cliente {
     grid-template-columns: 42px 1fr;
+    gap: 10px;
+    padding: 12px;
   }
 
   .linha-proximo-status {
     grid-column: 2;
+    align-items: flex-start;
     text-align: left;
   }
 
   .painel-planejamento-rota {
-    padding: 18px;
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   }
 
   .linha-planejamento-rota {
@@ -1170,7 +1506,8 @@
   }
 
   .card-manutencao {
-    padding: 18px;
+    padding: 14px;
+    border-radius: 14px;
   }
 
   .card-manutencao-topo {
@@ -1190,6 +1527,38 @@
 
   .card-manutencao-acoes button {
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .info-topo-rota {
+    grid-template-columns: 1fr;
+  }
+
+  .acoes-rota-premium {
+    grid-template-columns: 1fr;
+  }
+
+  .grupo-botoes-rota {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-atual-acoes-linha {
+    grid-template-columns: 1fr;
+  }
+
+  .cards-resumo-rota {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .linha-proximo-cliente {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .linha-proximo-info h3,
+  .linha-proximo-info p,
+  .linha-proximo-info small {
+    overflow-wrap: anywhere;
   }
 }
 

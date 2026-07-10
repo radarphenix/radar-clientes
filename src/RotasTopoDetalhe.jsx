@@ -3,10 +3,6 @@ function RotasTopoDetalhe({
   clientesDaRota,
   abrirRota,
   setModoTelaRota,
-  perfil,
-  usuarioId,
-  reabrirRota,
-  finalizarRota,
 }) {
   return (
     <>
@@ -47,19 +43,6 @@ function RotasTopoDetalhe({
             <span>Total de clientes</span>
           </div>
         </div>
-      </div>
-
-      <div
-      >
-       
-        {rotaSelecionada.status === "EM_ANDAMENTO" && (
-          <button
-            type="button"
-            onClick={() => finalizarRota(rotaSelecionada)}
-          >
-            Finalizar rota
-          </button>
-        )}
       </div>
     </>
   );

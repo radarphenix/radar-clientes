@@ -1,22 +1,10 @@
-import {
-  Lock,
-  ArrowUpDown,
-  ClipboardList,
-  Wrench,
-} from "lucide-react";
-
 function RotasOperacao({
   rotaSelecionada,
-  clientesDaRota,
   buscaClienteRota,
-  setBuscaClienteRota,
   clientes,
   adicionarClienteNaRota,
-  fecharRota,
   modoReordenar,
-  setModoReordenar,
   abaRota,
-  setAbaRota,
   clienteAtual,
   proximosClientes,
   totalClientes,
@@ -29,7 +17,8 @@ function RotasOperacao({
   alterarStatusClienteRota,
   abrirMaps,
   abrirAcompanhamento,
-  reabrirRota,
+  reenviarAvisoWhatsAppCliente,
+  permiteAvisoWhatsAppRotaGrupoAtual,
 }) {
   return (
     <>
@@ -236,6 +225,17 @@ function RotasOperacao({
 
                       <div className="linha-proximo-status">
                         <strong>{item.status || "PENDENTE"}</strong>
+                        {item.aviso_whatsapp_em && (
+                          <span className="badge-aviso-whatsapp">Avisado</span>
+                        )}
+                        <button
+                          type="button"
+                          className="btn-mini-status whatsapp"
+                          disabled={!permiteAvisoWhatsAppRotaGrupoAtual}
+                          onClick={() => reenviarAvisoWhatsAppCliente(item)}
+                        >
+                          {item.aviso_whatsapp_em ? "Reenviar aviso" : "Primeiro aviso"}
+                        </button>
                       </div>
                     </div>
                   );

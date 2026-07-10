@@ -11,6 +11,7 @@ function RotasBarraAcoes({
   setBuscaClienteRota,
   fecharRota,
   reabrirRota,
+  finalizarRota,
   modoReordenar,
   setModoReordenar,
   abaRota,
@@ -34,7 +35,14 @@ function RotasBarraAcoes({
       )}
 
       {(rotaSelecionada.status === "FECHADA" ||
-        rotaSelecionada.status === "FINALIZADA") && (
+        rotaSelecionada.status === "EM_ANDAMENTO") && (
+        <button type="button" onClick={() => finalizarRota(rotaSelecionada)}>
+          <Lock size={16} />
+          Finalizar rota
+        </button>
+      )}
+
+      {rotaSelecionada.status === "FINALIZADA" && (
         <button type="button" onClick={() => reabrirRota(rotaSelecionada)}>
           <Lock size={16} />
           Reabrir rota
