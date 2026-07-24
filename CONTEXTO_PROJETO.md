@@ -34,6 +34,15 @@
 
 ## Proximo Foco Sugerido
 
+- [Concluido em 2026-07-14] Integracao da tela Amostras com acompanhamentos GEACOMP:
+  - migration remota `20260714000100_amostras_phenix_geacomp.sql` adiciona chave/ID de origem, sequencia, status, comprimento, largura e modelo concorrente
+  - `src/App.jsx` passou a ler os novos campos da `public.amostras_phenix`
+  - a listagem comum mostra cadastros manuais (`status_geacomp` nulo) e acompanhamentos concluidos; registros `EM_ANALISE` e `IGNORADO` ficam fora da consulta e da contagem
+  - a origem exibida e derivada sem nova coluna: chave GEACOMP preenchida = `ACOMPANHAMENTO`; chave nula = `MANUAL`
+  - detalhes compactos incluem origem, chave/ID, sequencia, status, comprimento, largura e modelo concorrente
+  - backup anterior ao frontend: `.codex-backups/20260714_180000_geacomp_radar`
+  - validacao tecnica: `npm.cmd run lint` e `npm.cmd run build` executados com sucesso em 2026-07-14; permanece apenas o aviso nao bloqueante de chunk acima de 500 kB
+
 - [Concluido neste bloco] Revisao de layout mobile:
   - `src/app-global.css` recebeu base responsiva para reduzir padding, evitar estouro horizontal e padronizar box sizing
   - `src/home.css` ganhou versao mobile do topo/home com logo, acoes e titulo em fluxo responsivo, alem de cards de menu e dashboard mais compactos
@@ -105,6 +114,16 @@
   - migration local `supabase/migrations/20260629234500_configuracoes_grupos_menu_amostras.sql` adiciona `permite_menu_amostras` em `configuracoes_grupos`
   - `MANUAL_USUARIO.md` atualizado com a nova tela e a regra administrativa
 - [Concluido neste bloco] Configuracao de envio de WhatsApp nas rotas por grupo de usuario:
+- [Concluido localmente] Contatos de empresas como origem do WhatsApp:
+  - `clientes_contatos` vincula cada contato ao cliente por `codigo_cliente`, com chave composta `codigo_cliente + codigo_contato`
+  - a migration `supabase/migrations/20260717113000_clientes_contatos_whatsapp.sql` cria tabela, chave estrangeira, validacao do numero, indice e RLS de leitura
+  - o botao WhatsApp do card consulta os contatos sincronizados, descarta numeros invalidos e abre uma selecao com nome, cargo, setor e numero
+  - os fluxos de Rotas (`Avisar proximo cliente`, `Primeiro aviso` e `Reenviar`) usam o mesmo seletor de `clientes_contatos`; nenhum deles usa mais diretamente `clientes.whatsapp` ou `clientes.telefone`
+  - o RadarSync recebe os dados da view Oracle `EX_MW_VW_RADAR_CLIENTES_CONTATOS`, priorizando `CELULAR` e usando `FONE` como alternativa
+  - corrigida a barra de acoes da execucao de rotas: controles permanecem alinhados no desktop, reorganizam em duas linhas em larguras intermediarias e empilham no celular
+  - ao acessar `Rotas` pelo menu, a rota anteriormente aberta e sua busca sao limpas; o usuario retorna para a listagem de rotas cadastradas
+  - a entrada na listagem foi centralizada em `abrirListaRotas`: menu lateral, card `Rotas` da tela inicial e indicadores do Dashboard limpam a selecao anterior; somente o clique explicito em uma rota do ranking abre diretamente seus detalhes
+  - alteracoes visuais de Rotas devem ser conferidas antes da liberacao em notebook 14 polegadas (`1366x768`) e celular (breakpoint ate `500px`); o harness `visual-tests/rotas-cliente-atual.html` permite capturas headless com o CSS real
   - migration local `supabase/migrations/20260629190000_configuracoes_grupos_whatsapp_rotas.sql` criada com tabela `configuracoes_grupos`, seed de perfis (`admin`, `tecnico`, `representante`) e policies RLS
   - `src/App.jsx` agora carrega configuracao por grupo e aplica bloqueio funcional em `Avisar proximo cliente` e `Primeiro aviso/Reenviar aviso`
   - `src/App.jsx` ganhou painel administrativo para habilitar/desabilitar envio por grupo com salvar/recarregar

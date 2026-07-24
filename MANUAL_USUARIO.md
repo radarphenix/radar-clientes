@@ -170,12 +170,16 @@ Botoes e filtros:
 - Dados visiveis: codigo/empresa, codigo/produto, numero da amostra, tipo, maquina, fornecedor, papel, duracao e gramatura.
 - Organizacao: empresa em uma unica linha (nome com reticencias somente se exceder o espaco), produto na linha 2, apenas `#numero` no canto superior direito e demais dados em grade alinhada de tres colunas por duas linhas.
 - Acao Ver detalhes: expande no proprio card observacoes e dados complementares de auditoria.
+- Nos detalhes, a origem aparece como `ACOMPANHAMENTO` quando a amostra veio da GEACOMP e como `MANUAL` nos demais cadastros.
+- Amostras de acompanhamento exibem tambem chave/ID de origem, sequencia, status, comprimento, largura e modelo concorrente quando informados.
 
 Regras:
 
 - Exibe total encontrado.
 - Trata carregamento, erro e lista vazia.
 - Acesso depende da configuracao por grupo feita pelo administrador.
+- A consulta comum exibe cadastros manuais e acompanhamentos com status `CONCLUIDO`.
+- Acompanhamentos `EM_ANALISE` e `IGNORADO` nao aparecem na lista nem no total encontrado.
 
 ## 8. Tela Dashboard
 
@@ -257,7 +261,7 @@ Botoes:
 - Regras:
 - Rota deve estar aberta na tela.
 - Busca somente clientes pendentes sem aviso.
-- Exige whatsapp/telefone no cliente.
+- Exige ao menos um contato sincronizado da empresa com celular ou telefone valido; antes do envio, o usuario escolhe o contato.
 - Registro de envio considera abertura do WhatsApp como envio.
 
 2. Ver historico

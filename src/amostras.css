@@ -247,6 +247,24 @@
   overflow-wrap: anywhere;
 }
 
+.amostra-origem {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+.amostra-origem-acompanhamento {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .amostra-detalhe {
   position: sticky;
   top: 16px;

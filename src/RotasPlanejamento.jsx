@@ -1,3 +1,5 @@
+import { ArrowUpDown, MapPin, Lock, Flag, RotateCcw } from "lucide-react";
+
 function RotasPlanejamento({
   rotaSelecionada,
   clientesDaRota,
@@ -78,6 +80,7 @@ finalizarRota,
         className="btn-rota-acao"
         onClick={() => setModoReordenar(!modoReordenar)}
       >
+        <ArrowUpDown size={18} />
         {modoReordenar ? "Finalizar reordenação" : "Reordenar rota"}
       </button>
 
@@ -86,7 +89,8 @@ finalizarRota,
         className="btn-rota-acao"
         onClick={() => ordenarRotaPorDistancia(rotaSelecionada)}
       >
-        📍 Ordenar por distância
+        <MapPin size={18} />
+        Ordenar por distância
       </button>
 
       {rotaSelecionada.status === "ABERTA" && (
@@ -95,6 +99,7 @@ finalizarRota,
           className="btn-rota-acao"
           onClick={() => fecharRota(rotaSelecionada)}
         >
+          <Lock size={18} />
           Fechar rota
         </button>
       )}
@@ -105,6 +110,7 @@ finalizarRota,
           className="btn-rota-acao"
           onClick={() => finalizarRota(rotaSelecionada)}
         >
+          <Flag size={18} />
           Finalizar rota
         </button>
       )}
@@ -119,6 +125,7 @@ finalizarRota,
         className="btn-rota-acao"
         onClick={() => reabrirRota(rotaSelecionada)}
       >
+        <RotateCcw size={18} />
         Reabrir rota
       </button>
     )}

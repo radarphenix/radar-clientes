@@ -22,13 +22,17 @@ function RotasBarraAcoes({
       <input
         type="text"
         className="input-busca-rota"
-        placeholder="Buscar cliente para adicionar..."
+        placeholder="Buscar cliente..."
         value={buscaClienteRota}
         onChange={(e) => setBuscaClienteRota(e.target.value)}
       />
 
       {rotaSelecionada.status === "ABERTA" && (
-        <button type="button" onClick={() => fecharRota(rotaSelecionada)}>
+        <button
+          type="button"
+          className="btn-status-rota"
+          onClick={() => fecharRota(rotaSelecionada)}
+        >
           <Lock size={16} />
           Fechar rota
         </button>
@@ -36,14 +40,22 @@ function RotasBarraAcoes({
 
       {(rotaSelecionada.status === "FECHADA" ||
         rotaSelecionada.status === "EM_ANDAMENTO") && (
-        <button type="button" onClick={() => finalizarRota(rotaSelecionada)}>
+        <button
+          type="button"
+          className="btn-status-rota"
+          onClick={() => finalizarRota(rotaSelecionada)}
+        >
           <Lock size={16} />
           Finalizar rota
         </button>
       )}
 
       {rotaSelecionada.status === "FINALIZADA" && (
-        <button type="button" onClick={() => reabrirRota(rotaSelecionada)}>
+        <button
+          type="button"
+          className="btn-status-rota"
+          onClick={() => reabrirRota(rotaSelecionada)}
+        >
           <Lock size={16} />
           Reabrir rota
         </button>

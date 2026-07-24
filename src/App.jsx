@@ -196,6 +196,13 @@ const CAMPOS_AMOSTRAS = [
   "updated_by",
   "updated_at",
   "synced_at",
+  "id_geacomp_origem",
+  "chave_geacomp_origem",
+  "sequencia_geacomp",
+  "status_geacomp",
+  "comprimento",
+  "largura",
+  "modelo_concorrente",
 ];
 
 const CAMPOS_DETALHE_AMOSTRA = [
@@ -220,7 +227,18 @@ const CAMPOS_DETALHE_AMOSTRA = [
   ["updated_by", "Atualizado por"],
   ["updated_at", "Atualizado em"],
   ["synced_at", "Sincronizado em"],
+  ["id_geacomp_origem", "ID acompanhamento"],
+  ["chave_geacomp_origem", "Chave acompanhamento"],
+  ["sequencia_geacomp", "Sequencia no acompanhamento"],
+  ["status_geacomp", "Status acompanhamento"],
+  ["comprimento", "Comprimento"],
+  ["largura", "Largura"],
+  ["modelo_concorrente", "Modelo concorrente"],
 ];
+
+function obterOrigemAmostra(amostra) {
+  return amostra.chave_geacomp_origem ? "ACOMPANHAMENTO" : "MANUAL";
+}
 
 function construirConfiguracaoWhatsAppPadrao() {
   return TIPOS_PERFIL_WHATSAPP_ROTA.reduce((acumulado, tipoPerfil) => {
@@ -295,6 +313,7 @@ function App() {
   const ignorarProximoHistoricoRef = useRef(false);
   const ultimaTelaHistoricoRef = useRef(null);
   const navegacoesInternasRef = useRef(0);
+  const perfilCarregadoUsuarioRef = useRef("");
   const [session, setSession] = useState(null);
   const [perfil, setPerfil] = useState(null);
   const [mensagemLogin, setMensagemLogin] = useState("");
@@ -331,6 +350,9 @@ function App() {
   const [raioKm, setRaioKm] = useState(50);
   const [modalVisita, setModalVisita] = useState(false);
   const [clienteVisita, setClienteVisita] = useState(null);
+  const [clienteWhatsApp, setClienteWhatsApp] = useState(null);
+  const [contatosWhatsApp, setContatosWhatsApp] = useState([]);
+  const acaoContatoWhatsAppRef = useRef(null);
   const [observacaoVisita, setObservacaoVisita] = useState("");
   const [gravandoVisita, setGravandoVisita] = useState(false);
   const [telaAtual, setTelaAtual] = useState(carregarTelaSalva);
@@ -445,8 +467,11 @@ function App() {
           setOrigemOrdenacaoRota("");
         }
 
-        carregarPerfil(sessionAtual.user.id);
+        if (event === "SIGNED_IN") {
+          carregarPerfil(sessionAtual.user.id);
+        }
       } else if (event === "SIGNED_OUT") {
+        perfilCarregadoUsuarioRef.current = "";
         setPerfil(null);
         setClientes([]);
         setRotas([]);
@@ -799,6 +824,8 @@ function App() {
   async function sair() {
     await supabase.auth.signOut();
 
+    perfilCarregadoUsuarioRef.current = "";
+
     setSession(null);
 
     setPerfil(null);
@@ -829,6 +856,12 @@ function App() {
   }
 
   async function carregarPerfil(userId) {
+    if (perfilCarregadoUsuarioRef.current === userId) {
+      return true;
+    }
+
+    perfilCarregadoUsuarioRef.current = userId;
+
     const { data, error } = await supabase
       .from("perfis")
       .select("*")
@@ -837,6 +870,7 @@ function App() {
       .maybeSingle();
 
     if (error) {
+      perfilCarregadoUsuarioRef.current = "";
       setMensagemLogin("Não foi possível validar seu perfil de acesso.");
       await supabase.auth.signOut();
       setSession(null);
@@ -846,6 +880,7 @@ function App() {
     }
 
     if (!data) {
+      perfilCarregadoUsuarioRef.current = "";
       setMensagemLogin("Usuário inativo ou sem perfil autorizado.");
       await supabase.auth.signOut();
       setSession(null);
@@ -1407,28 +1442,71 @@ function App() {
     );
   }
 
-  function abrirWhatsApp(item) {
-    const telefone = (item.whatsapp || item.telefone || "").replace(/\D/g, "");
+  function fecharSeletorContatosWhatsApp() {
+    acaoContatoWhatsAppRef.current = null;
+    setClienteWhatsApp(null);
+    setContatosWhatsApp([]);
+  }
 
-    if (!telefone) {
-      alert("Cliente sem WhatsApp ou telefone cadastrado.");
+  async function abrirSeletorContatosWhatsApp(item, acaoAoSelecionar) {
+    const codigoCliente = String(item?.codigo_cliente || "").trim();
+
+    if (!codigoCliente) {
+      alert("Cliente sem codigo para localizar os contatos.");
       return;
     }
 
-    window.open(`https://wa.me/55${telefone}`, "_blank");
-  }
+    const { data, error } = await supabase
+      .from("clientes_contatos")
+      .select(
+        "codigo_cliente, codigo_contato, nome, cargo, setor, telefone, celular, whatsapp, email, ramal",
+      )
+      .eq("codigo_cliente", codigoCliente)
+      .order("nome", { ascending: true });
 
-  function normalizarTelefoneWhatsApp(item) {
-    const telefone = (item?.whatsapp || item?.telefone || "").replace(
-      /\D/g,
-      "",
-    );
-
-    if (!telefone) {
-      return "";
+    if (error) {
+      console.error("Falha ao carregar contatos do cliente:", error);
+      alert("Nao foi possivel carregar os contatos desta empresa.");
+      return;
     }
 
-    return telefone.startsWith("55") ? telefone : `55${telefone}`;
+    const contatosValidos = (data || []).filter((contato) => {
+      const numero = String(
+        contato.whatsapp || contato.celular || contato.telefone || "",
+      ).replace(/\D/g, "");
+      return numero.length >= 10 && numero.length <= 13;
+    });
+
+    if (contatosValidos.length === 0) {
+      alert("Esta empresa nao possui contato com WhatsApp valido.");
+      return;
+    }
+
+    acaoContatoWhatsAppRef.current = acaoAoSelecionar;
+    setClienteWhatsApp(item);
+    setContatosWhatsApp(contatosValidos);
+  }
+
+  async function abrirWhatsApp(item) {
+    await abrirSeletorContatosWhatsApp(item, (numero) => {
+      window.open(`https://wa.me/${numero}`, "_blank");
+    });
+  }
+
+  async function selecionarContatoWhatsApp(contato) {
+    const numeroOriginal = String(
+      contato?.whatsapp || contato?.celular || contato?.telefone || "",
+    ).replace(/\D/g, "");
+    const numero = numeroOriginal.startsWith("55")
+      ? numeroOriginal
+      : `55${numeroOriginal}`;
+
+    const acaoAoSelecionar = acaoContatoWhatsAppRef.current;
+    fecharSeletorContatosWhatsApp();
+
+    if (acaoAoSelecionar) {
+      await acaoAoSelecionar(numero, contato);
+    }
   }
 
   function montarMensagemAvisoVisita(cliente) {
@@ -1560,117 +1638,7 @@ function App() {
     );
   }
 
-  async function avisarProximoClienteRota() {
-    if (!permiteAvisoWhatsAppRotaGrupoAtual) {
-      alert(
-        "O envio de aviso por WhatsApp nas rotas esta desativado para o seu grupo de usuario.",
-      );
-      return;
-    }
-
-    if (!rotaSelecionada?.id) {
-      alert("Abra uma rota antes de avisar os clientes.");
-      return;
-    }
-
-    const itensPendentes = clientesDaRota.filter(
-      (item) =>
-        (item.status === "PENDENTE" || !item.status) && !item.aviso_whatsapp_em,
-    );
-
-    if (!itensPendentes.length) {
-      alert("Todos os clientes pendentes desta rota ja foram avisados.");
-      return;
-    }
-
-    const itemComContato = itensPendentes.find((item) => {
-      const cliente = clientes.find((cli) => cli.id === item.cliente_id);
-      return normalizarTelefoneWhatsApp(cliente);
-    });
-
-    if (!itemComContato) {
-      alert(
-        "Nenhum cliente pendente sem aviso possui WhatsApp ou telefone cadastrado.",
-      );
-      return;
-    }
-
-    const cliente = clientes.find(
-      (cli) => cli.id === itemComContato.cliente_id,
-    );
-    const telefone = normalizarTelefoneWhatsApp(cliente);
-    const mensagem = montarMensagemAvisoVisita(cliente);
-    const avisoEm = new Date().toISOString();
-
-    window.open(
-      `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`,
-      "_blank",
-    );
-
-    await registrarHistoricoAvisoWhatsApp(
-      itemComContato,
-      cliente,
-      telefone,
-      avisoEm,
-      mensagem,
-    );
-
-    const { error } = await supabase
-      .from("rota_clientes")
-      .update({
-        aviso_whatsapp_em: avisoEm,
-        aviso_whatsapp_por: session.user.id,
-        aviso_whatsapp_mensagem: mensagem,
-        aviso_whatsapp_status: "ENVIADO_ABERTURA",
-      })
-      .eq("id", itemComContato.id);
-
-    if (error) {
-      const mensagemErro = String(error.message || "").toLowerCase();
-
-      if (
-        mensagemErro.includes("schema cache") ||
-        mensagemErro.includes("aviso_whatsapp_em") ||
-        mensagemErro.includes("aviso_whatsapp_status")
-      ) {
-        marcarAvisoWhatsAppLocal(itemComContato, avisoEm, mensagem);
-        return;
-      }
-
-      alert("WhatsApp aberto, mas nao foi possivel registrar o aviso.");
-      return;
-    }
-
-    marcarAvisoWhatsAppLocal(itemComContato, avisoEm, mensagem);
-  }
-
-  async function reenviarAvisoWhatsAppCliente(itemRota) {
-    if (!permiteAvisoWhatsAppRotaGrupoAtual) {
-      alert(
-        "O envio de aviso por WhatsApp nas rotas esta desativado para o seu grupo de usuario.",
-      );
-      return;
-    }
-
-    if (!itemRota?.id) {
-      alert("Cliente da rota nao identificado para reenvio.");
-      return;
-    }
-
-    const cliente = clientes.find((cli) => cli.id === itemRota.cliente_id);
-
-    if (!cliente) {
-      alert("Cliente nao encontrado para este item da rota.");
-      return;
-    }
-
-    const telefone = normalizarTelefoneWhatsApp(cliente);
-
-    if (!telefone) {
-      alert("Cliente sem WhatsApp ou telefone cadastrado.");
-      return;
-    }
-
+  async function concluirAvisoWhatsAppRota(itemRota, cliente, telefone) {
     const mensagem = montarMensagemAvisoVisita(cliente);
     const avisoEm = new Date().toISOString();
 
@@ -1709,11 +1677,69 @@ function App() {
         return;
       }
 
-      alert("WhatsApp aberto, mas nao foi possivel registrar o reenvio.");
+      alert("WhatsApp aberto, mas nao foi possivel registrar o aviso.");
       return;
     }
 
     marcarAvisoWhatsAppLocal(itemRota, avisoEm, mensagem);
+  }
+
+  async function avisarProximoClienteRota() {
+    if (!permiteAvisoWhatsAppRotaGrupoAtual) {
+      alert(
+        "O envio de aviso por WhatsApp nas rotas esta desativado para o seu grupo de usuario.",
+      );
+      return;
+    }
+
+    if (!rotaSelecionada?.id) {
+      alert("Abra uma rota antes de avisar os clientes.");
+      return;
+    }
+
+    const itensPendentes = clientesDaRota.filter(
+      (item) =>
+        (item.status === "PENDENTE" || !item.status) && !item.aviso_whatsapp_em,
+    );
+
+    if (!itensPendentes.length) {
+      alert("Todos os clientes pendentes desta rota ja foram avisados.");
+      return;
+    }
+
+    const itemComContato = itensPendentes[0];
+
+    const cliente = clientes.find(
+      (cli) => cli.id === itemComContato.cliente_id,
+    );
+    await abrirSeletorContatosWhatsApp(cliente, (telefone) =>
+      concluirAvisoWhatsAppRota(itemComContato, cliente, telefone),
+    );
+  }
+
+  async function reenviarAvisoWhatsAppCliente(itemRota) {
+    if (!permiteAvisoWhatsAppRotaGrupoAtual) {
+      alert(
+        "O envio de aviso por WhatsApp nas rotas esta desativado para o seu grupo de usuario.",
+      );
+      return;
+    }
+
+    if (!itemRota?.id) {
+      alert("Cliente da rota nao identificado para reenvio.");
+      return;
+    }
+
+    const cliente = clientes.find((cli) => cli.id === itemRota.cliente_id);
+
+    if (!cliente) {
+      alert("Cliente nao encontrado para este item da rota.");
+      return;
+    }
+
+    await abrirSeletorContatosWhatsApp(cliente, (telefone) =>
+      concluirAvisoWhatsAppRota(itemRota, cliente, telefone),
+    );
   }
 
   const clientesFiltrados = useMemo(() => {
@@ -1985,11 +2011,30 @@ function App() {
     setOrigemOrdenacaoRota("");
   }
 
-  function abrirRotasPorStatus(status) {
+  async function abrirTelaClientes() {
+    setTelaAtual("clientes");
+    limparModoProximos();
+    await carregarClientes(perfil);
+  }
+
+  async function abrirTelaProximos() {
+    setTelaAtual("proximos");
+    setRaioKm(50);
+    await carregarClientes(perfil);
+    buscarClientesProximos();
+  }
+
+  function abrirListaRotas(status = "") {
+    abrirRota(null);
+    setBuscaClienteRota("");
     setFiltroStatusRotas(status);
     setFiltroResponsavelRotas("");
     setTelaAtual("rotas");
     carregarRotas();
+  }
+
+  function abrirRotasPorStatus(status) {
+    abrirListaRotas(status);
   }
 
   function voltarTelaAnterior() {
@@ -3038,6 +3083,7 @@ function App() {
     let consulta = supabase
       .from("amostras_phenix")
       .select(CAMPOS_AMOSTRAS.join(", "), { count: "exact" })
+      .or("status_geacomp.is.null,status_geacomp.eq.CONCLUIDO")
       .order("updated_at", { ascending: false, nullsFirst: false })
       .order("id_amostra_oracle", { ascending: false, nullsFirst: false });
 
@@ -3408,12 +3454,7 @@ function App() {
           <button
             type="button"
             className={telaAtual === "clientes" ? "ativo" : ""}
-            onClick={() => {
-              setTelaAtual("clientes");
-              setModoProximos(false);
-              setLocalizacaoUsuario(null);
-              setOrigemOrdenacaoRota("");
-            }}
+            onClick={abrirTelaClientes}
           >
             <Users size={20} />
             Clientes
@@ -3422,11 +3463,7 @@ function App() {
           <button
             type="button"
             className={telaAtual === "proximos" ? "ativo" : ""}
-            onClick={() => {
-              setTelaAtual("proximos");
-              setRaioKm(50);
-              buscarClientesProximos();
-            }}
+            onClick={abrirTelaProximos}
           >
             <MapPin size={20} />
             Próximos
@@ -3435,10 +3472,7 @@ function App() {
           <button
             type="button"
             className={telaAtual === "rotas" ? "ativo" : ""}
-            onClick={() => {
-              setTelaAtual("rotas");
-              carregarRotas();
-            }}
+            onClick={() => abrirListaRotas()}
           >
             <Route size={20} />
             Rotas
@@ -3510,12 +3544,7 @@ function App() {
           <div className="home-menu-cards">
             <button
               className="home-card-menu"
-              onClick={() => {
-                setTelaAtual("clientes");
-                setModoProximos(false);
-                setLocalizacaoUsuario(null);
-                setOrigemOrdenacaoRota("");
-              }}
+              onClick={abrirTelaClientes}
             >
               <div className="home-icone-menu">
                 <Users size={42} />
@@ -3531,11 +3560,7 @@ function App() {
 
             <button
               className="home-card-menu"
-              onClick={() => {
-                setTelaAtual("proximos");
-                setRaioKm(50);
-                buscarClientesProximos();
-              }}
+              onClick={abrirTelaProximos}
             >
               <div className="home-icone-menu">
                 <MapPin size={42} />
@@ -3551,10 +3576,7 @@ function App() {
 
             <button
               className="home-card-menu"
-              onClick={() => {
-                setTelaAtual("rotas");
-                carregarRotas();
-              }}
+              onClick={() => abrirListaRotas()}
             >
               <div className="home-icone-menu">
                 <Route size={42} />
@@ -4581,6 +4603,16 @@ function App() {
                       </summary>
 
                       <dl className="amostra-card-detalhes">
+                        <div>
+                          <dt>Origem</dt>
+                          <dd>
+                            <span
+                              className={`amostra-origem amostra-origem-${obterOrigemAmostra(amostra).toLowerCase()}`}
+                            >
+                              {obterOrigemAmostra(amostra)}
+                            </span>
+                          </dd>
+                        </div>
                         {CAMPOS_DETALHE_AMOSTRA.filter(
                           ([campo]) =>
                             ![
@@ -4901,6 +4933,52 @@ function App() {
             >
               Cancelar
             </button>
+          </div>
+        </div>
+      )}
+
+      {clienteWhatsApp && (
+        <div
+          className="modal-contatos-whatsapp-overlay"
+          onClick={fecharSeletorContatosWhatsApp}
+        >
+          <div
+            className="modal-contatos-whatsapp"
+            onClick={(evento) => evento.stopPropagation()}
+          >
+            <div className="modal-contatos-whatsapp-cabecalho">
+              <div>
+                <h2>Selecionar contato</h2>
+                <p>{clienteWhatsApp.cliente}</p>
+              </div>
+              <button
+                type="button"
+                onClick={fecharSeletorContatosWhatsApp}
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="lista-contatos-whatsapp">
+              {contatosWhatsApp.map((contato) => (
+                <button
+                  type="button"
+                  className="contato-whatsapp-item"
+                  key={`${contato.codigo_cliente}-${contato.codigo_contato}`}
+                  onClick={() => selecionarContatoWhatsApp(contato)}
+                >
+                  <strong>{contato.nome || "Contato sem nome"}</strong>
+                  <span>
+                    {[contato.cargo, contato.setor].filter(Boolean).join(" - ") ||
+                      "Cargo nao informado"}
+                  </span>
+                  <span>
+                    {contato.whatsapp || contato.celular || contato.telefone}
+                    {contato.ramal ? ` - ramal ${contato.ramal}` : ""}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -156,14 +156,14 @@ function RotasOperacao({
                     className="btn-atual-visitar"
                     onClick={() => alterarStatusClienteRota(clienteAtual, "VISITADO")}
                   >
-                    ✔ Marcar visitado
+                    Marcar visitado
                   </button>
 
                   <button
                     className="btn-atual-waze"
                     onClick={() => abrirMaps(buscarCliente(clienteAtual))}
                   >
-                    🧭 Abrir Waze
+                    Abrir Waze
                   </button>
 				  
 				    <button
@@ -173,14 +173,14 @@ function RotasOperacao({
     abrirAcompanhamento(buscarCliente(clienteAtual))
   }
 >
-  📋 Acompanhamento
+  Acompanhamento
 </button>
 
                   <button
                     className="btn-atual-cancelar"
                     onClick={() => alterarStatusClienteRota(clienteAtual, "CANCELADO")}
                   >
-                    ✖ Cancelar
+                    Cancelar
                   </button>
                 </div>
               </div>
