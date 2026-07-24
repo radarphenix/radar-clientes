@@ -9,13 +9,167 @@
 
 ## Snapshot Atual
 
-- Data: 2026-07-03
+- Data: 2026-07-24
 - Branch atual: `main`
 - Situacao de sincronizacao: branch local alinhada com `origin/main` (sem commits locais pendentes de push no momento da atualizacao).
-- Backup pre-alteracoes mais recente: `.codex-backups/20260703_113000_full_width_desktop_header`
+- Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Migration de Amostras aplicada no Supabase remoto via `supabase db push --linked` em 2026-07-03.
 - Ajuste de contraste global aplicado em `src/app-global.css` e `src/index.css` para melhorar leitura de titulos e campos de busca.
 - Cabecalho de contexto padronizado em `src/App.jsx` com estilo compartilhado em `src/app-global.css` para clientes, amostras, dashboard, administracao e alterar senha.
+
+## Meu Dia
+
+- [Concluido em 2026-07-23] A antiga Home de cartoes foi substituida pelo
+  painel operacional Meu Dia.
+- A funcionalidade foi isolada em `src/MeuDia.jsx`, com estilos proprios em
+  `src/meu-dia.css`, evitando aumentar os arquivos visuais existentes.
+- O item Inicio do menu lateral passou a se chamar Meu Dia.
+- A tela apresenta saudacao, data, rotas ativas, clientes nas rotas, visitados,
+  pendentes, rota prioritaria, progresso e acessos rapidos.
+- Os dados sao vinculados ao `session.user.id`: somente rotas atribuidas ao
+  usuario autenticado aparecem no Meu Dia, inclusive para administradores.
+- A prioridade das rotas e EM_ANDAMENTO, ABERTA e FECHADA; rotas FINALIZADAS
+  ficam fora do resumo ativo.
+- O layout usa grade ampla no desktop e reorganizacao em coluna no celular,
+  com indicadores em duas colunas e botoes adequados para toque.
+- Backup anterior: `.codex-backups/20260723_220500_meu_dia`.
+- `MANUAL_USUARIO.md` foi atualizado com regras, areas e botoes da nova tela.
+- Validacao tecnica: `npm.cmd run lint`, `npm.cmd run build` e
+  `git diff --check` executados com sucesso; permanece apenas o aviso
+  nao bloqueante de chunk JavaScript acima de 500 kB.
+- [Ajuste mobile em 2026-07-23] A grade de indicadores do Meu Dia foi mantida
+  em duas colunas inclusive em celulares estreitos. Cards, icones, textos e
+  saudacao foram compactados para reduzir rolagem vertical.
+- Backup anterior ao ajuste: `.codex-backups/20260723_223500_meu_dia_mobile`.
+- [Ajuste de alinhamento mobile em 2026-07-23] Os indicadores passaram a usar
+  colunas internas fixas para icone e conteudo. Titulos e valores agora ficam
+  alinhados pela esquerda na mesma posicao, independentemente do tamanho do
+  rotulo.
+- Backup anterior: `.codex-backups/20260723_224500_meu_dia_alinhamento`.
+- [Concluido em 2026-07-23] Supervisao do Meu Dia por administradores:
+  - `App.jsx` mantem a selecao do usuario supervisionado durante a sessao;
+  - administradores podem escolher qualquer perfil ativo ou Toda a equipe;
+  - a selecao recalcula rotas, indicadores, prioridade e pendencias;
+  - usuarios comuns continuam limitados ao proprio `session.user.id`;
+  - o seletor fica ao lado das acoes no desktop e ocupa largura total no
+    celular;
+  - backup anterior:
+    `.codex-backups/20260723_230500_meu_dia_admin`.
+- [Correcao em 2026-07-23] Abertura de rota pelo Meu Dia:
+  - o atalho agora define explicitamente `radarClientes:modoTelaRota` como
+    `execucao` antes de abrir a rota;
+  - evita que o modo persistido `lista` mostre somente topo e historico,
+    ocultando cliente atual e proximos clientes;
+  - backup anterior:
+    `.codex-backups/20260723_233000_meu_dia_abrir_rota`.
+- [Concluido em 2026-07-23] Data prevista por cliente da rota:
+  - migration
+    `20260723235000_rota_clientes_data_prevista_visita.sql` adiciona
+    `public.rota_clientes.data_prevista_visita date` e indice por data/status;
+  - migration aplicada com sucesso no Supabase remoto vinculado;
+  - `RotasPlanejamento.jsx` permite definir ou limpar a data de cada cliente;
+  - rotas finalizadas exibem o campo bloqueado;
+  - `App.jsx` carrega os itens agendados junto ao resumo das rotas e mantem
+    Meu Dia sincronizado apos alteracao;
+  - `MeuDia.jsx` passou de resumo de rotas para agenda de clientes, com
+    clientes para hoje, visitados, pendentes, atrasados, proximos e sem data;
+  - visoes individual e Toda a equipe continuam disponiveis para admin;
+  - layouts desktop e mobile foram atualizados;
+  - validacoes concluidas: lint, build, `git diff --check`, servidor local e
+    historico remoto de migrations;
+  - backup anterior:
+    `.codex-backups/20260723_235000_data_prevista_cliente`.
+- [Correcao em 2026-07-24] Ajuste de consistencia na agenda do Meu Dia:
+  - clientes de rotas FINALIZADA deixaram de aparecer na lista de hoje;
+  - a tela passou a manter essa exclusao alinhada com as demais secoes da
+    agenda;
+  - o input de sequencia no planejamento teve o evento `onFocus` duplicado
+    removido;
+  - backup anterior:
+    `.codex-backups/20260724_100837_riscos_meu_dia_planejamento`.
+- [Correcao em 2026-07-24] Clientes proximos e busca de cidade:
+  - clientes com UF `EX` deixaram de entrar no calculo de proximidade;
+  - o modal de cidade passou a remover sugestoes duplicadas antes de renderizar;
+  - backup anterior:
+    `.codex-backups/20260724_101416_ex_uf_proximos_cidade`.
+- [Ajuste em 2026-07-24] Busca de cidade ficou mais flexivel:
+  - a consulta passou a normalizar acentos e pontuacao antes de procurar;
+  - a lista agora mistura sugestoes vindas de cidades reais ja presentes nos
+    clientes com o geocoding externo;
+  - isso melhora casos como `parob` -> `Parobé` e `Novo H` -> `Novo Hamburgo`;
+  - backup anterior:
+    `.codex-backups/20260724_102842_busca_cidade_hibrida`.
+- [Ajuste em 2026-07-24] Meu Dia trocou o indicador redundante:
+  - o card `Pendentes hoje` passou a exibir `Visitas agendadas`;
+  - a alteracao reduziu a repeticao de informacao no bloco de indicadores;
+  - backup anterior:
+    `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`.
+- [Ajuste em 2026-07-24] Visitas agendadas passaram a cobrir o futuro:
+  - o card agora considera apenas visitas com data a partir de amanha;
+  - a regra ficou alinhada com a ideia de proximos dias, sem incluir hoje;
+  - backup anterior:
+    `.codex-backups/20260724_103117_visitas_agendadas_amanha`.
+- [Correcao em 2026-07-24] Página branca no Meu Dia:
+  - o componente estava usando `proximos` antes da declaracao da constante;
+  - isso gerava falha de montagem e tela em branco;
+  - a ordem foi corrigida em `src/MeuDia.jsx`;
+  - backup anterior:
+    `.codex-backups/20260724_103117_visitas_agendadas_amanha`.
+- [Concluido em 2026-07-24] Rotas abertas no Meu Dia:
+  - a agenda de clientes passou a incluir uma secao complementar de rotas com
+    status `ABERTA`;
+  - na visao individual, lista somente rotas atribuidas ao usuario escolhido;
+  - na opcao Toda a equipe, exibe consolidado por responsavel com quantidade
+    de rotas, clientes e pendentes, seguido da lista de rotas;
+  - cada item abre diretamente a rota no modo Execucao;
+  - layout desktop usa coluna lateral e o mobile empilha resumo e lista;
+  - backup anterior:
+    `.codex-backups/20260724_001500_meu_dia_rotas_abertas`.
+- [Concluido em 2026-07-24] Clareza da agenda do Meu Dia:
+  - bloco redundante Acesso rapido foi removido, pois a navegacao ja existe no
+    menu lateral;
+  - o titulo generico Visitas prioritarias foi substituido por listas
+    separadas de Clientes atrasados e Clientes agendados para hoje;
+  - Clientes sem data ganharam uma lista propria com cliente, rota, cidade e
+    sequencia, em vez de somente um contador;
+  - Proximos dias continua exibindo visitas futuras;
+  - desktop e mobile preservam a mesma ordem e significado das secoes;
+  - backup anterior:
+    `.codex-backups/20260724_004500_meu_dia_clareza`.
+- [Concluido em 2026-07-24] Visao ampliada de Minhas rotas:
+  - a antiga secao Rotas abertas passou a se chamar Minhas rotas;
+  - inclui status `EM_ANDAMENTO`, `ABERTA` e `FECHADA`;
+  - exclui apenas rotas `FINALIZADA` da visao operacional;
+  - ordena primeiro EM_ANDAMENTO, depois ABERTA e FECHADA, usando pendencias
+    como segundo criterio;
+  - cada item passou a exibir o status da rota;
+  - o consolidado de Toda a equipe segue a mesma regra ampliada;
+  - backup anterior:
+    `.codex-backups/20260724_011500_meu_dia_minhas_rotas`.
+- [Concluido em 2026-07-24] Distancia rodoviaria em Clientes Proximos:
+  - a formula Haversine permanece somente como pre-filtro invisivel;
+  - candidatos em linha reta dentro do raio sao enviados ao Table Service do
+    OSRM em lotes de ate 40 destinos;
+  - o filtro final e a distancia rodoviaria menor ou igual ao raio solicitado;
+  - cards exibem quilometros por estrada e duracao estimada;
+  - a interface informa calculo em andamento, resultado sem transito em tempo
+    real e falha do servico;
+  - em caso de falha, a distancia em linha reta nao e exibida como substituta;
+  - exemplo validado Parobe/Rondinha: 95 km em linha reta e aproximadamente
+    152,6 km / 137 minutos por estrada;
+  - CORS do servico validado para `http://localhost:5173`;
+  - dependencia externa: servidor publico demonstrativo do OSRM, sem SLA;
+  - backup anterior:
+    `.codex-backups/20260724_014500_distancia_rodoviaria`.
+- [Concluido em 2026-07-24] Carregamento de Clientes Proximos:
+  - durante o calculo rodoviario, total e lista deixam de aparecer vazios;
+  - painel visivel informa Aguarde, carregando clientes proximos;
+  - spinner permanece animado durante as requisicoes;
+  - quantidade processada e total sao atualizados ao final de cada lote;
+  - barra visual acompanha o progresso;
+  - mensagens de erro continuam separadas do estado de carregamento;
+  - backup anterior:
+    `.codex-backups/20260724_021500_loading_clientes_proximos`.
 
 ## Mudancas Locais Relevantes Identificadas
 

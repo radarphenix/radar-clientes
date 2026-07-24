@@ -7,6 +7,7 @@ import "./clientes.css";
 import "./amostras.css";
 import "./login.css";
 import Login from "./Login.jsx";
+import MeuDia from "./MeuDia.jsx";
 import "./admin.css";
 import "./rotas.css";
 import "./modal-cidade.css";
@@ -17,7 +18,6 @@ import {
   Route,
   BarChart3,
   Settings,
-  ChevronRight,
   LogOut,
   LockOpen,
   PlayCircle,
@@ -56,8 +56,101 @@ const TELAS_PERSISTIDAS = new Set([
 
 const TELA_ATUAL_STORAGE_KEY = "radarClientes:telaAtual";
 const ROTA_SELECIONADA_STORAGE_KEY = "radarClientes:rotaSelecionadaId";
+const MODO_TELA_ROTA_STORAGE_KEY = "radarClientes:modoTelaRota";
+const TAMANHO_LOTE_DISTANCIA_RODOVIARIA = 40;
+
+function criarChaveConsultaRodoviaria(origem, raio) {
+  if (!origem) return "";
+  return `${Number(origem.latitude).toFixed(6)}:${Number(
+    origem.longitude,
+  ).toFixed(6)}:${raio}`;
+}
+
+function formatarDuracaoMinutos(totalMinutos) {
+  const horas = Math.floor(totalMinutos / 60);
+  const minutos = totalMinutos % 60;
+
+  if (!horas) return `${minutos} min`;
+  if (!minutos) return `${horas}h`;
+  return `${horas}h ${minutos}min`;
+}
+
+async function calcularDistanciasRodoviariasEmLotes(
+  origem,
+  candidatos,
+  signal,
+  informarProgresso,
+) {
+  const resultados = {};
+
+  for (
+    let inicio = 0;
+    inicio < candidatos.length;
+    inicio += TAMANHO_LOTE_DISTANCIA_RODOVIARIA
+  ) {
+    const lote = candidatos.slice(
+      inicio,
+      inicio + TAMANHO_LOTE_DISTANCIA_RODOVIARIA,
+    );
+    const coordenadas = [
+      `${Number(origem.longitude).toFixed(6)},${Number(origem.latitude).toFixed(
+        6,
+      )}`,
+      ...lote.map(
+        (cliente) =>
+          `${Number(cliente.longitude).toFixed(6)},${Number(
+            cliente.latitude,
+          ).toFixed(6)}`,
+      ),
+    ];
+    const destinos = lote.map((_, indice) => indice + 1).join(";");
+    const url =
+      `https://router.project-osrm.org/table/v1/driving/` +
+      `${coordenadas.join(";")}?sources=0&destinations=${destinos}` +
+      `&annotations=distance,duration`;
+    const resposta = await fetch(url, { signal });
+
+    if (!resposta.ok) {
+      throw new Error(`Serviço de rotas indisponível (${resposta.status}).`);
+    }
+
+    const dados = await resposta.json();
+
+    if (dados.code !== "Ok") {
+      throw new Error("O serviço não conseguiu calcular os trajetos.");
+    }
+
+    lote.forEach((cliente, indice) => {
+      const distanciaMetros = dados.distances?.[0]?.[indice];
+      const duracaoSegundos = dados.durations?.[0]?.[indice];
+
+      if (
+        Number.isFinite(distanciaMetros) &&
+        Number.isFinite(duracaoSegundos)
+      ) {
+        resultados[cliente.id] = {
+          distancia_km: distanciaMetros / 1000,
+          duracao_minutos: Math.round(duracaoSegundos / 60),
+        };
+      }
+    });
+
+    informarProgresso?.(
+      Math.min(inicio + TAMANHO_LOTE_DISTANCIA_RODOVIARIA, candidatos.length),
+      candidatos.length,
+    );
+  }
+
+  return resultados;
+}
 
 function carregarTelaSalva() {
+  const estadoAtual = window.history.state;
+
+  if (estadoAtual?.radarClientes && TELAS_PERSISTIDAS.has(estadoAtual.tela)) {
+    return estadoAtual.tela;
+  }
+
   const telaSalva = window.localStorage.getItem(TELA_ATUAL_STORAGE_KEY);
 
   return TELAS_PERSISTIDAS.has(telaSalva) ? telaSalva : "home";
@@ -348,6 +441,15 @@ function App() {
   const [localizacaoUsuario, setLocalizacaoUsuario] = useState(null);
   const [modoProximos, setModoProximos] = useState(false);
   const [raioKm, setRaioKm] = useState(50);
+  const [consultaDistanciasRodoviarias, setConsultaDistanciasRodoviarias] =
+    useState({
+      chave: "",
+      calculando: false,
+      distancias: {},
+      erro: "",
+      processados: 0,
+      total: 0,
+    });
   const [modalVisita, setModalVisita] = useState(false);
   const [clienteVisita, setClienteVisita] = useState(null);
   const [clienteWhatsApp, setClienteWhatsApp] = useState(null);
@@ -360,6 +462,7 @@ function App() {
   const [historicoWhatsAppRota, setHistoricoWhatsAppRota] = useState([]);
   const [buscaClienteRota, setBuscaClienteRota] = useState("");
   const [rotas, setRotas] = useState([]);
+  const [usuarioMeuDiaId, setUsuarioMeuDiaId] = useState("");
   const [nomeNovaRota, setNomeNovaRota] = useState("");
   const [usuarioResponsavelRota, setUsuarioResponsavelRota] = useState("");
   const [filtroResponsavelRotas, setFiltroResponsavelRotas] = useState("");
@@ -386,6 +489,14 @@ function App() {
       carregarUsuariosPerfis(perfil);
     }
   }, [perfil]);
+
+  useEffect(() => {
+    if (session?.user && perfil && telaAtual === "home") {
+      carregarRotas();
+    }
+    // Atualiza os dados do Meu Dia ao entrar ou retornar para a Home.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, perfil, telaAtual]);
 
   const [usuariosPerfis, setUsuariosPerfis] = useState([]);
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
@@ -472,6 +583,7 @@ function App() {
         }
       } else if (event === "SIGNED_OUT") {
         perfilCarregadoUsuarioRef.current = "";
+        setUsuarioMeuDiaId("");
         setPerfil(null);
         setClientes([]);
         setRotas([]);
@@ -519,7 +631,6 @@ function App() {
     if (estadoAtual?.radarClientes && TELAS_PERSISTIDAS.has(estadoAtual.tela)) {
       ultimaTelaHistoricoRef.current = estadoAtual.tela;
       ignorarProximoHistoricoRef.current = true;
-      setTelaAtual(estadoAtual.tela);
     } else if (telaAtual !== "home") {
       window.history.replaceState(
         { radarClientes: true, tela: "home" },
@@ -640,6 +751,9 @@ function App() {
     if (rotaSalva) {
       abrirRota(rotaSalva);
     }
+    // abrirRota e recriada a cada render, mas este efeito deve reagir apenas
+    // ao estado usado para restaurar a rota salva.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [telaAtual, rotaSelecionada, rotas]);
 
   useEffect(() => {
@@ -1354,22 +1468,42 @@ function App() {
   }
 
   async function buscarSugestoesCidade(texto) {
-    if (!texto || texto.trim().length < 3) {
+    const termoOriginal = String(texto || "").trim();
+    const termoNormalizado = termoOriginal
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .toLowerCase()
+      .trim();
+
+    if (termoNormalizado.length < 3) {
       return [];
     }
 
-    const url =
-      `https://nominatim.openstreetmap.org/search?` +
-      `format=json` +
-      `&addressdetails=1` +
-      `&limit=5` +
-      `&countrycodes=br` +
-      `&q=${encodeURIComponent(texto.trim())}`;
+    async function geocodificarConsultaCidade(consulta) {
+      const url =
+        `https://nominatim.openstreetmap.org/search?` +
+        `format=jsonv2` +
+        `&addressdetails=1` +
+        `&limit=1` +
+        `&countrycodes=br` +
+        `&accept-language=pt-BR` +
+        `&q=${encodeURIComponent(consulta)}`;
 
-    const resposta = await fetch(url);
-    const dados = await resposta.json();
+      const resposta = await fetch(url);
 
-    return dados.map((item) => {
+      if (!resposta.ok) {
+        return null;
+      }
+
+      const dados = await resposta.json();
+      const item = dados?.[0];
+
+      if (!item) {
+        return null;
+      }
+
       const cidade =
         item.address?.city ||
         item.address?.town ||
@@ -1386,6 +1520,124 @@ function App() {
         longitude: Number(item.lon),
         display_name: item.display_name,
       };
+    }
+
+    function normalizarChaveCidade(item) {
+      return String(item?.nome || item?.display_name || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9\s-]/g, " ")
+        .replace(/\s+/g, " ")
+        .toLowerCase()
+        .trim();
+    }
+
+    function construirSugestaoLocal(cliente) {
+      const cidade = String(cliente?.cidade || "").trim();
+      const uf = String(cliente?.uf || "")
+        .trim()
+        .toUpperCase();
+
+      if (!cidade) {
+        return null;
+      }
+
+      const nome = uf ? `${cidade} - ${uf}` : cidade;
+      const consulta = uf ? `${cidade}, ${uf}, Brasil` : `${cidade}, Brasil`;
+
+      return {
+        nome,
+        consulta,
+        chave: normalizarChaveCidade({ nome }),
+      };
+    }
+
+    const sugestoesLocais = [];
+    const chavesLocais = new Set();
+
+    for (const cliente of clientes) {
+      const sugestaoLocal = construirSugestaoLocal(cliente);
+
+      if (!sugestaoLocal) {
+        continue;
+      }
+
+      if (
+        !sugestaoLocal.chave.includes(termoNormalizado) &&
+        !termoNormalizado.includes(sugestaoLocal.chave)
+      ) {
+        continue;
+      }
+
+      if (chavesLocais.has(sugestaoLocal.chave)) {
+        continue;
+      }
+
+      chavesLocais.add(sugestaoLocal.chave);
+      sugestoesLocais.push(sugestaoLocal);
+
+      if (sugestoesLocais.length >= 5) {
+        break;
+      }
+    }
+
+    const sugestoesLocaisGeocodificadas = await Promise.all(
+      sugestoesLocais.map(async (sugestao) => {
+        const resultado = await geocodificarConsultaCidade(sugestao.consulta);
+        if (!resultado) {
+          return null;
+        }
+
+        return resultado;
+      }),
+    );
+
+    const sugestoesGeocoder = [];
+    const consultasGeocoder = [
+      termoOriginal,
+      termoNormalizado,
+      `${termoOriginal}, Brasil`,
+      `${termoNormalizado}, Brasil`,
+    ].filter(Boolean);
+
+    for (const consulta of consultasGeocoder) {
+      const resultado = await geocodificarConsultaCidade(consulta);
+
+      if (resultado) {
+        sugestoesGeocoder.push(resultado);
+      }
+
+      if (sugestoesGeocoder.length >= 5) {
+        break;
+      }
+    }
+
+    return deduplicarSugestoesCidade([
+      ...sugestoesLocaisGeocodificadas,
+      ...sugestoesGeocoder,
+    ]).slice(0, 8);
+  }
+
+  function deduplicarSugestoesCidade(sugestoes) {
+    const vistos = new Set();
+
+    return (sugestoes || []).filter((item) => {
+      const chave = `${String(item.nome || item.display_name || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9\s-]/g, " ")
+        .replace(/\s+/g, " ")
+        .toLowerCase()
+        .trim()}|${String(item.latitude || "").slice(0, 8)}|${String(
+        item.longitude || "",
+      ).slice(0, 8)}`;
+
+      if (vistos.has(chave)) {
+        return false;
+      }
+
+      vistos.add(chave);
+      return true;
     });
   }
 
@@ -1408,7 +1660,7 @@ function App() {
 
       const resultados = await buscarSugestoesCidade(termo);
 
-      setSugestoesCidade(resultados);
+      setSugestoesCidade(deduplicarSugestoesCidade(resultados));
     } catch (erro) {
       console.error("Erro ao buscar cidades:", erro);
     } finally {
@@ -1760,23 +2012,46 @@ function App() {
     });
 
     if (modoProximos && localizacaoUsuario) {
+      const chaveConsultaAtual = criarChaveConsultaRodoviaria(
+        localizacaoUsuario,
+        raioKm,
+      );
+
+      if (
+        consultaDistanciasRodoviarias.chave !== chaveConsultaAtual ||
+        consultaDistanciasRodoviarias.calculando ||
+        consultaDistanciasRodoviarias.erro
+      ) {
+        return [];
+      }
+
       lista = lista
-        .filter((item) => item.latitude !== null && item.longitude !== null)
-        .map((item) => ({
-          ...item,
-          distancia_km: calcularDistanciaKm(
-            localizacaoUsuario.latitude,
-            localizacaoUsuario.longitude,
-            Number(item.latitude),
-            Number(item.longitude),
-          ),
-        }))
+        .filter(
+          (item) =>
+            String(item.uf || "")
+              .trim()
+              .toUpperCase() !== "EX",
+        )
+        .map((item) => {
+          const trajeto =
+            consultaDistanciasRodoviarias.distancias[item.id] || null;
+
+          return trajeto ? { ...item, ...trajeto } : null;
+        })
+        .filter(Boolean)
         .filter((item) => item.distancia_km <= raioKm)
         .sort((a, b) => a.distancia_km - b.distancia_km);
     }
 
     return lista;
-  }, [clientes, filtro, modoProximos, localizacaoUsuario, raioKm]);
+  }, [
+    clientes,
+    consultaDistanciasRodoviarias,
+    filtro,
+    modoProximos,
+    localizacaoUsuario,
+    raioKm,
+  ]);
 
   const indicadoresDashboard = useMemo(() => {
     const totalRotas = rotas.length;
@@ -1862,6 +2137,37 @@ function App() {
       rotasCriticas,
     };
   }, [rotas, clientes]);
+
+  const rotasMeuDia = useMemo(() => {
+    const usuarioFiltro =
+      perfil?.tipo_perfil === "admin"
+        ? usuarioMeuDiaId || session?.user?.id
+        : session?.user?.id;
+
+    if (perfil?.tipo_perfil === "admin" && usuarioFiltro === "todos") {
+      return rotas;
+    }
+
+    return rotas.filter((rota) => rota.usuario_responsavel === usuarioFiltro);
+  }, [perfil?.tipo_perfil, rotas, session?.user?.id, usuarioMeuDiaId]);
+
+  const usuarioMeuDiaSelecionado = useMemo(() => {
+    if (
+      perfil?.tipo_perfil !== "admin" ||
+      !usuarioMeuDiaId ||
+      usuarioMeuDiaId === session?.user?.id
+    ) {
+      return perfil;
+    }
+
+    if (usuarioMeuDiaId === "todos") {
+      return null;
+    }
+
+    return usuariosPerfis.find(
+      (usuario) => usuario.user_id === usuarioMeuDiaId,
+    );
+  }, [perfil, session?.user?.id, usuarioMeuDiaId, usuariosPerfis]);
 
   async function atualizarCoordenadasPendentes() {
     if (perfil.tipo_perfil !== "admin") {
@@ -1950,6 +2256,85 @@ function App() {
     return raioTerra * c;
   }
 
+  useEffect(() => {
+    if (!modoProximos || !localizacaoUsuario) {
+      return undefined;
+    }
+
+    const controlador = new AbortController();
+    const chave = criarChaveConsultaRodoviaria(localizacaoUsuario, raioKm);
+    const candidatos = clientes.filter((cliente) => {
+      if (cliente.latitude === null || cliente.longitude === null) {
+        return false;
+      }
+
+      const distanciaLinhaReta = calcularDistanciaKm(
+        localizacaoUsuario.latitude,
+        localizacaoUsuario.longitude,
+        Number(cliente.latitude),
+        Number(cliente.longitude),
+      );
+
+      return distanciaLinhaReta <= raioKm;
+    });
+
+    async function carregarDistanciasRodoviarias() {
+      setConsultaDistanciasRodoviarias({
+        chave,
+        calculando: true,
+        distancias: {},
+        erro: "",
+        processados: 0,
+        total: candidatos.length,
+      });
+
+      try {
+        const distancias = await calcularDistanciasRodoviariasEmLotes(
+          localizacaoUsuario,
+          candidatos,
+          controlador.signal,
+          (processados, total) => {
+            if (!controlador.signal.aborted) {
+              setConsultaDistanciasRodoviarias((estadoAtual) => ({
+                ...estadoAtual,
+                processados,
+                total,
+              }));
+            }
+          },
+        );
+
+        if (!controlador.signal.aborted) {
+          setConsultaDistanciasRodoviarias({
+            chave,
+            calculando: false,
+            distancias,
+            erro: "",
+            processados: candidatos.length,
+            total: candidatos.length,
+          });
+        }
+      } catch (erro) {
+        if (!controlador.signal.aborted) {
+          setConsultaDistanciasRodoviarias({
+            chave,
+            calculando: false,
+            distancias: {},
+            erro:
+              erro?.message ||
+              "Não foi possível calcular as distâncias por estrada.",
+            processados: 0,
+            total: candidatos.length,
+          });
+        }
+      }
+    }
+
+    carregarDistanciasRodoviarias();
+
+    return () => controlador.abort();
+  }, [clientes, localizacaoUsuario, modoProximos, raioKm]);
+
   async function buscarClientesProximos() {
     const usarLocalizacaoAtual = confirm(
       "Deseja usar sua localização atual?\n\nOK = Usar localização atual\nCancelar = Informar cidade manualmente",
@@ -2031,6 +2416,13 @@ function App() {
     setFiltroResponsavelRotas("");
     setTelaAtual("rotas");
     carregarRotas();
+  }
+
+  function abrirRotaPeloMeuDia(rota) {
+    window.localStorage.setItem(MODO_TELA_ROTA_STORAGE_KEY, "execucao");
+    setBuscaClienteRota("");
+    setTelaAtual("rotas");
+    abrirRota(rota);
   }
 
   function abrirRotasPorStatus(status) {
@@ -2120,7 +2512,9 @@ function App() {
 
     const { data: itensRota, error: erroItens } = await supabase
       .from("rota_clientes")
-      .select("rota_id, status, visitado");
+      .select(
+        "id, rota_id, cliente_id, status, visitado, sequencia, aviso_whatsapp_em, data_prevista_visita",
+      );
 
     if (erroItens) {
       alert("Falha ao carregar resumo das rotas: " + erroItens.message);
@@ -2153,6 +2547,7 @@ function App() {
             item.status === null ||
             item.status === undefined,
         ).length,
+        clientes_agendados: itens,
       };
     });
 
@@ -2201,6 +2596,42 @@ function App() {
         responsavel_nome: novoNomeResponsavel,
       };
     });
+  }
+
+  async function alterarDataPrevistaClienteRota(itemRota, novaData) {
+    const dataPrevista = novaData || null;
+    const { error } = await supabase
+      .from("rota_clientes")
+      .update({ data_prevista_visita: dataPrevista })
+      .eq("id", itemRota.id);
+
+    if (error) {
+      alert("Falha ao atualizar a data prevista: " + error.message);
+      return;
+    }
+
+    setClientesDaRota((itensAtuais) =>
+      itensAtuais.map((item) =>
+        item.id === itemRota.id
+          ? { ...item, data_prevista_visita: dataPrevista }
+          : item,
+      ),
+    );
+
+    setRotas((rotasAtuais) =>
+      rotasAtuais.map((rota) =>
+        rota.id === itemRota.rota_id
+          ? {
+              ...rota,
+              clientes_agendados: (rota.clientes_agendados || []).map((item) =>
+                item.id === itemRota.id
+                  ? { ...item, data_prevista_visita: dataPrevista }
+                  : item,
+              ),
+            }
+          : rota,
+      ),
+    );
   }
 
   async function abrirRota(rota) {
@@ -3448,7 +3879,7 @@ function App() {
             onClick={() => setTelaAtual("home")}
           >
             <Menu size={20} />
-            Início
+            Meu Dia
           </button>
 
           <button
@@ -3540,133 +3971,22 @@ function App() {
       )}
 
       {telaAtual === "home" && (
-        <>
-          <div className="home-menu-cards">
-            <button
-              className="home-card-menu"
-              onClick={abrirTelaClientes}
-            >
-              <div className="home-icone-menu">
-                <Users size={42} />
-              </div>
-
-              <div className="home-conteudo-menu">
-                <h3>Clientes</h3>
-                <p>Consulta completa de clientes</p>
-              </div>
-
-              <ChevronRight size={28} />
-            </button>
-
-            <button
-              className="home-card-menu"
-              onClick={abrirTelaProximos}
-            >
-              <div className="home-icone-menu">
-                <MapPin size={42} />
-              </div>
-
-              <div className="home-conteudo-menu">
-                <h3>Próximos</h3>
-                <p>Clientes próximos da sua localização</p>
-              </div>
-
-              <ChevronRight size={28} />
-            </button>
-
-            <button
-              className="home-card-menu"
-              onClick={() => abrirListaRotas()}
-            >
-              <div className="home-icone-menu">
-                <Route size={42} />
-              </div>
-
-              <div className="home-conteudo-menu">
-                <h3>Rotas</h3>
-                <p>Planejamento e execução de rotas</p>
-              </div>
-
-              <ChevronRight size={28} />
-            </button>
-
-            <button
-              className="home-card-menu"
-              onClick={() => {
-                setTelaAtual("dashboard");
-                carregarRotas();
-              }}
-            >
-              <div className="home-icone-menu">
-                <BarChart3 size={42} />
-              </div>
-
-              <div className="home-conteudo-menu">
-                <h3>Dashboard</h3>
-                <p>Indicadores e análises do negócio</p>
-              </div>
-
-              <ChevronRight size={28} />
-            </button>
-
-            {permiteMenuAmostrasGrupoAtual && (
-              <button
-                className="home-card-menu"
-                onClick={() => abrirAmostrasComFiltros()}
-              >
-                <div className="home-icone-menu">
-                  <ClipboardList size={42} />
-                </div>
-
-                <div className="home-conteudo-menu">
-                  <h3>Amostras</h3>
-                  <p>Consulta tecnica de amostras de clientes</p>
-                </div>
-
-                <ChevronRight size={28} />
-              </button>
-            )}
-
-            <button
-              className="home-card-menu"
-              onClick={() => {
-                setTelaAtual("alterarSenha");
-              }}
-            >
-              <div className="home-icone-menu">
-                <Settings size={42} />
-              </div>
-
-              <div className="home-conteudo-menu">
-                <h3>Alterar senha</h3>
-                <p>Atualize sua senha de acesso</p>
-              </div>
-
-              <ChevronRight size={28} />
-            </button>
-
-            {perfil?.tipo_perfil === "admin" && (
-              <button
-                className="home-card-menu"
-                onClick={() => {
-                  setTelaAtual("admin");
-                  carregarUsuariosPerfis();
-                }}
-              >
-                <div className="home-icone-menu">
-                  <Settings size={42} />
-                </div>
-
-                <div className="home-conteudo-menu">
-                  <h3>Administração</h3>
-                  <p>Importação e gerenciamento</p>
-                </div>
-
-                <ChevronRight size={28} />
-              </button>
-            )}
-          </div>
-        </>
+        <MeuDia
+          nomeUsuario={
+            usuarioMeuDiaId === "todos"
+              ? "Equipe"
+              : usuarioMeuDiaSelecionado?.nome || nomeUsuarioTopo
+          }
+          rotas={rotasMeuDia}
+          clientes={clientes}
+          administrador={perfil?.tipo_perfil === "admin"}
+          usuarios={usuariosPerfis}
+          usuarioSelecionadoId={usuarioMeuDiaId || session?.user?.id || ""}
+          visaoEquipe={usuarioMeuDiaId === "todos"}
+          selecionarUsuario={setUsuarioMeuDiaId}
+          abrirRota={abrirRotaPeloMeuDia}
+          abrirListaRotas={() => abrirListaRotas()}
+        />
       )}
 
       {telaAtual === "alterarSenha" && (
@@ -4288,130 +4608,192 @@ function App() {
             </div>
 
             {modoProximos && (
-              <div className="controle-raio controle-raio-card">
-                {origemOrdenacaoRota && (
-                  <p className="origem-localizacao">
-                    <strong>Origem da busca:</strong> {origemOrdenacaoRota}
+              <div>
+                <div className="controle-raio controle-raio-card">
+                  {origemOrdenacaoRota && (
+                    <p className="origem-localizacao">
+                      <strong>Origem da busca:</strong> {origemOrdenacaoRota}
+                    </p>
+                  )}
+                  <label>Raio por estrada:</label>
+
+                  <select
+                    value={raioKm}
+                    onChange={(e) => setRaioKm(Number(e.target.value))}
+                  >
+                    <option value={10}>10 km</option>
+                    <option value={25}>25 km</option>
+                    <option value={50}>50 km</option>
+                    <option value={100}>100 km</option>
+                    <option value={200}>200 km</option>
+                  </select>
+                </div>
+
+                {consultaDistanciasRodoviarias.calculando && (
+                  <p className="status-distancia-rodoviaria calculando">
+                    Consulta rodoviária em andamento.
                   </p>
                 )}
-                <label>Raio de busca:</label>
 
-                <select
-                  value={raioKm}
-                  onChange={(e) => setRaioKm(Number(e.target.value))}
-                >
-                  <option value={10}>10 km</option>
-                  <option value={25}>25 km</option>
-                  <option value={50}>50 km</option>
-                  <option value={100}>100 km</option>
-                  <option value={200}>200 km</option>
-                </select>
+                {consultaDistanciasRodoviarias.erro && (
+                  <p className="status-distancia-rodoviaria erro">
+                    Distância rodoviária indisponível:{" "}
+                    {consultaDistanciasRodoviarias.erro}
+                  </p>
+                )}
+
+                {!consultaDistanciasRodoviarias.calculando &&
+                  !consultaDistanciasRodoviarias.erro && (
+                    <p className="status-distancia-rodoviaria pronto">
+                      Estimativa por estrada, sem trânsito em tempo real.
+                    </p>
+                  )}
               </div>
             )}
 
-            <p>Total exibido: {clientesFiltrados.length}</p>
-
-            {carregando ? (
-              <p>Carregando clientes...</p>
-            ) : (
-              <div className="grid-clientes">
-                {clientesFiltrados.map((item) => (
-                  <div className="card-cliente" key={item.id}>
-                    <div className="cliente-resumo">
-                      <h3>{item.cliente || "Cliente sem nome"}</h3>
-
-                      <div className="cliente-resumo-linha">
-                        <span>
-                          <strong>Código:</strong> {item.codigo_cliente || "-"}
-                        </span>
-                        <span>
-                          <strong>Cidade:</strong> {item.cidade || "-"} /{" "}
-                          {item.uf || "-"}
-                        </span>
-                        {item.distancia_km !== undefined && (
-                          <span>
-                            <strong>Distância:</strong>{" "}
-                            {item.distancia_km.toFixed(1)} km
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="cliente-resumo-endereco">
-                        <strong>Endereço:</strong>{" "}
-                        {item.endereco_completo || "-"}
-                      </p>
-
-                      <details className="cliente-detalhes">
-                        <summary>Ver detalhes</summary>
-                        <div className="cliente-dados">
-                          <p>
-                            <strong>Telefone:</strong> {item.telefone || "-"}
-                          </p>
-                          <p>
-                            <strong>WhatsApp:</strong> {item.whatsapp || "-"}
-                          </p>
-                          <p>
-                            <strong>Representante:</strong>{" "}
-                            {item.codigo_representante || "-"}
-                          </p>
-                          <p>
-                            <strong>Tipo:</strong> {item.tipo || "Não informado"}
-                          </p>
-                          <p>
-                            <strong>Prioridade:</strong>{" "}
-                            {item.prioridade || "Não informada"}
-                          </p>
-                          <p>
-                            <strong>Status:</strong>{" "}
-                            {item.status || "Não informado"}
-                          </p>
-                        </div>
-                      </details>
-                    </div>
-
-                    <div className="acoes">
-                      <button onClick={() => abrirMaps(item)}>Waze</button>
-
-                      <button onClick={() => abrirWhatsApp(item)}>
-                        WhatsApp
-                      </button>
-
-                      <button
-                        type="button"
-                        className="botao-acao"
-                        onClick={() => {
-                          const codigo = String(
-                            item.codigo_cliente || "",
-                          ).padStart(6, "0");
-
-                          window.open(
-                            `https://phenixportais.cigam.cloud/portalrepresentante/ge/acompanhamento/pesquisa/${codigo}`,
-                            "_blank",
-                          );
-                        }}
-                      >
-                        Acomp.
-                      </button>
-
-                      {permiteMenuAmostrasGrupoAtual && (
-                        <button
-                          type="button"
-                          className="botao-acao"
-                          onClick={() =>
-                            abrirAmostrasComFiltros({
-                              cliente:
-                                item.codigo_cliente || item.cliente || "",
-                            })
-                          }
-                        >
-                          Amostras
-                        </button>
-                      )}
-                    </div>
+            {modoProximos && consultaDistanciasRodoviarias.calculando ? (
+              <div
+                className="clientes-proximos-carregando"
+                role="status"
+                aria-live="polite"
+              >
+                <span
+                  className="clientes-proximos-spinner"
+                  aria-hidden="true"
+                />
+                <strong>Aguarde, carregando clientes próximos...</strong>
+                <p>
+                  Calculando distância e duração por estrada
+                  {consultaDistanciasRodoviarias.total > 0
+                    ? ` · ${consultaDistanciasRodoviarias.processados} de ${consultaDistanciasRodoviarias.total}`
+                    : ""}
+                </p>
+                {consultaDistanciasRodoviarias.total > 0 && (
+                  <div className="clientes-proximos-progresso">
+                    <span
+                      style={{
+                        width: `${Math.round(
+                          (consultaDistanciasRodoviarias.processados /
+                            consultaDistanciasRodoviarias.total) *
+                            100,
+                        )}%`,
+                      }}
+                    />
                   </div>
-                ))}
+                )}
               </div>
-            )}
+            ) : !(modoProximos && consultaDistanciasRodoviarias.erro) ? (
+              <>
+                <p>Total exibido: {clientesFiltrados.length}</p>
+
+                {carregando ? (
+                  <p>Carregando clientes...</p>
+                ) : (
+                  <div className="grid-clientes">
+                    {clientesFiltrados.map((item) => (
+                      <div className="card-cliente" key={item.id}>
+                        <div className="cliente-resumo">
+                          <h3>{item.cliente || "Cliente sem nome"}</h3>
+
+                          <div className="cliente-resumo-linha">
+                            <span>
+                              <strong>Código:</strong>{" "}
+                              {item.codigo_cliente || "-"}
+                            </span>
+                            <span>
+                              <strong>Cidade:</strong> {item.cidade || "-"} /{" "}
+                              {item.uf || "-"}
+                            </span>
+                            {item.distancia_km !== undefined && (
+                              <span>
+                                <strong>Trajeto:</strong>{" "}
+                                {item.distancia_km.toFixed(1)} km ·{" "}
+                                {formatarDuracaoMinutos(item.duracao_minutos)}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="cliente-resumo-endereco">
+                            <strong>Endereço:</strong>{" "}
+                            {item.endereco_completo || "-"}
+                          </p>
+
+                          <details className="cliente-detalhes">
+                            <summary>Ver detalhes</summary>
+                            <div className="cliente-dados">
+                              <p>
+                                <strong>Telefone:</strong>{" "}
+                                {item.telefone || "-"}
+                              </p>
+                              <p>
+                                <strong>WhatsApp:</strong>{" "}
+                                {item.whatsapp || "-"}
+                              </p>
+                              <p>
+                                <strong>Representante:</strong>{" "}
+                                {item.codigo_representante || "-"}
+                              </p>
+                              <p>
+                                <strong>Tipo:</strong>{" "}
+                                {item.tipo || "Não informado"}
+                              </p>
+                              <p>
+                                <strong>Prioridade:</strong>{" "}
+                                {item.prioridade || "Não informada"}
+                              </p>
+                              <p>
+                                <strong>Status:</strong>{" "}
+                                {item.status || "Não informado"}
+                              </p>
+                            </div>
+                          </details>
+                        </div>
+
+                        <div className="acoes">
+                          <button onClick={() => abrirMaps(item)}>Waze</button>
+
+                          <button onClick={() => abrirWhatsApp(item)}>
+                            WhatsApp
+                          </button>
+
+                          <button
+                            type="button"
+                            className="botao-acao"
+                            onClick={() => {
+                              const codigo = String(
+                                item.codigo_cliente || "",
+                              ).padStart(6, "0");
+
+                              window.open(
+                                `https://phenixportais.cigam.cloud/portalrepresentante/ge/acompanhamento/pesquisa/${codigo}`,
+                                "_blank",
+                              );
+                            }}
+                          >
+                            Acomp.
+                          </button>
+
+                          {permiteMenuAmostrasGrupoAtual && (
+                            <button
+                              type="button"
+                              className="botao-acao"
+                              onClick={() =>
+                                abrirAmostrasComFiltros({
+                                  cliente:
+                                    item.codigo_cliente || item.cliente || "",
+                                })
+                              }
+                            >
+                              Amostras
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : null}
           </section>
         )}
 
@@ -4632,7 +5014,9 @@ function App() {
                         ).map(([campo, rotulo]) => (
                           <div key={campo}>
                             <dt>{rotulo}</dt>
-                            <dd>{formatarValorAmostra(campo, amostra[campo])}</dd>
+                            <dd>
+                              {formatarValorAmostra(campo, amostra[campo])}
+                            </dd>
                           </div>
                         ))}
                       </dl>
@@ -4850,6 +5234,7 @@ function App() {
             abrirRota={abrirRota}
             abrirRotaCompleta={abrirRotaCompleta}
             alterarSequenciaClienteRota={alterarSequenciaClienteRota}
+            alterarDataPrevistaClienteRota={alterarDataPrevistaClienteRota}
             iniciarRota={iniciarRota}
             finalizarRota={finalizarRota}
             abrirAcompanhamento={abrirAcompanhamento}
@@ -4951,10 +5336,7 @@ function App() {
                 <h2>Selecionar contato</h2>
                 <p>{clienteWhatsApp.cliente}</p>
               </div>
-              <button
-                type="button"
-                onClick={fecharSeletorContatosWhatsApp}
-              >
+              <button type="button" onClick={fecharSeletorContatosWhatsApp}>
                 Fechar
               </button>
             </div>
@@ -4969,8 +5351,9 @@ function App() {
                 >
                   <strong>{contato.nome || "Contato sem nome"}</strong>
                   <span>
-                    {[contato.cargo, contato.setor].filter(Boolean).join(" - ") ||
-                      "Cargo nao informado"}
+                    {[contato.cargo, contato.setor]
+                      .filter(Boolean)
+                      .join(" - ") || "Cargo nao informado"}
                   </span>
                   <span>
                     {contato.whatsapp || contato.celular || contato.telefone}

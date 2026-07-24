@@ -47,47 +47,94 @@ Botoes:
 - Nova senha obrigatoria.
 - Confirmacao deve ser igual a nova senha.
 
-## 4. Tela Home (Menu principal)
+## 4. Tela Meu Dia (pagina inicial)
 
-Tela: cartoes de navegacao.
+Tela: resumo operacional exibido logo apos o login, com prioridade para uso
+em celular e tambem adaptado ao desktop.
 
-Botoes/cartoes:
+Regras:
 
-1. Clientes
+- O Meu Dia usa a data prevista registrada em cada cliente da rota.
+- Usuarios comuns visualizam clientes de rotas atribuidas ao proprio usuario.
+- O administrador pode selecionar o proprio usuario, qualquer usuario ativo
+  ou a opcao Toda a equipe.
+- Registros antigos sem data continuam validos e aparecem como pendentes sem
+  data.
+- Clientes atrasados sao aqueles com data anterior a hoje, status pendente e
+  rota ainda ativa.
 
-- Abre consulta completa de clientes.
+Areas e botoes:
 
-2. Proximos
+1. Resumo do Meu Dia
+
+- Mostra clientes para hoje, visitados hoje, pendentes hoje e atrasados.
+
+2. Clientes atrasados
+
+- Lista clientes com data anterior a hoje que ainda estao pendentes.
+- Mostra cliente, rota, cidade, data e sequencia.
+- Ao tocar ou clicar, abre a rota correspondente no modo Execucao.
+
+3. Clientes agendados para hoje
+
+- Lista separadamente todos os clientes com data prevista igual a hoje.
+- O titulo explicita a origem da lista, sem classificacao generica de
+  prioridade.
+
+4. Clientes sem data
+
+- Lista clientes pendentes de rotas ativas que ainda nao possuem data.
+- Mostra cliente, rota, cidade e sequencia para facilitar o planejamento.
+- Cada item abre a rota correspondente.
+
+5. Visitas agendadas
+
+- Lista os proximos clientes com data posterior a hoje.
+
+6. Ver todas as rotas
+
+- Abre o modulo completo de planejamento e execucao de rotas.
+
+7. Clientes
+
+- Abre a consulta completa de clientes permitidos para o perfil.
+
+8. Proximos
 
 - Abre clientes proximos e inicia busca com raio padrao.
 
-3. Rotas
+9. Dashboard
 
-- Abre modulo de planejamento e execucao de rotas.
+- Abre os indicadores consolidados.
 
-4. Dashboard
+10. Menu lateral
 
-- Abre indicadores consolidados.
+- Meu Dia substitui o antigo item Inicio.
+- Clientes, Proximos, Rotas, Dashboard, Amostras, Alterar senha e Administracao
+  continuam disponiveis conforme as permissoes do perfil.
 
-5. Amostras
+11. Sair
 
-- Abre consulta de amostras quando o perfil estiver liberado pelo administrador.
+- Encerra a sessao e limpa os estados locais da navegacao.
 
-6. Alterar senha
+12. Meu Dia de (somente administrador)
 
-- Abre tela para troca de senha com senha atual.
+- Permite selecionar qualquer usuario ativo para acompanhar seus clientes.
+- A opcao Toda a equipe consolida os clientes de todos os responsaveis.
+- Ao trocar a selecao, indicadores e agenda de clientes sao
+  recalculados imediatamente.
+- O seletor ocupa uma linha propria no celular para preservar leitura e toque.
 
-7. Administracao (somente admin)
+13. Minhas rotas
 
-- Abre importacao de clientes e gestao de usuarios.
-
-8. Menu
-
-- Volta para a Home quando o usuario esta em outra tela.
-
-9. Sair
-
-- Encerra sessao e limpa estados locais da navegacao.
+- Na visao individual, mostra as rotas ABERTA, FECHADA e EM_ANDAMENTO
+  atribuidas ao usuario selecionado.
+- Rotas FINALIZADAS ficam fora desta visao operacional.
+- Cada rota mostra status, total de clientes e pendentes e abre diretamente
+  no modo Execucao.
+- Na opcao Toda a equipe, apresenta um consolidado por responsavel com
+  quantidade de rotas, clientes e pendencias, alem da lista das rotas.
+- No celular, consolidado e rotas sao empilhados para manter a leitura.
 
 ## 5. Tela Alterar Senha
 
@@ -121,6 +168,21 @@ Botoes principais:
 - Regras:
 - Usa geolocalizacao do dispositivo.
 - Considera apenas clientes com coordenadas.
+- Quando o usuario informa uma cidade, a origem e o ponto central retornado
+  para a cidade selecionada.
+- A distancia em linha reta e usada somente como pre-filtro interno.
+- O resultado final considera distancia por estrada menor ou igual ao raio
+  escolhido.
+- A tela mostra distancia e duracao rodoviarias estimadas, sem transito em
+  tempo real.
+- Durante a consulta, exibe Calculando trajetos por estrada.
+- Enquanto o calculo estiver em andamento, a lista e o total ficam ocultos e
+  a tela mostra Aguarde, carregando clientes proximos.
+- O painel de espera possui animacao, quantidade processada e barra de
+  progresso por lotes.
+- Se o servico rodoviario falhar, a tela informa indisponibilidade e nao
+  apresenta distancia em linha reta como resultado operacional.
+- As consultas rodoviarias sao enviadas em lotes de ate 40 clientes.
 
 2. Limpar proximidade
 
@@ -386,7 +448,16 @@ Botoes principais:
 - Funcao: remove cliente da rota.
 - Regra: exige confirmacao.
 
-9. Responsavel pela rota (admin)
+9. Data prevista
+
+- Funcao: definir o dia planejado para visitar cada cliente da rota.
+- A data pertence ao cliente dentro da rota, nao a rota inteira.
+- O campo e opcional para manter compatibilidade com rotas antigas.
+- Rotas finalizadas exibem a data sem permitir alteracao.
+- A data alimenta as secoes Hoje, Atrasados, Proximos dias e Sem data do
+  Meu Dia.
+
+10. Responsavel pela rota (admin)
 
 - Funcao: trocar responsavel da rota.
 - Regra: lista apenas usuarios ativos.

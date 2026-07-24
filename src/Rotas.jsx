@@ -37,6 +37,7 @@ function Rotas({
   reabrirRota,
   abrirRotaCompleta,
   alterarSequenciaClienteRota,
+  alterarDataPrevistaClienteRota,
 finalizarRota,
 perfil,
 usuarioId,
@@ -311,6 +312,7 @@ setFiltroStatusRotas={setFiltroStatusRotas}
     adicionarClienteNaRota={adicionarClienteNaRota}
     removerClienteDaRota={removerClienteDaRota}
     alterarSequenciaClienteRota={alterarSequenciaClienteRota}
+    alterarDataPrevistaClienteRota={alterarDataPrevistaClienteRota}
     fecharRota={fecharRota}
     modoReordenar={modoReordenar}
     setModoReordenar={setModoReordenar}

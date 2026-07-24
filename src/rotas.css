@@ -1092,7 +1092,7 @@
 
 .linha-planejamento-rota {
   display: grid;
-  grid-template-columns: 60px 1fr 200px;
+  grid-template-columns: 60px minmax(0, 1fr) 170px 200px;
   gap: 14px;
   align-items: center;
   padding: 14px;
@@ -1113,6 +1113,37 @@
   margin-top: 4px;
   color: #64748b;
   font-size: 13px;
+}
+
+.data-prevista-cliente-rota {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.data-prevista-cliente-rota span {
+  margin: 0;
+  color: #475569;
+  font-size: 11px;
+}
+
+.data-prevista-cliente-rota input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.data-prevista-cliente-rota input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 /* ===============================
@@ -1566,6 +1597,11 @@
 
   .linha-planejamento-rota {
     grid-template-columns: 48px 1fr;
+  }
+
+  .data-prevista-cliente-rota,
+  .acoes-planejamento-rota {
+    grid-column: 1 / -1;
   }
 
   .linha-planejamento-rota button {
