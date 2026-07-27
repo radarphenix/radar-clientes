@@ -2,6 +2,7 @@ function RotasOperacao({
   rotaSelecionada,
   buscaClienteRota,
   clientes,
+  clientesDaRota,
   adicionarClienteNaRota,
   modoReordenar,
   abaRota,
@@ -200,16 +201,20 @@ function RotasOperacao({
                     <div className="linha-proximo-cliente" key={item.id}>
                       <div className="linha-proximo-seq">
                         {modoReordenar ? (
-                          <input
-                            type="text"
-                            inputMode="numeric"
+                          <select
                             className="input-sequencia-mini"
-                            value={item.sequencia || ""}
-                            onFocus={(e) => e.target.select()}
+                            value={item.sequencia || 1}
+                            aria-label={`Mover ${cliente?.cliente || "cliente"} para a posição`}
                             onChange={(e) =>
                               alterarSequenciaClienteRota(item, e.target.value)
                             }
-                          />
+                          >
+                            {clientesDaRota.map((_, indice) => (
+                              <option key={indice + 1} value={indice + 1}>
+                                {indice + 1}º
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           item.sequencia || "-"
                         )}

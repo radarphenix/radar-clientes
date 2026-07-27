@@ -408,6 +408,13 @@ Botoes principais:
 1. Reordenar rota
 
 - Funcao: habilita/encerra ajuste manual de sequencia.
+- Regras:
+- Cada cliente passa a exibir um seletor com todas as posicoes disponiveis.
+- Ao escolher uma posicao ocupada, o cliente e movido para ela e os demais
+  sao deslocados automaticamente.
+- A sequencia sempre e normalizada de 1 ate o total de itens, sem duplicidades
+  ou lacunas.
+- O mesmo recurso esta disponivel no Planejamento, Operacao e Manutencao.
 
 2. Ordenar por distancia
 
@@ -434,7 +441,9 @@ Botoes principais:
 
 - Funcao: inclui cliente na rota.
 - Regras:
-- Nao permite cliente duplicado na mesma rota.
+- Permite incluir o mesmo cliente mais de uma vez na mesma rota.
+- Cada inclusao representa uma visita independente e pode receber uma data
+  prevista diferente, como uma visita hoje e outra amanha.
 - Sequencia nova vai para o final.
 
 7. Primeiro aviso / Reenviar aviso (por cliente da lista)

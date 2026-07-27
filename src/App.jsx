@@ -2718,16 +2718,6 @@ function App() {
       return;
     }
 
-    const jaExiste = clientesDaRota.some(
-      (item) => item.cliente_id === cliente.id,
-    );
-
-    if (jaExiste) {
-      alert("Este cliente já está na rota.");
-      setBuscaClienteRota("");
-      return;
-    }
-
     const proximaSequencia = clientesDaRota.length + 1;
 
     const { error } = await supabase.from("rota_clientes").insert({
@@ -2946,28 +2936,35 @@ function App() {
       return;
     }
 
-    if (!novaSequencia || Number(novaSequencia) <= 0) {
+    const posicaoDesejada = Number(novaSequencia);
+
+    if (
+      !Number.isInteger(posicaoDesejada) ||
+      posicaoDesejada <= 0 ||
+      posicaoDesejada > clientesDaRota.length
+    ) {
       alert("Informe uma sequência válida.");
       return;
     }
 
-    const sequenciaDuplicada = clientesDaRota.some(
-      (item) =>
-        item.id !== itemRota.id &&
-        Number(item.sequencia) === Number(novaSequencia),
+    const itensOrdenados = [...clientesDaRota].sort(
+      (a, b) => Number(a.sequencia || 0) - Number(b.sequencia || 0),
+    );
+    const indiceAtual = itensOrdenados.findIndex(
+      (item) => item.id === itemRota.id,
     );
 
-    if (sequenciaDuplicada) {
-      alert("Já existe outro cliente com esta sequência na rota.");
+    if (indiceAtual < 0 || indiceAtual === posicaoDesejada - 1) {
       return;
     }
 
-    const { error } = await supabase
-      .from("rota_clientes")
-      .update({
-        sequencia: Number(novaSequencia),
-      })
-      .eq("id", itemRota.id);
+    const [itemMovido] = itensOrdenados.splice(indiceAtual, 1);
+    itensOrdenados.splice(posicaoDesejada - 1, 0, itemMovido);
+
+    const { error } = await supabase.rpc("reordenar_clientes_rota", {
+      p_rota_id: rotaSelecionada.id,
+      p_itens: itensOrdenados.map((item) => item.id),
+    });
 
     if (error) {
       alert("Falha ao atualizar sequência: " + error.message);

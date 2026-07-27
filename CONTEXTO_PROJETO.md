@@ -9,13 +9,43 @@
 
 ## Snapshot Atual
 
-- Data: 2026-07-24
+- Data: 2026-07-27
 - Branch atual: `main`
 - Situacao de sincronizacao: branch local alinhada com `origin/main` (sem commits locais pendentes de push no momento da atualizacao).
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
+- Backup da evolucao de repeticao e reordenacao:
+  `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
 - Migration de Amostras aplicada no Supabase remoto via `supabase db push --linked` em 2026-07-03.
 - Ajuste de contraste global aplicado em `src/app-global.css` e `src/index.css` para melhorar leitura de titulos e campos de busca.
 - Cabecalho de contexto padronizado em `src/App.jsx` com estilo compartilhado em `src/app-global.css` para clientes, amostras, dashboard, administracao e alterar senha.
+
+## Planejamento de Rotas
+
+- [Concluido em 2026-07-27] Visitas repetidas e reordenacao manual:
+  - o mesmo cliente pode ser incluido mais de uma vez na mesma rota;
+  - cada inclusao permanece independente, inclusive para informar datas
+    previstas diferentes;
+  - a digitacao instavel da sequencia foi substituida por um seletor de
+    posicao no Planejamento, Operacao e Manutencao;
+  - ao mover um item para uma posicao ocupada, os seguintes sao deslocados e
+    toda a rota e renumerada de 1 a N;
+  - a funcao SQL `reordenar_clientes_rota` executa a mudanca de forma atomica;
+  - a migration
+    `20260727174500_rota_clientes_repeticao_reordenacao.sql` remove a
+    unicidade rota/cliente, preserva indice de consulta e cria a funcao;
+  - migration aplicada com sucesso no Supabase remoto vinculado;
+  - o seletor recebeu largura compacta compativel com desktop e mobile;
+  - validacoes concluidas: lint, build e `git diff --check`;
+  - backup anterior:
+    `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
+- [Correcao em 2026-07-27] Aparencia da reordenacao na Manutencao:
+  - o seletor deixou de herdar o fundo azul e as dimensoes do antigo indicador
+    numerico, eliminando a sobreposicao visual;
+  - o indicador circular azul continua preservado fora do modo de
+    reordenacao;
+  - ajuste aplicado para desktop e mobile;
+  - backup anterior:
+    `.codex-backups/20260727_175447_ajuste_visual_reordenacao_manutencao`.
 
 ## Meu Dia
 
