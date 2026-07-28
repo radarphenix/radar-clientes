@@ -1,4 +1,4 @@
-import { ArrowUpDown, MapPin, Lock, Flag, RotateCcw } from "lucide-react";
+import { ArrowUpDown, MapPin, Lock, Flag, RotateCcw, Trash2 } from "lucide-react";
 
 function RotasPlanejamento({
   rotaSelecionada,
@@ -25,7 +25,7 @@ function RotasPlanejamento({
   finalizarRota,
 }) {
   return (
-    <div className="painel-planejamento-rota">
+    <div className="painel-planejamento-rota planejamento-mobile">
       <h2>Planejamento da Rota</h2>
 
       <p>
@@ -173,53 +173,87 @@ function RotasPlanejamento({
             {clientesDaRota.map((item) => {
               const cliente = buscarCliente(item);
 
-              return (
-                <div className="linha-planejamento-rota" key={item.id}>
-                  {modoReordenar ? (
-                    <select
-                      className="input-sequencia-mini"
-                      value={item.sequencia || 1}
-                      aria-label={`Mover ${cliente?.cliente || "cliente"} para a posição`}
-                      onChange={(e) =>
-                        alterarSequenciaClienteRota(item, e.target.value)
-                      }
-                    >
-                      {clientesDaRota.map((_, indice) => (
-                        <option key={indice + 1} value={indice + 1}>
-                          {indice + 1}º
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <strong>{item.sequencia || "-"}</strong>
-                  )}
+              const statusTexto =
+                item.status === "VISITADO"
+                  ? "Visitado"
+                  : item.status === "CANCELADO"
+                    ? "Cancelado"
+                    : item.status === "PENDENTE"
+                      ? "Pendente"
+                      : "Sem status";
+              const corStatus =
+                item.status === "VISITADO"
+                  ? "visitado"
+                  : item.status === "CANCELADO"
+                    ? "cancelado"
+                    : item.status === "PENDENTE"
+                      ? "pendente"
+                      : "padrao";
+              const dataResumo = item.data_prevista_visita
+                ? new Date(`${item.data_prevista_visita}T00:00:00`).toLocaleDateString(
+                    "pt-BR",
+                    { day: "2-digit", month: "2-digit" },
+                  )
+                : "Sem data";
 
-                  <div>
+              return (
+                <div className={`linha-planejamento-rota${modoReordenar ? " reordenando" : ""}`} key={item.id}>
+                  <div className="linha-planejamento-rota-seq">
+                    {modoReordenar ? (
+                      <select
+                        className="input-sequencia-mini"
+                        value={item.sequencia || 1}
+                        aria-label={`Mover ${cliente?.cliente || "cliente"} para a posição`}
+                        onChange={(e) =>
+                          alterarSequenciaClienteRota(item, e.target.value)
+                        }
+                      >
+                        {clientesDaRota.map((_, indice) => (
+                          <option key={indice + 1} value={indice + 1}>
+                            {indice + 1}º
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <strong>{item.sequencia || "-"}</strong>
+                    )}
+                  </div>
+
+                  <div className="linha-planejamento-rota-info">
                     <strong>{cliente?.cliente || "Cliente sem nome"}</strong>
                     <span>
                       {cliente?.cidade || "-"} / {cliente?.uf || "-"}
                     </span>
-                    {item.aviso_whatsapp_em && (
-                      <span className="badge-aviso-whatsapp">
-                        Avisado no WhatsApp
-                      </span>
-                    )}
                   </div>
 
-                  <label className="data-prevista-cliente-rota">
-                    <span>Data prevista</span>
-                    <input
-                      type="date"
-                      value={item.data_prevista_visita || ""}
-                      disabled={rotaSelecionada.status === "FINALIZADA"}
-                      onChange={(evento) =>
-                        alterarDataPrevistaClienteRota(
-                          item,
-                          evento.target.value,
-                        )
-                      }
-                    />
-                  </label>
+                  <div className="linha-planejamento-rota-rodape">
+                    <div className="linha-planejamento-rota-meta">
+                      <span className={`badge-status-rota ${corStatus}`}>
+                        {statusTexto}
+                      </span>
+                      <span className="badge-data-rota">{dataResumo}</span>
+                      {item.aviso_whatsapp_em && (
+                        <span className="badge-aviso-whatsapp">
+                          Avisado no WhatsApp
+                        </span>
+                      )}
+                    </div>
+
+                    <label className="data-prevista-cliente-rota">
+                      <span>Data prevista</span>
+                      <input
+                        type="date"
+                        value={item.data_prevista_visita || ""}
+                        disabled={rotaSelecionada.status === "FINALIZADA"}
+                        onChange={(evento) =>
+                          alterarDataPrevistaClienteRota(
+                            item,
+                            evento.target.value,
+                          )
+                        }
+                      />
+                    </label>
+                  </div>
 
                   {rotaSelecionada.status !== "FINALIZADA" && (
                     <div className="acoes-planejamento-rota">
@@ -238,8 +272,9 @@ function RotasPlanejamento({
                         type="button"
                         className="btn-mini-status remover"
                         onClick={() => removerClienteDaRota(item)}
+                        aria-label={`Remover ${cliente?.cliente || "cliente"} da rota`}
                       >
-                        Remover
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   )}

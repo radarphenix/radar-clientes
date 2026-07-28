@@ -145,15 +145,23 @@ async function calcularDistanciasRodoviariasEmLotes(
 }
 
 function carregarTelaSalva() {
-  const estadoAtual = window.history.state;
+  return "home";
+}
 
-  if (estadoAtual?.radarClientes && TELAS_PERSISTIDAS.has(estadoAtual.tela)) {
-    return estadoAtual.tela;
+function normalizarDataVisita(valor) {
+  if (!valor) {
+    return null;
   }
 
-  const telaSalva = window.localStorage.getItem(TELA_ATUAL_STORAGE_KEY);
+  if (typeof valor === "string") {
+    return valor;
+  }
 
-  return TELAS_PERSISTIDAS.has(telaSalva) ? telaSalva : "home";
+  if (valor instanceof Date) {
+    return valor.toISOString().slice(0, 10);
+  }
+
+  return null;
 }
 
 function emailValido(valor) {
@@ -497,6 +505,7 @@ function App() {
     // Atualiza os dados do Meu Dia ao entrar ou retornar para a Home.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, perfil, telaAtual]);
+
 
   const [usuariosPerfis, setUsuariosPerfis] = useState([]);
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
@@ -2600,6 +2609,20 @@ function App() {
 
   async function alterarDataPrevistaClienteRota(itemRota, novaData) {
     const dataPrevista = novaData || null;
+    const duplicado = (clientesDaRota || []).some(
+      (item) =>
+        item.id !== itemRota.id &&
+        item.cliente_id === itemRota.cliente_id &&
+        normalizarDataVisita(item.data_prevista_visita || null) ===
+          dataPrevista &&
+        dataPrevista !== null,
+    );
+
+    if (duplicado) {
+      alert("Este cliente já está agendado para esta data nesta rota. Escolha outra data ou mantenha o cadastro atual.");
+      return;
+    }
+
     const { error } = await supabase
       .from("rota_clientes")
       .update({ data_prevista_visita: dataPrevista })
@@ -2649,7 +2672,8 @@ function App() {
       .from("rota_clientes")
       .select("*")
       .eq("rota_id", rota.id)
-      .order("sequencia", { ascending: true });
+      .order("sequencia", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
 
     if (error) {
       alert("Falha ao abrir rota: " + error.message);
@@ -2662,11 +2686,11 @@ function App() {
 
   async function abrirRotaCompleta(rota) {
     const { data, error } = await supabase
-
       .from("rota_clientes")
       .select("*")
       .eq("rota_id", rota.id)
-      .order("sequencia", { ascending: true });
+      .order("sequencia", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
 
     if (error) {
       alert("Falha ao carregar clientes da rota: " + error.message);
@@ -2718,7 +2742,8 @@ function App() {
       return;
     }
 
-    const proximaSequencia = clientesDaRota.length + 1;
+    const proximaSequencia = (clientesDaRota || []).length + 1;
+    const dataInicial = normalizarDataVisita(cliente?.data_prevista_visita || null);
 
     const { error } = await supabase.from("rota_clientes").insert({
       rota_id: rotaSelecionada.id,
@@ -2726,6 +2751,7 @@ function App() {
       sequencia: proximaSequencia,
       status: "PENDENTE",
       visitado: false,
+      data_prevista_visita: dataInicial,
     });
 
     if (error) {
@@ -2741,7 +2767,7 @@ function App() {
     setRotaSelecionada((rotaAnterior) => ({
       ...rotaAnterior,
       total_clientes:
-        (rotaAnterior?.total_clientes || clientesDaRota.length) + 1,
+        (rotaAnterior?.total_clientes || (clientesDaRota || []).length) + 1,
       total_pendentes: (rotaAnterior?.total_pendentes || 0) + 1,
     }));
   }

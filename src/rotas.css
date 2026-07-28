@@ -713,6 +713,49 @@
   font-size: 11px;
 }
 
+.badge-status-rota {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-status-rota.visitado {
+  background: #ecfdf3;
+  color: #047857;
+}
+
+.badge-status-rota.cancelado {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.badge-status-rota.pendente {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.badge-status-rota.padrao {
+  background: #f3f4f6;
+  color: #475569;
+}
+
+.badge-data-rota {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 /* ===============================
    OPERAÇÃO DA ROTA
    Componente: RotasOperacao.jsx
@@ -1094,9 +1137,9 @@
 
 .linha-planejamento-rota {
   display: grid;
-  grid-template-columns: 60px minmax(0, 1fr) 170px 200px;
+  grid-template-columns: 60px minmax(0, 1fr) 1fr 200px;
   gap: 14px;
-  align-items: center;
+  align-items: start;
   padding: 14px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -1105,22 +1148,68 @@
   border-bottom: none;
 }
 
-.linha-planejamento-rota strong {
+.linha-planejamento-rota-seq {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.linha-planejamento-rota-seq strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+}
+
+.linha-planejamento-rota-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.linha-planejamento-rota-info strong {
   display: block;
   color: #0f172a;
 }
 
-.linha-planejamento-rota span {
+.linha-planejamento-rota-info span {
   display: block;
-  margin-top: 4px;
+  margin-top: 0;
   color: #64748b;
   font-size: 13px;
 }
 
-.data-prevista-cliente-rota {
+.linha-planejamento-rota-rodape {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.linha-planejamento-rota-meta {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
+}
+
+.linha-planejamento-rota-meta .badge-status-rota,
+.linha-planejamento-rota-meta .badge-data-rota,
+.linha-planejamento-rota-meta .badge-aviso-whatsapp {
+  margin-top: 0;
+}
+
+.data-prevista-cliente-rota {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
   color: #475569;
   font-size: 12px;
   font-weight: 800;
@@ -1274,7 +1363,19 @@
 }
 
 .btn-mini-status.remover {
-  background: #be123c !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 0 10px;
+  background: #ffffff !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.btn-mini-status.remover:hover {
+  background: #f8fafc !important;
+  color: #334155 !important;
 }
 
 .acoes-planejamento-rota {
@@ -1771,6 +1872,180 @@
 
 @media (max-width: 700px) {
   .planejamento-acoes-principais {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .planejamento-mobile {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .planejamento-mobile h2 {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .planejamento-mobile p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .planejamento-mobile .planejamento-busca {
+    margin: 12px 0;
+  }
+
+  .planejamento-mobile .planejamento-busca .input-busca-rota {
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+  }
+
+  .planejamento-mobile .planejamento-acoes-principais {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+
+  .planejamento-mobile .planejamento-acoes-principais button {
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12px !important;
+  }
+
+  .planejamento-mobile .lista-planejamento-rota {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-seq {
+    justify-content: flex-start;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-seq strong {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-info {
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-info strong {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-info span {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-rodape {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 2px;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .planejamento-mobile .data-prevista-cliente-rota {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+  }
+
+  .planejamento-mobile .data-prevista-cliente-rota span {
+    font-size: 10px;
+  }
+
+  .planejamento-mobile .data-prevista-cliente-rota input {
+    min-height: 40px;
+    border-radius: 9px;
+  }
+
+  .planejamento-mobile .acoes-planejamento-rota {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 42px;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .planejamento-mobile .btn-mini-status {
+    min-height: 40px;
+    padding: 8px 10px !important;
+  }
+
+  .planejamento-mobile .btn-mini-status.whatsapp {
+    justify-content: center;
+  }
+
+  .planejamento-mobile .btn-mini-status.remover {
+    min-width: 42px;
+    height: 40px;
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .planejamento-mobile {
+    padding: 12px;
+  }
+
+  .planejamento-mobile .planejamento-acoes-principais {
+    grid-template-columns: 1fr;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-seq strong {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .planejamento-mobile .data-prevista-cliente-rota {
+    grid-template-columns: 1fr;
+  }
+
+  .planejamento-mobile .acoes-planejamento-rota {
     grid-template-columns: 1fr;
   }
 }

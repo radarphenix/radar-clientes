@@ -68,6 +68,25 @@ function MeuDia({
         Number(b.total_pendentes || 0) - Number(a.total_pendentes || 0)
       );
     });
+  const rotasComVisitados = rotasAtivas
+    .map((rota) => {
+      const visitados = (rota.clientes_agendados || [])
+        .filter((item) => item.status === "VISITADO" || item.visitado === true)
+        .map((item) => ({
+          ...item,
+          rota,
+          cliente: mapaClientes.get(item.cliente_id) || null,
+        }))
+        .sort((a, b) => Number(a.sequencia || 0) - Number(b.sequencia || 0));
+
+      return {
+        ...rota,
+        visitados,
+        totalVisitados: visitados.length,
+      };
+    })
+    .filter((rota) => rota.totalVisitados > 0)
+    .slice(0, 4);
   const mapaUsuarios = new Map(
     (usuarios || []).map((usuario) => [usuario.user_id, usuario]),
   );
@@ -384,6 +403,50 @@ function MeuDia({
                 ))}
               </div>
             )}
+
+            <div className="meu-dia-bloco-visitados">
+              <div className="meu-dia-bloco-visitados-topo">
+                <span>Clientes visitados por rota</span>
+                <strong>{rotasComVisitados.reduce((total, rota) => total + rota.totalVisitados, 0)}</strong>
+              </div>
+
+              {rotasComVisitados.length ? (
+                <div className="meu-dia-lista-visitados-rotas">
+                  {rotasComVisitados.slice(0, 5).map((rota) => (
+                    <div key={rota.id} className="meu-dia-rota-visitados">
+                      <button
+                        type="button"
+                        className="meu-dia-rota-visitados-cabecalho"
+                        onClick={() => abrirRota(rota)}
+                      >
+                        <span>
+                          <strong>{rota.nome}</strong>
+                          <small>
+                            {rota.responsavel_nome || "Sem responsável"} · {rota.totalVisitados} visitado(s)
+                          </small>
+                        </span>
+                        <ChevronRight size={16} />
+                      </button>
+                      <ul>
+                        {rota.visitados.slice(0, 3).map((item) => (
+                          <li key={item.id}>
+                            <CheckCircle size={14} />
+                            <span>
+                              {item.cliente?.cliente || "Cliente sem nome"}
+                              {item.data_prevista_visita ? ` · ${formatarData(item.data_prevista_visita)}` : ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="meu-dia-texto-vazio">
+                  Ainda não há clientes visitados nas rotas ativas.
+                </p>
+              )}
+            </div>
 
             {rotasAtivas.length ? (
               <div className="meu-dia-lista-rotas-abertas">
