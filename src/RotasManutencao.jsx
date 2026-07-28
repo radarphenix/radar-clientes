@@ -15,6 +15,17 @@ function RotasManutencao({
       <div className="lista-manutencao">
         {clientesDaRota.map((item) => {
           const cliente = buscarCliente(item);
+          const baseSequencia =
+            (clientesDaRota || []).filter(
+              (itemRota) =>
+                itemRota?.status &&
+                String(itemRota.status).toUpperCase() !== "PENDENTE",
+            ).length + 1;
+          const itensReordenaveis = (clientesDaRota || []).filter(
+            (itemRota) =>
+              !itemRota?.status ||
+              String(itemRota.status).toUpperCase() === "PENDENTE",
+          );
 
           return (
             <div
@@ -26,7 +37,7 @@ function RotasManutencao({
                 <div
                   className={`card-manutencao-seq${modoReordenar ? " reordenando" : ""}`}
                 >
-                  {modoReordenar ? (
+                  {modoReordenar && (!item.status || item.status === "PENDENTE") ? (
                     <select
                       className="input-sequencia-mini"
                       value={item.sequencia || 1}
@@ -38,9 +49,9 @@ function RotasManutencao({
                         )
                       }
                     >
-                      {clientesDaRota.map((_, indice) => (
-                        <option key={indice + 1} value={indice + 1}>
-                          {indice + 1}º
+                      {itensReordenaveis.map((_, indice) => (
+                        <option key={baseSequencia + indice} value={baseSequencia + indice}>
+                          {baseSequencia + indice}º
                         </option>
                       ))}
                     </select>

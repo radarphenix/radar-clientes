@@ -172,6 +172,17 @@ function RotasPlanejamento({
           <div className="lista-planejamento-rota">
             {clientesDaRota.map((item) => {
               const cliente = buscarCliente(item);
+              const baseSequencia =
+                (clientesDaRota || []).filter(
+                  (itemRota) =>
+                    itemRota?.status &&
+                    String(itemRota.status).toUpperCase() !== "PENDENTE",
+                ).length + 1;
+              const itensReordenaveis = (clientesDaRota || []).filter(
+                (itemRota) =>
+                  !itemRota?.status ||
+                  String(itemRota.status).toUpperCase() === "PENDENTE",
+              );
 
               const statusTexto =
                 item.status === "VISITADO"
@@ -199,7 +210,7 @@ function RotasPlanejamento({
               return (
                 <div className={`linha-planejamento-rota${modoReordenar ? " reordenando" : ""}`} key={item.id}>
                   <div className="linha-planejamento-rota-seq">
-                    {modoReordenar ? (
+                    {modoReordenar && (!item.status || item.status === "PENDENTE") ? (
                       <select
                         className="input-sequencia-mini"
                         value={item.sequencia || 1}
@@ -208,9 +219,9 @@ function RotasPlanejamento({
                           alterarSequenciaClienteRota(item, e.target.value)
                         }
                       >
-                        {clientesDaRota.map((_, indice) => (
-                          <option key={indice + 1} value={indice + 1}>
-                            {indice + 1}º
+                        {itensReordenaveis.map((_, indice) => (
+                          <option key={baseSequencia + indice} value={baseSequencia + indice}>
+                            {baseSequencia + indice}º
                           </option>
                         ))}
                       </select>

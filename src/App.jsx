@@ -12,6 +12,7 @@ import "./admin.css";
 import "./rotas.css";
 import "./modal-cidade.css";
 import Rotas from "./Rotas.jsx";
+import { calcularSequenciasPendentes } from "./lib/rotasSequencia.js";
 import {
   Users,
   MapPin,
@@ -2759,6 +2760,34 @@ function App() {
       return;
     }
 
+    const { data: itensAtualizados, error: erroItensAtualizados } = await supabase
+      .from("rota_clientes")
+      .select("*")
+      .eq("rota_id", rotaSelecionada.id)
+      .order("sequencia", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
+
+    if (erroItensAtualizados) {
+      alert("Falha ao validar a nova ordem da rota: " + erroItensAtualizados.message);
+      return;
+    }
+
+    const itensNormalizados = calcularSequenciasPendentes(itensAtualizados || [], -1, -1);
+
+    for (const itemNormalizado of itensNormalizados.filter(
+      (item) => !item?.status || String(item.status).toUpperCase() === "PENDENTE",
+    )) {
+      const { error: erroSequencia } = await supabase
+        .from("rota_clientes")
+        .update({ sequencia: itemNormalizado.sequencia })
+        .eq("id", itemNormalizado.id);
+
+      if (erroSequencia) {
+        alert("Falha ao ajustar a sequência da rota: " + erroSequencia.message);
+        return;
+      }
+    }
+
     setBuscaClienteRota("");
 
     await abrirRota(rotaSelecionada);
@@ -2962,39 +2991,73 @@ function App() {
       return;
     }
 
+    const statusItem = String(itemRota?.status || "PENDENTE").toUpperCase();
+
+    if (statusItem !== "PENDENTE") {
+      alert("Somente clientes pendentes podem ser reordenados.");
+      return;
+    }
+
     const posicaoDesejada = Number(novaSequencia);
+    const baseSequencia =
+      [...clientesDaRota].filter(
+        (item) =>
+          item?.status && String(item.status).toUpperCase() !== "PENDENTE",
+      ).length + 1;
+
+    const itensPendentes = [...clientesDaRota]
+      .filter(
+        (item) => !item?.status || String(item.status).toUpperCase() === "PENDENTE",
+      )
+      .sort((a, b) => {
+        const sequenciaA = Number(a.sequencia || 0);
+        const sequenciaB = Number(b.sequencia || 0);
+
+        if (sequenciaA !== sequenciaB) {
+          return sequenciaA - sequenciaB;
+        }
+
+        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      });
 
     if (
       !Number.isInteger(posicaoDesejada) ||
-      posicaoDesejada <= 0 ||
-      posicaoDesejada > clientesDaRota.length
+      posicaoDesejada < baseSequencia ||
+      posicaoDesejada > baseSequencia + itensPendentes.length - 1
     ) {
       alert("Informe uma sequência válida.");
       return;
     }
 
-    const itensOrdenados = [...clientesDaRota].sort(
-      (a, b) => Number(a.sequencia || 0) - Number(b.sequencia || 0),
-    );
-    const indiceAtual = itensOrdenados.findIndex(
+    const indiceAtual = itensPendentes.findIndex(
       (item) => item.id === itemRota.id,
     );
 
-    if (indiceAtual < 0 || indiceAtual === posicaoDesejada - 1) {
+    if (indiceAtual < 0) {
+      alert("Cliente não encontrado na fila pendente.");
       return;
     }
 
-    const [itemMovido] = itensOrdenados.splice(indiceAtual, 1);
-    itensOrdenados.splice(posicaoDesejada - 1, 0, itemMovido);
+    const itensReordenados = calcularSequenciasPendentes(
+      clientesDaRota,
+      indiceAtual,
+      posicaoDesejada,
+    );
 
-    const { error } = await supabase.rpc("reordenar_clientes_rota", {
-      p_rota_id: rotaSelecionada.id,
-      p_itens: itensOrdenados.map((item) => item.id),
-    });
+    const itensPendentesAtualizados = itensReordenados.filter(
+      (item) => !item?.status || String(item.status).toUpperCase() === "PENDENTE",
+    );
 
-    if (error) {
-      alert("Falha ao atualizar sequência: " + error.message);
-      return;
+    for (const itemAtualizado of itensPendentesAtualizados) {
+      const { error } = await supabase
+        .from("rota_clientes")
+        .update({ sequencia: itemAtualizado.sequencia })
+        .eq("id", itemAtualizado.id);
+
+      if (error) {
+        alert("Falha ao atualizar sequência: " + error.message);
+        return;
+      }
     }
 
     if (rotaSelecionada) {

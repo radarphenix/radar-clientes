@@ -196,11 +196,22 @@ function RotasOperacao({
               <div className="lista-proximos-clientes">
                 {proximosClientes.map((item) => {
                   const cliente = buscarCliente(item);
+                  const baseSequencia =
+                    (clientesDaRota || []).filter(
+                      (itemRota) =>
+                        itemRota?.status &&
+                        String(itemRota.status).toUpperCase() !== "PENDENTE",
+                    ).length + 1;
+                  const itensReordenaveis = (clientesDaRota || []).filter(
+                    (itemRota) =>
+                      !itemRota?.status ||
+                      String(itemRota.status).toUpperCase() === "PENDENTE",
+                  );
 
                   return (
                     <div className="linha-proximo-cliente" key={item.id}>
                       <div className="linha-proximo-seq">
-                        {modoReordenar ? (
+                        {modoReordenar && (!item.status || item.status === "PENDENTE") ? (
                           <select
                             className="input-sequencia-mini"
                             value={item.sequencia || 1}
@@ -209,9 +220,9 @@ function RotasOperacao({
                               alterarSequenciaClienteRota(item, e.target.value)
                             }
                           >
-                            {clientesDaRota.map((_, indice) => (
-                              <option key={indice + 1} value={indice + 1}>
-                                {indice + 1}º
+                            {itensReordenaveis.map((_, indice) => (
+                              <option key={baseSequencia + indice} value={baseSequencia + indice}>
+                                {baseSequencia + indice}º
                               </option>
                             ))}
                           </select>
