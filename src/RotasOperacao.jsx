@@ -23,8 +23,6 @@ function RotasOperacao({
 }) {
   return (
     <>
-      
-
       {buscaClienteRota.trim() !== "" && (
         <div className="grid-clientes">
           {clientes
@@ -48,7 +46,10 @@ function RotasOperacao({
                   <strong>Cidade:</strong> {cliente.cidade} / {cliente.uf}
                 </p>
 
-                <button type="button" onClick={() => adicionarClienteNaRota(cliente)}>
+                <button
+                  type="button"
+                  onClick={() => adicionarClienteNaRota(cliente)}
+                >
                   Adicionar
                 </button>
               </div>
@@ -155,7 +156,9 @@ function RotasOperacao({
                 <div className="cliente-atual-acoes-linha">
                   <button
                     className="btn-atual-visitar"
-                    onClick={() => alterarStatusClienteRota(clienteAtual, "VISITADO")}
+                    onClick={() =>
+                      alterarStatusClienteRota(clienteAtual, "VISITADO")
+                    }
                   >
                     Marcar visitado
                   </button>
@@ -166,20 +169,22 @@ function RotasOperacao({
                   >
                     Abrir Waze
                   </button>
-				  
-				    <button
-  type="button"
-  className="btn-atual-acompanhamento"
-  onClick={() =>
-    abrirAcompanhamento(buscarCliente(clienteAtual))
-  }
->
-  Acompanhamento
-</button>
+
+                  <button
+                    type="button"
+                    className="btn-atual-acompanhamento"
+                    onClick={() =>
+                      abrirAcompanhamento(buscarCliente(clienteAtual))
+                    }
+                  >
+                    Acompanhamento
+                  </button>
 
                   <button
                     className="btn-atual-cancelar"
-                    onClick={() => alterarStatusClienteRota(clienteAtual, "CANCELADO")}
+                    onClick={() =>
+                      alterarStatusClienteRota(clienteAtual, "CANCELADO")
+                    }
                   >
                     Cancelar
                   </button>
@@ -211,7 +216,8 @@ function RotasOperacao({
                   return (
                     <div className="linha-proximo-cliente" key={item.id}>
                       <div className="linha-proximo-seq">
-                        {modoReordenar && (!item.status || item.status === "PENDENTE") ? (
+                        {modoReordenar &&
+                        (!item.status || item.status === "PENDENTE") ? (
                           <select
                             className="input-sequencia-mini"
                             value={item.sequencia || 1}
@@ -221,7 +227,10 @@ function RotasOperacao({
                             }
                           >
                             {itensReordenaveis.map((_, indice) => (
-                              <option key={baseSequencia + indice} value={baseSequencia + indice}>
+                              <option
+                                key={baseSequencia + indice}
+                                value={baseSequencia + indice}
+                              >
                                 {baseSequencia + indice}º
                               </option>
                             ))}
@@ -250,7 +259,9 @@ function RotasOperacao({
                           disabled={!permiteAvisoWhatsAppRotaGrupoAtual}
                           onClick={() => reenviarAvisoWhatsAppCliente(item)}
                         >
-                          {item.aviso_whatsapp_em ? "Reenviar aviso" : "Primeiro aviso"}
+                          {item.aviso_whatsapp_em
+                            ? "Reenviar aviso"
+                            : "Primeiro aviso"}
                         </button>
                       </div>
                     </div>

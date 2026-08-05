@@ -407,7 +407,12 @@ function MeuDia({
             <div className="meu-dia-bloco-visitados">
               <div className="meu-dia-bloco-visitados-topo">
                 <span>Clientes visitados por rota</span>
-                <strong>{rotasComVisitados.reduce((total, rota) => total + rota.totalVisitados, 0)}</strong>
+                <strong>
+                  {rotasComVisitados.reduce(
+                    (total, rota) => total + rota.totalVisitados,
+                    0,
+                  )}
+                </strong>
               </div>
 
               {rotasComVisitados.length ? (
@@ -422,7 +427,8 @@ function MeuDia({
                         <span>
                           <strong>{rota.nome}</strong>
                           <small>
-                            {rota.responsavel_nome || "Sem responsável"} · {rota.totalVisitados} visitado(s)
+                            {rota.responsavel_nome || "Sem responsável"} ·{" "}
+                            {rota.totalVisitados} visitado(s)
                           </small>
                         </span>
                         <ChevronRight size={16} />
@@ -433,7 +439,9 @@ function MeuDia({
                             <CheckCircle size={14} />
                             <span>
                               {item.cliente?.cliente || "Cliente sem nome"}
-                              {item.data_prevista_visita ? ` · ${formatarData(item.data_prevista_visita)}` : ""}
+                              {item.data_prevista_visita
+                                ? ` · ${formatarData(item.data_prevista_visita)}`
+                                : ""}
                             </span>
                           </li>
                         ))}

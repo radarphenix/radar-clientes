@@ -28,29 +28,26 @@ function RotasManutencao({
           );
 
           return (
-            <div
-              className="card-manutencao"
-              key={item.id}
-            >
+            <div className="card-manutencao" key={item.id}>
               <div className="card-manutencao-topo">
-
                 <div
                   className={`card-manutencao-seq${modoReordenar ? " reordenando" : ""}`}
                 >
-                  {modoReordenar && (!item.status || item.status === "PENDENTE") ? (
+                  {modoReordenar &&
+                  (!item.status || item.status === "PENDENTE") ? (
                     <select
                       className="input-sequencia-mini"
                       value={item.sequencia || 1}
                       aria-label={`Mover ${cliente?.cliente || "cliente"} para a posição`}
                       onChange={(e) =>
-                        alterarSequenciaClienteRota(
-                          item,
-                          e.target.value
-                        )
+                        alterarSequenciaClienteRota(item, e.target.value)
                       }
                     >
                       {itensReordenaveis.map((_, indice) => (
-                        <option key={baseSequencia + indice} value={baseSequencia + indice}>
+                        <option
+                          key={baseSequencia + indice}
+                          value={baseSequencia + indice}
+                        >
                           {baseSequencia + indice}º
                         </option>
                       ))}
@@ -61,35 +58,23 @@ function RotasManutencao({
                 </div>
 
                 <div className="card-manutencao-info">
-
-                  <h3>
-                    {cliente?.cliente}
-                  </h3>
+                  <h3>{cliente?.cliente}</h3>
 
                   <p>
-                    <strong>Cidade:</strong>{" "}
-                    {cliente?.cidade} / {cliente?.uf}
+                    <strong>Cidade:</strong> {cliente?.cidade} / {cliente?.uf}
                   </p>
 
                   <p>
-                    <strong>Status:</strong>{" "}
-                    {item.status || "PENDENTE"}
+                    <strong>Status:</strong> {item.status || "PENDENTE"}
                   </p>
-
                 </div>
               </div>
 
               <div className="card-manutencao-acoes">
-
                 <button
                   type="button"
                   className="btn-mini-status pendente"
-                  onClick={() =>
-                    alterarStatusClienteRota(
-                      item,
-                      "PENDENTE"
-                    )
-                  }
+                  onClick={() => alterarStatusClienteRota(item, "PENDENTE")}
                 >
                   Pendente
                 </button>
@@ -97,12 +82,7 @@ function RotasManutencao({
                 <button
                   type="button"
                   className="btn-mini-status visitado"
-                  onClick={() =>
-                    alterarStatusClienteRota(
-                      item,
-                      "VISITADO"
-                    )
-                  }
+                  onClick={() => alterarStatusClienteRota(item, "VISITADO")}
                 >
                   Visitado
                 </button>
@@ -110,12 +90,7 @@ function RotasManutencao({
                 <button
                   type="button"
                   className="btn-mini-status cancelado"
-                  onClick={() =>
-                    alterarStatusClienteRota(
-                      item,
-                      "CANCELADO"
-                    )
-                  }
+                  onClick={() => alterarStatusClienteRota(item, "CANCELADO")}
                 >
                   Cancelado
                 </button>
@@ -123,9 +98,7 @@ function RotasManutencao({
                 <button
                   type="button"
                   className="btn-mini-status mapa"
-                  onClick={() =>
-                    abrirMaps(cliente)
-                  }
+                  onClick={() => abrirMaps(cliente)}
                 >
                   Waze
                 </button>
@@ -134,14 +107,11 @@ function RotasManutencao({
                   <button
                     type="button"
                     className="btn-mini-status remover"
-                    onClick={() =>
-                      removerClienteDaRota(item)
-                    }
+                    onClick={() => removerClienteDaRota(item)}
                   >
                     Remover
                   </button>
                 )}
-
               </div>
             </div>
           );

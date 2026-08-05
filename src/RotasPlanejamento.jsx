@@ -1,4 +1,11 @@
-import { ArrowUpDown, MapPin, Lock, Flag, RotateCcw, Trash2 } from "lucide-react";
+import {
+  ArrowUpDown,
+  MapPin,
+  Lock,
+  Flag,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 
 function RotasPlanejamento({
   rotaSelecionada,
@@ -201,16 +208,22 @@ function RotasPlanejamento({
                       ? "pendente"
                       : "padrao";
               const dataResumo = item.data_prevista_visita
-                ? new Date(`${item.data_prevista_visita}T00:00:00`).toLocaleDateString(
-                    "pt-BR",
-                    { day: "2-digit", month: "2-digit" },
-                  )
+                ? new Date(
+                    `${item.data_prevista_visita}T00:00:00`,
+                  ).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                  })
                 : "Sem data";
 
               return (
-                <div className={`linha-planejamento-rota${modoReordenar ? " reordenando" : ""}`} key={item.id}>
+                <div
+                  className={`linha-planejamento-rota${modoReordenar ? " reordenando" : ""}`}
+                  key={item.id}
+                >
                   <div className="linha-planejamento-rota-seq">
-                    {modoReordenar && (!item.status || item.status === "PENDENTE") ? (
+                    {modoReordenar &&
+                    (!item.status || item.status === "PENDENTE") ? (
                       <select
                         className="input-sequencia-mini"
                         value={item.sequencia || 1}
@@ -220,7 +233,10 @@ function RotasPlanejamento({
                         }
                       >
                         {itensReordenaveis.map((_, indice) => (
-                          <option key={baseSequencia + indice} value={baseSequencia + indice}>
+                          <option
+                            key={baseSequencia + indice}
+                            value={baseSequencia + indice}
+                          >
                             {baseSequencia + indice}º
                           </option>
                         ))}

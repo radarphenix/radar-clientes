@@ -1,19 +1,44 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { calcularSequenciasPendentes } from '../src/lib/rotasSequencia.js';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { calcularSequenciasPendentes } from "../src/lib/rotasSequencia.js";
 
-test('normaliza as sequências pendentes sem mexer nos visitados', () => {
+test("normaliza as sequências pendentes sem mexer nos visitados", () => {
   const itens = [
-    { id: 1, status: 'VISITADO', sequencia: 1, created_at: '2024-01-01T00:00:00Z' },
-    { id: 2, status: 'VISITADO', sequencia: 2, created_at: '2024-01-02T00:00:00Z' },
-    { id: 3, status: 'VISITADO', sequencia: 3, created_at: '2024-01-03T00:00:00Z' },
-    { id: 4, status: 'PENDENTE', sequencia: 4, created_at: '2024-01-04T00:00:00Z' },
-    { id: 5, status: 'PENDENTE', sequencia: 5, created_at: '2024-01-05T00:00:00Z' },
+    {
+      id: 1,
+      status: "VISITADO",
+      sequencia: 1,
+      created_at: "2024-01-01T00:00:00Z",
+    },
+    {
+      id: 2,
+      status: "VISITADO",
+      sequencia: 2,
+      created_at: "2024-01-02T00:00:00Z",
+    },
+    {
+      id: 3,
+      status: "VISITADO",
+      sequencia: 3,
+      created_at: "2024-01-03T00:00:00Z",
+    },
+    {
+      id: 4,
+      status: "PENDENTE",
+      sequencia: 4,
+      created_at: "2024-01-04T00:00:00Z",
+    },
+    {
+      id: 5,
+      status: "PENDENTE",
+      sequencia: 5,
+      created_at: "2024-01-05T00:00:00Z",
+    },
   ];
 
   const resultado = calcularSequenciasPendentes(itens, 0, 5);
   const pendentes = resultado
-    .filter((item) => item.status === 'PENDENTE')
+    .filter((item) => item.status === "PENDENTE")
     .sort((a, b) => a.sequencia - b.sequencia);
 
   assert.deepEqual(
@@ -25,16 +50,31 @@ test('normaliza as sequências pendentes sem mexer nos visitados', () => {
   );
 });
 
-test('normaliza os pendentes mesmo sem mudança de posição', () => {
+test("normaliza os pendentes mesmo sem mudança de posição", () => {
   const itens = [
-    { id: 1, status: 'VISITADO', sequencia: 1, created_at: '2024-01-01T00:00:00Z' },
-    { id: 2, status: 'PENDENTE', sequencia: 1, created_at: '2024-01-02T00:00:00Z' },
-    { id: 3, status: 'PENDENTE', sequencia: 2, created_at: '2024-01-03T00:00:00Z' },
+    {
+      id: 1,
+      status: "VISITADO",
+      sequencia: 1,
+      created_at: "2024-01-01T00:00:00Z",
+    },
+    {
+      id: 2,
+      status: "PENDENTE",
+      sequencia: 1,
+      created_at: "2024-01-02T00:00:00Z",
+    },
+    {
+      id: 3,
+      status: "PENDENTE",
+      sequencia: 2,
+      created_at: "2024-01-03T00:00:00Z",
+    },
   ];
 
   const resultado = calcularSequenciasPendentes(itens, -1, -1);
   const pendentes = resultado
-    .filter((item) => item.status === 'PENDENTE')
+    .filter((item) => item.status === "PENDENTE")
     .sort((a, b) => a.sequencia - b.sequencia);
 
   assert.deepEqual(
@@ -46,10 +86,20 @@ test('normaliza os pendentes mesmo sem mudança de posição', () => {
   );
 });
 
-test('mantém a sequência inicial quando a posição escolhida é a mesma', () => {
+test("mantém a sequência inicial quando a posição escolhida é a mesma", () => {
   const itens = [
-    { id: 1, status: 'PENDENTE', sequencia: 1, created_at: '2024-01-01T00:00:00Z' },
-    { id: 2, status: 'PENDENTE', sequencia: 2, created_at: '2024-01-02T00:00:00Z' },
+    {
+      id: 1,
+      status: "PENDENTE",
+      sequencia: 1,
+      created_at: "2024-01-01T00:00:00Z",
+    },
+    {
+      id: 2,
+      status: "PENDENTE",
+      sequencia: 2,
+      created_at: "2024-01-02T00:00:00Z",
+    },
   ];
 
   const resultado = calcularSequenciasPendentes(itens, 0, 1);
