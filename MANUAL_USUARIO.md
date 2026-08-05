@@ -52,6 +52,12 @@ Botoes:
 Tela: resumo operacional exibido logo apos o login, com prioridade para uso
 em celular e tambem adaptado ao desktop.
 
+No celular, o botao Menu do cabecalho abre um painel lateral com todos os
+atalhos (Clientes, Proximos, Rotas, Dashboard, Amostras, Promocao 30 anos e
+Administracao, conforme o perfil). Ele fecha ao tocar fora do painel ou ao
+escolher uma opcao. No desktop o menu lateral permanece sempre visivel e o
+botao nao aparece.
+
 Regras:
 
 - O Meu Dia usa a data prevista registrada em cada cliente da rota.
@@ -135,6 +141,13 @@ Areas e botoes:
 - Na opcao Toda a equipe, apresenta um consolidado por responsavel com
   quantidade de rotas, clientes e pendencias, alem da lista das rotas.
 - No celular, consolidado e rotas sao empilhados para manter a leitura.
+
+14. Clientes visitados por rota
+
+- Resume os clientes ja visitados nas rotas ativas.
+- Mostra o total consolidado, o responsavel, a quantidade por rota e ate tres
+  clientes de cada rota.
+- Ao tocar ou clicar no cabecalho, abre a rota correspondente.
 
 ## 5. Tela Alterar Senha
 
@@ -409,11 +422,14 @@ Botoes principais:
 
 - Funcao: habilita/encerra ajuste manual de sequencia.
 - Regras:
-- Cada cliente passa a exibir um seletor com todas as posicoes disponiveis.
+- Somente clientes pendentes podem ser reordenados.
+- Clientes visitados ou cancelados mantem suas posicoes.
+- Cada cliente pendente passa a exibir um seletor com as posicoes disponiveis
+  na fila pendente.
 - Ao escolher uma posicao ocupada, o cliente e movido para ela e os demais
-  sao deslocados automaticamente.
-- A sequencia sempre e normalizada de 1 ate o total de itens, sem duplicidades
-  ou lacunas.
+  pendentes sao deslocados automaticamente.
+- A fila pendente e normalizada sem duplicidades ou lacunas, iniciando depois
+  dos itens que ja nao estao pendentes.
 - O mesmo recurso esta disponivel no Planejamento, Operacao e Manutencao.
 
 2. Ordenar por distancia
@@ -444,6 +460,7 @@ Botoes principais:
 - Permite incluir o mesmo cliente mais de uma vez na mesma rota.
 - Cada inclusao representa uma visita independente e pode receber uma data
   prevista diferente, como uma visita hoje e outra amanha.
+- O mesmo cliente nao pode ter duas visitas com a mesma data na mesma rota.
 - Sequencia nova vai para o final.
 
 7. Primeiro aviso / Reenviar aviso (por cliente da lista)
@@ -463,6 +480,8 @@ Botoes principais:
 - A data pertence ao cliente dentro da rota, nao a rota inteira.
 - O campo e opcional para manter compatibilidade com rotas antigas.
 - Rotas finalizadas exibem a data sem permitir alteracao.
+- Ao alterar a data, o sistema impede que o mesmo cliente fique agendado duas
+  vezes para o mesmo dia na mesma rota.
 - A data alimenta as secoes Hoje, Atrasados, Proximos dias e Sem data do
   Meu Dia.
 
@@ -582,6 +601,37 @@ Botoes:
 3. Atualizar acesso
 
 - Funcao: recarregar as regras atuais salvas no banco.
+
+### 15.5 Promocao Veste Phenix - 30 anos (somente admin)
+
+Tela acessada pelo item "Promocao 30 anos" do menu, visivel apenas para o
+perfil admin.
+
+A inscricao dos participantes acontece fora do Radar, em pagina publica sem
+login, hospedada no mesmo dominio; o Supabase do projeto e usado apenas para
+gravar os cadastros (via Edge Function dedicada) e nao aplica as regras de
+acesso por perfil do restante do sistema.
+
+Areas e botoes:
+
+1. Resumo de inscricoes
+
+- Mostra o total de inscricoes e o total com status valida.
+
+2. Exportar Excel
+
+- Funcao: baixa planilha com todas as inscricoes (numero da sorte, dados do
+  participante, status e datas de auditoria).
+
+3. Apuracao pela Loteria Federal
+
+- Campos: numero apurado e data da extracao.
+- Funcao: registra oficialmente o resultado do sorteio.
+- Regra: seleciona a inscricao valida com menor diferenca absoluta para o
+  numero apurado; em caso de empate, vence a inscricao valida mais antiga.
+  A inscricao vencedora passa para o status contemplada e o resultado fica
+  registrado para auditoria.
+- Exige confirmacao explicita antes de executar, pois a apuracao e definitiva.
 
 ## 16. Regras de negocio consolidadas
 

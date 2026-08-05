@@ -9,9 +9,11 @@
 
 ## Snapshot Atual
 
-- Data: 2026-07-27
+- Data: 2026-08-05
 - Branch atual: `main`
-- Situacao de sincronizacao: branch local alinhada com `origin/main` (sem commits locais pendentes de push no momento da atualizacao).
+- Situacao de sincronizacao: lote de commits (reordenacao de rotas, Meu Dia
+  mobile, menu mobile, Promocao Veste Phenix e documentacao) enviado para
+  `origin/main` em 2026-08-05.
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Backup da evolucao de repeticao e reordenacao:
   `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
@@ -21,15 +23,33 @@
 
 ## Planejamento de Rotas
 
+- [Correcao em 2026-07-28] Reordenacao segura de clientes pendentes:
+  - somente itens com status `PENDENTE` podem ser movidos;
+  - clientes `VISITADO` e `CANCELADO` preservam suas posicoes, e os pendentes
+    sao renumerados de forma continua a partir da posicao seguinte;
+  - inclusoes novas tambem normalizam a fila pendente, evitando sequencias
+    duplicadas ou lacunas;
+  - a persistencia passou a atualizar diretamente cada item pendente, sem
+    depender da funcao RPC `reordenar_clientes_rota`;
+  - a ordenacao de leitura usa `sequencia` e `created_at` como desempate;
+  - a regra foi centralizada em `src/lib/rotasSequencia.js` e coberta por
+    `tests/rotas-sequencia.test.js`.
+- [Ajuste em 2026-07-28] Planejamento responsivo:
+  - os itens ganharam resumo visual de status e data prevista;
+  - acoes, metadados e seletor de sequencia foram reorganizados para celular;
+  - o botao Remover passou a usar icone com rotulo acessivel;
+  - o mesmo cliente continua podendo aparecer mais de uma vez, mas nao pode
+    ser agendado duas vezes para a mesma data dentro da mesma rota.
 - [Concluido em 2026-07-27] Visitas repetidas e reordenacao manual:
   - o mesmo cliente pode ser incluido mais de uma vez na mesma rota;
   - cada inclusao permanece independente, inclusive para informar datas
     previstas diferentes;
   - a digitacao instavel da sequencia foi substituida por um seletor de
     posicao no Planejamento, Operacao e Manutencao;
-  - ao mover um item para uma posicao ocupada, os seguintes sao deslocados e
-    toda a rota e renumerada de 1 a N;
-  - a funcao SQL `reordenar_clientes_rota` executa a mudanca de forma atomica;
+  - ao mover um item para uma posicao ocupada, os demais pendentes sao
+    deslocados e renumerados;
+  - a migration criou a funcao SQL `reordenar_clientes_rota`, posteriormente
+    substituida no frontend pela atualizacao direta dos itens pendentes;
   - a migration
     `20260727174500_rota_clientes_repeticao_reordenacao.sql` remove a
     unicidade rota/cliente, preserva indice de consulta e cria a funcao;
@@ -49,6 +69,27 @@
 
 ## Meu Dia
 
+- [Correcao em 2026-08-05] Navegacao do menu sumia no mobile:
+  - o menu lateral (`desktop-sidebar`) sempre foi exclusivo do desktop
+    (`display: none` abaixo de 901px) e a tela Meu Dia nao tinha atalhos
+    proprios para Clientes, Proximos, Amostras, Dashboard ou Administracao;
+  - o botao Menu do cabecalho so aparecia fora da tela Meu Dia e apenas
+    voltava para ela, entao ao chegar na Meu Dia no celular nao havia
+    caminho de volta para as demais telas;
+  - `src/App.jsx` ganhou o estado `menuMobileAberto`: na Meu Dia (mobile) o
+    botao do cabecalho vira um atalho que abre o menu lateral como painel
+    deslizante com fundo escurecido, fechando ao tocar fora ou ao escolher
+    uma opcao; fora da Meu Dia o botao mantem o comportamento anterior;
+  - `src/home.css` recebeu os estilos do painel deslizante, do fundo
+    escurecido e do botao dedicado ao mobile; o desktop nao foi alterado;
+  - validacao tecnica: `npm run lint` e `npm run build` executados com
+    sucesso.
+
+- [Ajuste em 2026-07-28] Resumo de clientes visitados por rota:
+  - o painel passou a exibir as rotas ativas que possuem clientes visitados;
+  - cada rota mostra responsavel, total de visitados e ate tres clientes;
+  - o cabecalho da rota abre diretamente sua execucao;
+  - o layout foi compactado para preservar a leitura no celular.
 - [Concluido em 2026-07-23] A antiga Home de cartoes foi substituida pelo
   painel operacional Meu Dia.
 - A funcionalidade foi isolada em `src/MeuDia.jsx`, com estilos proprios em
@@ -200,6 +241,38 @@
   - mensagens de erro continuam separadas do estado de carregamento;
   - backup anterior:
     `.codex-backups/20260724_021500_loading_clientes_proximos`.
+
+## Promocao Veste Phenix - 30 anos
+
+- [Concluido em 2026-08-04] Inscricao publica, apuracao e painel admin:
+  - a promocao vive no mesmo dominio do Radar, mas a inscricao publica NAO
+    tem acesso monitorado/autenticado como o restante do sistema; o Supabase
+    do projeto e usado somente para hospedar o cadastro das inscricoes;
+  - a gravacao acontece exclusivamente pela Edge Function
+    `supabase/functions/inscrever-veste-phenix`, que usa a service role e
+    valida: maior de 18, aceite de regulamento e privacidade, formato de
+    e-mail, CPF e CNPJ com digito verificador, janela oficial de inscricao
+    (06 a 08/10/2026, exceto em modo teste) e a flag
+    `PROMO_INSCRICOES_ATIVAS`;
+  - `cpf` e unico na tabela (bloqueia segunda inscricao com erro 409); o
+    `numero_sorte` e sorteado aleatoriamente entre 00000 e 99999, unico por
+    inscricao;
+  - apos o cadastro, o envio do e-mail de confirmacao ocorre em segundo
+    plano e nunca bloqueia a resposta; o status fica em
+    `email_status` (`pendente/enviando/enviado/falhou/aguardando_configuracao`);
+  - toda alteracao na tabela e auditada automaticamente via trigger em
+    `promocao_veste_phenix_30_anos_auditoria`;
+  - `src/PromocaoVestePhenix.jsx` e o painel administrativo (item "Promocao
+    30 anos" no menu), restrito ao perfil admin tanto no front quanto por
+    RLS no banco; lista inscricoes, exporta Excel e executa a apuracao
+    oficial pela funcao `apurar_veste_phenix` (menor diferenca absoluta
+    para o numero sorteado, desempate pela inscricao valida mais antiga);
+  - `limpar_testes_veste_phenix()` remove somente inscricoes de
+    `origem='formulario_teste'` e e restrita a admin;
+  - migrations locais: `20260804120000_veste_phenix_30_anos.sql`,
+    `20260804163000_promocao_email_assincrono.sql` e
+    `20260804173000_numero_sorte_aleatorio.sql`;
+  - `MANUAL_USUARIO.md` atualizado com a secao 15.5 descrevendo a tela.
 
 ## Mudancas Locais Relevantes Identificadas
 

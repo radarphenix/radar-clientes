@@ -1,16 +1,41 @@
-# React + Vite
+# Radar Clientes
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicacao web interna para consulta de clientes, planejamento e execucao de
+rotas, acompanhamento da agenda diaria e indicadores operacionais.
 
-Currently, two official plugins are available:
+## Funcionalidades principais
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Meu Dia com agenda, atrasos, proximas visitas e visitados por rota.
+- Consulta de clientes e busca por proximidade rodoviaria.
+- Planejamento, reordenacao e execucao de rotas.
+- Avisos de visita por WhatsApp e historico por rota.
+- Consulta de amostras e painel administrativo por perfil.
 
-## React Compiler
+## Perfis
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `admin`: acesso completo, supervisao da equipe e administracao.
+- `tecnico`: operacao de clientes, rotas, agenda e dashboard.
+- `representante`: operacao restrita aos clientes vinculados ao representante.
 
-## Expanding the ESLint configuration
+## Desenvolvimento local
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Requisitos: Node.js, npm e um projeto Supabase configurado no arquivo `.env`.
+
+```bash
+npm install
+npm run dev
+```
+
+Validacoes antes de entregar alteracoes:
+
+```bash
+npm run lint
+node --test tests/*.test.js
+npm run build
+```
+
+## Documentacao
+
+- `MANUAL_USUARIO.md`: telas, botoes e regras de negocio.
+- `CONTEXTO_PROJETO.md`: historico funcional, decisoes e estado atual.
+- `supabase/migrations/`: evolucao versionada do banco de dados.
