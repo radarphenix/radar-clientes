@@ -25,3 +25,7 @@ dist-ssr
 .env
 __pycache__/
 *.pyc
+
+# Backups locais e cache do Supabase CLI
+.codex-backups/
+supabase/.temp/
