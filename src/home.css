@@ -444,7 +444,95 @@
   display: none;
 }
 
+.desktop-sidebar-nav {
+  display: grid;
+  gap: 7px;
+}
+
+.desktop-sidebar-nav button {
+  width: 100%;
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: transparent;
+  color: #1f3f67;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.desktop-sidebar-nav button:hover,
+.desktop-sidebar-nav button.ativo {
+  background: #eef5ff;
+  color: #032b63;
+}
+
+.desktop-sidebar-nav button.ativo {
+  box-shadow: inset 4px 0 0 #032b63;
+}
+
+.desktop-sidebar-nav svg {
+  color: #0057d8;
+}
+
+.home-botao-menu-mobile {
+  position: static !important;
+  min-width: 104px !important;
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 0 18px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: white !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.home-botao-menu-mobile:hover {
+  background: white !important;
+  color: #032b63 !important;
+}
+
+.menu-mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(4, 20, 45, 0.45);
+}
+
+@media (max-width: 900px) {
+  .desktop-sidebar.menu-mobile-aberto {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 70;
+    width: min(280px, 82vw);
+    padding: 22px 20px 20px 20px;
+    overflow-y: auto;
+    border-right: 1px solid #dbe7f5;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: 8px 0 24px rgba(3, 43, 99, 0.25);
+  }
+}
+
 @media (min-width: 901px) {
+  .home-botao-menu-mobile {
+    display: none !important;
+  }
+
+
   .home-topo {
     position: fixed !important;
     top: 0 !important;
@@ -587,41 +675,6 @@
     padding: 22px 20px 20px 20px;
     border-right: 1px solid #dbe7f5;
     background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  }
-
-  .desktop-sidebar-nav {
-    display: grid;
-    gap: 7px;
-  }
-
-  .desktop-sidebar-nav button {
-    width: 100%;
-    min-height: 46px;
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-    padding: 0 12px;
-    border-radius: 10px;
-    background: transparent;
-    color: #1f3f67;
-    font-size: 15px;
-    font-weight: 700;
-    text-align: left;
-  }
-
-  .desktop-sidebar-nav button:hover,
-  .desktop-sidebar-nav button.ativo {
-    background: #eef5ff;
-    color: #032b63;
-  }
-
-  .desktop-sidebar-nav button.ativo {
-    box-shadow: inset 4px 0 0 #032b63;
-  }
-
-  .desktop-sidebar-nav svg {
-    color: #0057d8;
   }
 
   .home-menu-cards {
@@ -815,6 +868,7 @@
   }
 
   .home-botao-menu,
+  .home-botao-menu-mobile,
   .home-botao-sair {
     width: 42px !important;
     min-width: 42px !important;
@@ -825,6 +879,7 @@
   }
 
   .home-botao-menu svg,
+  .home-botao-menu-mobile svg,
   .home-botao-sair svg {
     width: 18px !important;
     height: 18px !important;

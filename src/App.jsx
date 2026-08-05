@@ -12,6 +12,8 @@ import "./admin.css";
 import "./rotas.css";
 import "./modal-cidade.css";
 import Rotas from "./Rotas.jsx";
+import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
+import "./promocao.css";
 import { calcularSequenciasPendentes } from "./lib/rotasSequencia.js";
 import {
   Users,
@@ -53,6 +55,7 @@ const TELAS_PERSISTIDAS = new Set([
   "amostras",
   "alterarSenha",
   "admin",
+  "promocaoVestePhenix",
 ]);
 
 const TELA_ATUAL_STORAGE_KEY = "radarClientes:telaAtual";
@@ -467,6 +470,7 @@ function App() {
   const [observacaoVisita, setObservacaoVisita] = useState("");
   const [gravandoVisita, setGravandoVisita] = useState(false);
   const [telaAtual, setTelaAtual] = useState(carregarTelaSalva);
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const [clientesDaRota, setClientesDaRota] = useState([]);
   const [historicoWhatsAppRota, setHistoricoWhatsAppRota] = useState([]);
   const [buscaClienteRota, setBuscaClienteRota] = useState("");
@@ -506,7 +510,6 @@ function App() {
     // Atualiza os dados do Meu Dia ao entrar ou retornar para a Home.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, perfil, telaAtual]);
-
 
   const [usuariosPerfis, setUsuariosPerfis] = useState([]);
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
@@ -2620,7 +2623,9 @@ function App() {
     );
 
     if (duplicado) {
-      alert("Este cliente já está agendado para esta data nesta rota. Escolha outra data ou mantenha o cadastro atual.");
+      alert(
+        "Este cliente já está agendado para esta data nesta rota. Escolha outra data ou mantenha o cadastro atual.",
+      );
       return;
     }
 
@@ -2744,7 +2749,9 @@ function App() {
     }
 
     const proximaSequencia = (clientesDaRota || []).length + 1;
-    const dataInicial = normalizarDataVisita(cliente?.data_prevista_visita || null);
+    const dataInicial = normalizarDataVisita(
+      cliente?.data_prevista_visita || null,
+    );
 
     const { error } = await supabase.from("rota_clientes").insert({
       rota_id: rotaSelecionada.id,
@@ -2760,22 +2767,31 @@ function App() {
       return;
     }
 
-    const { data: itensAtualizados, error: erroItensAtualizados } = await supabase
-      .from("rota_clientes")
-      .select("*")
-      .eq("rota_id", rotaSelecionada.id)
-      .order("sequencia", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true });
+    const { data: itensAtualizados, error: erroItensAtualizados } =
+      await supabase
+        .from("rota_clientes")
+        .select("*")
+        .eq("rota_id", rotaSelecionada.id)
+        .order("sequencia", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
 
     if (erroItensAtualizados) {
-      alert("Falha ao validar a nova ordem da rota: " + erroItensAtualizados.message);
+      alert(
+        "Falha ao validar a nova ordem da rota: " +
+          erroItensAtualizados.message,
+      );
       return;
     }
 
-    const itensNormalizados = calcularSequenciasPendentes(itensAtualizados || [], -1, -1);
+    const itensNormalizados = calcularSequenciasPendentes(
+      itensAtualizados || [],
+      -1,
+      -1,
+    );
 
     for (const itemNormalizado of itensNormalizados.filter(
-      (item) => !item?.status || String(item.status).toUpperCase() === "PENDENTE",
+      (item) =>
+        !item?.status || String(item.status).toUpperCase() === "PENDENTE",
     )) {
       const { error: erroSequencia } = await supabase
         .from("rota_clientes")
@@ -3007,7 +3023,8 @@ function App() {
 
     const itensPendentes = [...clientesDaRota]
       .filter(
-        (item) => !item?.status || String(item.status).toUpperCase() === "PENDENTE",
+        (item) =>
+          !item?.status || String(item.status).toUpperCase() === "PENDENTE",
       )
       .sort((a, b) => {
         const sequenciaA = Number(a.sequencia || 0);
@@ -3045,7 +3062,8 @@ function App() {
     );
 
     const itensPendentesAtualizados = itensReordenados.filter(
-      (item) => !item?.status || String(item.status).toUpperCase() === "PENDENTE",
+      (item) =>
+        !item?.status || String(item.status).toUpperCase() === "PENDENTE",
     );
 
     for (const itemAtualizado of itensPendentesAtualizados) {
@@ -3932,6 +3950,19 @@ function App() {
               <span>{nomeUsuarioTopo}</span>
               <small>{perfil?.tipo_perfil}</small>
             </div>
+            {telaAtual === "home" && (
+              <button
+                type="button"
+                className="home-botao-menu-mobile"
+                onClick={() => setMenuMobileAberto((valor) => !valor)}
+                aria-label="Abrir menu"
+                aria-expanded={menuMobileAberto}
+              >
+                <Menu size={18} />
+                Menu
+              </button>
+            )}
+
             {telaAtual !== "home" && (
               <button
                 type="button"
@@ -3957,12 +3988,25 @@ function App() {
         </div>
       </header>
 
-      <aside className="desktop-sidebar" aria-label="Menu principal">
+      {menuMobileAberto && (
+        <div
+          className="menu-mobile-backdrop"
+          onClick={() => setMenuMobileAberto(false)}
+        />
+      )}
+
+      <aside
+        className={`desktop-sidebar${menuMobileAberto ? " menu-mobile-aberto" : ""}`}
+        aria-label="Menu principal"
+      >
         <nav className="desktop-sidebar-nav">
           <button
             type="button"
             className={telaAtual === "home" ? "ativo" : ""}
-            onClick={() => setTelaAtual("home")}
+            onClick={() => {
+              setTelaAtual("home");
+              setMenuMobileAberto(false);
+            }}
           >
             <Menu size={20} />
             Meu Dia
@@ -3971,7 +4015,10 @@ function App() {
           <button
             type="button"
             className={telaAtual === "clientes" ? "ativo" : ""}
-            onClick={abrirTelaClientes}
+            onClick={() => {
+              abrirTelaClientes();
+              setMenuMobileAberto(false);
+            }}
           >
             <Users size={20} />
             Clientes
@@ -3980,7 +4027,10 @@ function App() {
           <button
             type="button"
             className={telaAtual === "proximos" ? "ativo" : ""}
-            onClick={abrirTelaProximos}
+            onClick={() => {
+              abrirTelaProximos();
+              setMenuMobileAberto(false);
+            }}
           >
             <MapPin size={20} />
             Próximos
@@ -3989,7 +4039,10 @@ function App() {
           <button
             type="button"
             className={telaAtual === "rotas" ? "ativo" : ""}
-            onClick={() => abrirListaRotas()}
+            onClick={() => {
+              abrirListaRotas();
+              setMenuMobileAberto(false);
+            }}
           >
             <Route size={20} />
             Rotas
@@ -4001,6 +4054,7 @@ function App() {
             onClick={() => {
               setTelaAtual("dashboard");
               carregarRotas();
+              setMenuMobileAberto(false);
             }}
           >
             <BarChart3 size={20} />
@@ -4011,7 +4065,10 @@ function App() {
             <button
               type="button"
               className={telaAtual === "amostras" ? "ativo" : ""}
-              onClick={() => abrirAmostrasComFiltros()}
+              onClick={() => {
+                abrirAmostrasComFiltros();
+                setMenuMobileAberto(false);
+              }}
             >
               <ClipboardList size={20} />
               Amostras
@@ -4021,7 +4078,10 @@ function App() {
           <button
             type="button"
             className={telaAtual === "alterarSenha" ? "ativo" : ""}
-            onClick={() => setTelaAtual("alterarSenha")}
+            onClick={() => {
+              setTelaAtual("alterarSenha");
+              setMenuMobileAberto(false);
+            }}
           >
             <Settings size={20} />
             Alterar senha
@@ -4030,10 +4090,25 @@ function App() {
           {perfil?.tipo_perfil === "admin" && (
             <button
               type="button"
+              className={telaAtual === "promocaoVestePhenix" ? "ativo" : ""}
+              onClick={() => {
+                setTelaAtual("promocaoVestePhenix");
+                setMenuMobileAberto(false);
+              }}
+            >
+              <Trophy size={20} />
+              Promoção 30 anos
+            </button>
+          )}
+
+          {perfil?.tipo_perfil === "admin" && (
+            <button
+              type="button"
               className={telaAtual === "admin" ? "ativo" : ""}
               onClick={() => {
                 setTelaAtual("admin");
                 carregarUsuariosPerfis();
+                setMenuMobileAberto(false);
               }}
             >
               <Settings size={20} />
@@ -4073,6 +4148,10 @@ function App() {
           abrirRota={abrirRotaPeloMeuDia}
           abrirListaRotas={() => abrirListaRotas()}
         />
+      )}
+
+      {perfil?.tipo_perfil === "admin" && telaAtual === "promocaoVestePhenix" && (
+        <PromocaoVestePhenix />
       )}
 
       {telaAtual === "alterarSenha" && (
