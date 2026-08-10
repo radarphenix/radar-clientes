@@ -1336,6 +1336,16 @@
   color: #475569;
 }
 
+.card-manutencao-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-manutencao-status .badge-status-rota {
+  margin-top: 0;
+}
+
 .card-manutencao-acoes {
   display: flex;
   flex-wrap: wrap;

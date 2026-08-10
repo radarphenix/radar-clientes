@@ -27,6 +27,19 @@ function RotasManutencao({
               String(itemRota.status).toUpperCase() === "PENDENTE",
           );
 
+          const statusTexto =
+            item.status === "VISITADO"
+              ? "Visitado"
+              : item.status === "CANCELADO"
+                ? "Cancelado"
+                : "Pendente";
+          const corStatus =
+            item.status === "VISITADO"
+              ? "visitado"
+              : item.status === "CANCELADO"
+                ? "cancelado"
+                : "pendente";
+
           return (
             <div className="card-manutencao" key={item.id}>
               <div className="card-manutencao-topo">
@@ -64,8 +77,11 @@ function RotasManutencao({
                     <strong>Cidade:</strong> {cliente?.cidade} / {cliente?.uf}
                   </p>
 
-                  <p>
-                    <strong>Status:</strong> {item.status || "PENDENTE"}
+                  <p className="card-manutencao-status">
+                    <strong>Status:</strong>
+                    <span className={`badge-status-rota ${corStatus}`}>
+                      {statusTexto}
+                    </span>
                   </p>
                 </div>
               </div>

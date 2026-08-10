@@ -133,6 +133,22 @@
     fazendo os campos empilhados encolherem para o conteudo em vez de
     ocupar a linha inteira; corrigido com `align-items: stretch` explicito
     dentro do bloco `@media (max-width: 900px)` do `.planejamento-mobile`.
+- [Correcao em 2026-08-10] Status na Manutencao parecia nao atualizar:
+  - usuario relatou que mudar um cliente de Visitado para Pendente na
+    Manutencao alterava o banco mas "nao visualmente", passando a
+    impressao de que a alteracao nao ocorreu;
+  - reproduzido com Playwright (login real, sem reload manual): o dado
+    e o texto realmente atualizavam na hora (`alterarStatusClienteRota`
+    ja chama `abrirRota` + `carregarRotas`, recarregando `clientesDaRota`
+    do banco) - o problema nao era falta de refresh, e sim que o status
+    aparecia como texto preto simples ("Status: VISITADO"), sem nenhuma
+    cor, ao contrario do Planejamento/Operacao que usam selo colorido;
+  - correcao: `RotasManutencao.jsx` passou a usar o mesmo selo
+    `badge-status-rota` (verde/vermelho/laranja) ja usado no
+    Planejamento, deixando a troca de status visualmente inequivoca no
+    instante do clique;
+  - validado visualmente com Playwright antes/depois do clique (sem
+    reload) - confirmado que o selo muda de cor imediatamente.
 
 ## Meu Dia
 

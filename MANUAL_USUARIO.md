@@ -512,6 +512,11 @@ Botoes principais:
 
 Tela: manutencao de itens da rota com foco em status e sequencia.
 
+O status de cada cliente aparece como um selo colorido (verde = Visitado,
+vermelho = Cancelado, laranja = Pendente), o mesmo padrao usado no
+Planejamento. A troca de cor confirma visualmente a alteracao assim que o
+botao e clicado, sem precisar recarregar a pagina.
+
 Botoes por cliente:
 
 1. Pendente
