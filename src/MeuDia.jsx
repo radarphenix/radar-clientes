@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Clock3,
   Route,
+  Search,
   UserCheck,
 } from "lucide-react";
 import "./meu-dia.css";
@@ -44,6 +45,7 @@ function MeuDia({
   selecionarUsuario,
   abrirRota,
   abrirListaRotas,
+  abrirPesquisaRotas,
 }) {
   const hoje = chaveDataLocal();
   const mapaClientes = new Map(
@@ -257,6 +259,11 @@ function MeuDia({
           <button type="button" onClick={abrirListaRotas}>
             <Route size={18} /> Ver todas as rotas
           </button>
+          {administrador && (
+            <button type="button" onClick={abrirPesquisaRotas}>
+              <Search size={18} /> Pesquisar rotas
+            </button>
+          )}
         </div>
       </section>
 

@@ -10,8 +10,10 @@ import Login from "./Login.jsx";
 import MeuDia from "./MeuDia.jsx";
 import "./admin.css";
 import "./rotas.css";
+import "./rotas-pesquisa.css";
 import "./modal-cidade.css";
 import Rotas from "./Rotas.jsx";
+import RotasPesquisa from "./RotasPesquisa.jsx";
 import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
 import "./promocao.css";
 import { calcularSequenciasPendentes } from "./lib/rotasSequencia.js";
@@ -36,6 +38,7 @@ import {
   ClipboardList,
   Menu,
   ArrowLeft,
+  Search,
 } from "lucide-react";
 
 function detectarLinkRecuperacao() {
@@ -56,7 +59,18 @@ const TELAS_PERSISTIDAS = new Set([
   "alterarSenha",
   "admin",
   "promocaoVestePhenix",
+  "pesquisaRotas",
 ]);
+
+const FILTROS_PESQUISA_ROTAS_INICIAIS = {
+  texto: "",
+  statusCliente: "",
+  statusRota: "",
+  responsavel: "",
+  incluidoPor: "",
+  dataInicio: "",
+  dataFim: "",
+};
 
 const TELA_ATUAL_STORAGE_KEY = "radarClientes:telaAtual";
 const ROTA_SELECIONADA_STORAGE_KEY = "radarClientes:rotaSelecionadaId";
@@ -446,6 +460,9 @@ function App() {
   });
   const [carregandoAmostras, setCarregandoAmostras] = useState(false);
   const [erroAmostras, setErroAmostras] = useState("");
+  const [filtrosPesquisaRotas, setFiltrosPesquisaRotas] = useState(
+    FILTROS_PESQUISA_ROTAS_INICIAIS,
+  );
   const [carregando, setCarregando] = useState(true);
   const [importando, setImportando] = useState(false);
   const [resumoGeo, setResumoGeo] = useState(null);
@@ -2182,6 +2199,24 @@ function App() {
     );
   }, [perfil, session?.user?.id, usuarioMeuDiaId, usuariosPerfis]);
 
+  const linhasPesquisaRotas = useMemo(() => {
+    const mapaClientes = new Map(
+      (clientes || []).map((cliente) => [cliente.id, cliente]),
+    );
+    const mapaUsuarios = new Map(
+      (usuariosPerfis || []).map((usuario) => [usuario.user_id, usuario]),
+    );
+
+    return (rotas || []).flatMap((rota) =>
+      (rota.clientes_agendados || []).map((item) => ({
+        ...item,
+        rota,
+        cliente: mapaClientes.get(item.cliente_id) || null,
+        incluidoPorNome: mapaUsuarios.get(item.incluido_por)?.nome || "",
+      })),
+    );
+  }, [rotas, clientes, usuariosPerfis]);
+
   async function atualizarCoordenadasPendentes() {
     if (perfil.tipo_perfil !== "admin") {
       alert("Somente administrador pode atualizar coordenadas.");
@@ -2442,6 +2477,21 @@ function App() {
     abrirListaRotas(status);
   }
 
+  function abrirPesquisaRotas() {
+    if (perfil?.tipo_perfil !== "admin") {
+      alert("Somente administrador pode acessar a Pesquisa de Rotas.");
+      return;
+    }
+
+    setFiltrosPesquisaRotas(FILTROS_PESQUISA_ROTAS_INICIAIS);
+    setTelaAtual("pesquisaRotas");
+    carregarRotas();
+  }
+
+  function limparFiltrosPesquisaRotas() {
+    setFiltrosPesquisaRotas(FILTROS_PESQUISA_ROTAS_INICIAIS);
+  }
+
   function voltarTelaAnterior() {
     if (telaAtual === "home") {
       return;
@@ -2526,7 +2576,7 @@ function App() {
     const { data: itensRota, error: erroItens } = await supabase
       .from("rota_clientes")
       .select(
-        "id, rota_id, cliente_id, status, visitado, sequencia, aviso_whatsapp_em, data_prevista_visita, horario_previsto_visita",
+        "id, rota_id, cliente_id, status, visitado, sequencia, aviso_whatsapp_em, data_prevista_visita, horario_previsto_visita, incluido_por, created_at",
       );
 
     if (erroItens) {
@@ -4185,6 +4235,7 @@ function App() {
           selecionarUsuario={setUsuarioMeuDiaId}
           abrirRota={abrirRotaPeloMeuDia}
           abrirListaRotas={() => abrirListaRotas()}
+          abrirPesquisaRotas={abrirPesquisaRotas}
         />
       )}
 
@@ -5240,10 +5291,23 @@ function App() {
             />
 
             <div className="dashboard-grupo">
-              <h3>
-                <Route size={22} />
-                Rotas
-              </h3>
+              <div className="dashboard-grupo-topo">
+                <h3>
+                  <Route size={22} />
+                  Rotas
+                </h3>
+
+                {perfil?.tipo_perfil === "admin" && (
+                  <button
+                    type="button"
+                    className="dashboard-botao-pesquisa"
+                    onClick={abrirPesquisaRotas}
+                  >
+                    <Search size={16} />
+                    Pesquisar rotas
+                  </button>
+                )}
+              </div>
 
               <div className="dashboard-indicadores">
                 <div className="dashboard-indicador">
@@ -5408,6 +5472,17 @@ function App() {
               </div>
             </div>
           </section>
+        )}
+
+        {telaAtual === "pesquisaRotas" && perfil?.tipo_perfil === "admin" && (
+          <RotasPesquisa
+            linhas={linhasPesquisaRotas}
+            usuariosPerfis={usuariosPerfis}
+            filtros={filtrosPesquisaRotas}
+            setFiltros={setFiltrosPesquisaRotas}
+            limparFiltros={limparFiltrosPesquisaRotas}
+            abrirRotaDaPesquisa={abrirRotaPeloMeuDia}
+          />
         )}
 
         {telaAtual === "rotas" && (

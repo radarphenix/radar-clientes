@@ -1,0 +1,279 @@
+.pesquisa-rotas-painel {
+  text-align: left;
+}
+
+.pesquisa-rotas-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.pesquisa-rotas-topo h2 {
+  margin: 0;
+  text-align: left;
+}
+
+.pesquisa-rotas-topo p {
+  margin: 6px 0 0 0;
+  color: #64748b;
+}
+
+.pesquisa-rotas-contador {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.pesquisa-rotas-filtros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.pesquisa-rotas-filtros label {
+  display: block;
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pesquisa-rotas-filtros input,
+.pesquisa-rotas-filtros select {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #cfe0f3;
+  border-radius: 10px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.pesquisa-rotas-filtros input:focus,
+.pesquisa-rotas-filtros select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  outline: none;
+}
+
+.pesquisa-rotas-acoes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0 10px 0;
+}
+
+.pesquisa-rotas-acoes button {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.pesquisa-rotas-acoes button:hover {
+  background: #cbd5e1;
+}
+
+.pesquisa-rotas-status {
+  margin: 18px 0 0 0;
+  color: #475569;
+}
+
+.pesquisa-rotas-lista {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.pesquisa-rotas-card {
+  width: 100%;
+  padding: 0;
+  border: 1px solid #dbe8f8;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.pesquisa-rotas-card:hover,
+.pesquisa-rotas-card[open] {
+  background: #f8fbff;
+  border-color: #60a5fa;
+}
+
+.pesquisa-rotas-card > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px 14px;
+  align-items: center;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pesquisa-rotas-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pesquisa-rotas-card-principal {
+  display: grid;
+  gap: 4px;
+  grid-column: 1;
+  min-width: 0;
+}
+
+.pesquisa-rotas-card-cliente {
+  overflow: hidden;
+  color: #071833;
+  font-size: 15px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pesquisa-rotas-card-sub {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pesquisa-rotas-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  grid-column: 2;
+}
+
+.pesquisa-rotas-card-meta .badge-status-rota {
+  margin-top: 0;
+}
+
+.pesquisa-rotas-card-data {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pesquisa-rotas-card-expandir {
+  color: #0057d8;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pesquisa-rotas-card-expandir::before {
+  content: "▸ ";
+}
+
+.pesquisa-rotas-card[open] .pesquisa-rotas-card-expandir::before {
+  content: "▾ ";
+}
+
+.pesquisa-rotas-card-detalhes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+  padding: 12px 14px 14px;
+  border-top: 1px solid #dbe8f8;
+  background: #ffffff;
+}
+
+.pesquisa-rotas-card-detalhes div {
+  min-width: 0;
+}
+
+.pesquisa-rotas-card-detalhes dt {
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pesquisa-rotas-card-detalhes dd {
+  margin: 0;
+  color: #0f172a;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.pesquisa-rotas-card-abrir {
+  display: flex;
+  align-items: flex-end;
+}
+
+.pesquisa-rotas-card-abrir button {
+  width: 100%;
+  min-height: 38px;
+}
+
+@media (max-width: 900px) {
+  .pesquisa-rotas-filtros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pesquisa-rotas-card-detalhes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .pesquisa-rotas-topo {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .pesquisa-rotas-contador {
+    width: 100%;
+    text-align: center;
+  }
+
+  .pesquisa-rotas-filtros {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pesquisa-rotas-filtros input,
+  .pesquisa-rotas-filtros select {
+    height: 42px;
+  }
+
+  .pesquisa-rotas-acoes button {
+    width: 100%;
+  }
+
+  .pesquisa-rotas-card > summary {
+    grid-template-columns: 1fr;
+    gap: 8px 10px;
+    padding: 11px 12px;
+  }
+
+  .pesquisa-rotas-card-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    grid-column: 1;
+  }
+
+  .pesquisa-rotas-card-detalhes {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 11px 12px 13px;
+  }
+}

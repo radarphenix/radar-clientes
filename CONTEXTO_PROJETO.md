@@ -166,6 +166,46 @@
     `incluido_por` = id do usuario logado e `created_at` preenchido;
     dado de teste removido do Supabase remoto ao final.
 
+## Pesquisa de Rotas
+
+- [Concluido em 2026-08-10] Nova tela de busca por cliente-dentro-da-rota:
+  - motivacao: `RotasLista.jsx` so filtra rotas inteiras; nao havia como
+    consultar no nivel de cliente (ex.: "quem incluiu esse cliente", "quais
+    clientes de tal cidade estao pendentes"), o que ficou mais relevante
+    depois de `rota_clientes.incluido_por` ter sido implementado sem tela;
+  - novo componente `src/RotasPesquisa.jsx` + `src/rotas-pesquisa.css`,
+    modelados no padrao ja usado na tela Amostras (`App.jsx`
+    `montarConsultaAmostras`/render ~5067): barra de filtros + lista de
+    cards `<details>` (resumo sempre visivel, detalhe expande ao tocar);
+  - diferença: filtragem 100% client-side (`useMemo` em `RotasPesquisa.jsx`)
+    sobre uma lista ja montada em `App.jsx` (`linhasPesquisaRotas`, mesma
+    logica do `agenda` de `MeuDia.jsx`: `rotas.flatMap(...)` juntando
+    `rota`, `cliente` e o nome de quem incluiu) - sem query nova ao
+    Supabase, os dados ja estao carregados para Meu Dia/Dashboard;
+  - `carregarRotas()` (`App.jsx`) ampliou o `select` de `rota_clientes`
+    para incluir `incluido_por, created_at` (unico dado que faltava);
+  - filtros: busca livre (cliente/codigo/cidade), status do cliente,
+    status da rota, responsavel pela rota, incluido por, periodo da data
+    prevista (de/ate); "Limpar filtros";
+  - cada card expandido mostra status da rota, responsavel, sequencia,
+    incluido por + data/hora de inclusao, e botao "Abrir rota" (reusa
+    `abrirRotaPeloMeuDia`, mesmo padrao ja usado pelo Meu Dia);
+  - acesso restrito a admin (confirmado com o usuario): guarda em
+    `abrirPesquisaRotas()` e no render condicional; botao "Pesquisar
+    rotas" aparece no Meu Dia (`MeuDia.jsx`, ao lado de "Ver todas as
+    rotas", tambem admin-only) e no Dashboard (grupo "Rotas",
+    `App.jsx`/`home.css` `.dashboard-grupo-topo`);
+  - `"pesquisaRotas"` adicionado a `TELAS_PERSISTIDAS` (`App.jsx`) para
+    manter o comportamento padrao de voltar do navegador/persistencia
+    entre as demais telas;
+  - sem paginacao server-side nesta v1 - lista vem toda da memoria; se o
+    volume crescer muito pode precisar de ajuste futuro;
+  - validado com Playwright (usuario demo): entrada pelo Meu Dia e pelo
+    Dashboard, filtro por status do cliente, card expandido conferindo
+    "incluido por" de um usuario diferente do responsavel pela rota
+    (cenario real que motivou a feature), clique em "Abrir rota", desktop
+    e mobile. Dados de teste inseridos via REST e removidos ao final.
+
 ## Meu Dia
 
 - [Correcao em 2026-08-05] Navegacao do menu sumia no mobile:

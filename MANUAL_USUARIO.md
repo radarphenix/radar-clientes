@@ -103,29 +103,34 @@ Areas e botoes:
 
 - Abre o modulo completo de planejamento e execucao de rotas.
 
-7. Clientes
+7. Pesquisar rotas (somente administrador)
+
+- Abre a tela de Pesquisa de Rotas (ver secao 17), com busca por cliente
+  dentro de qualquer rota.
+
+8. Clientes
 
 - Abre a consulta completa de clientes permitidos para o perfil.
 
-8. Proximos
+9. Proximos
 
 - Abre clientes proximos e inicia busca com raio padrao.
 
-9. Dashboard
+10. Dashboard
 
 - Abre os indicadores consolidados.
 
-10. Menu lateral
+11. Menu lateral
 
 - Meu Dia substitui o antigo item Inicio.
 - Clientes, Proximos, Rotas, Dashboard, Amostras, Alterar senha e Administracao
   continuam disponiveis conforme as permissoes do perfil.
 
-11. Sair
+12. Sair
 
 - Encerra a sessao e limpa os estados locais da navegacao.
 
-12. Meu Dia de (somente administrador)
+13. Meu Dia de (somente administrador)
 
 - Permite selecionar qualquer usuario ativo para acompanhar seus clientes.
 - A opcao Toda a equipe consolida os clientes de todos os responsaveis.
@@ -133,7 +138,7 @@ Areas e botoes:
   recalculados imediatamente.
 - O seletor ocupa uma linha propria no celular para preservar leitura e toque.
 
-13. Minhas rotas
+14. Minhas rotas
 
 - Na visao individual, mostra as rotas ABERTA, FECHADA e EM_ANDAMENTO
   atribuidas ao usuario selecionado.
@@ -144,7 +149,7 @@ Areas e botoes:
   quantidade de rotas, clientes e pendencias, alem da lista das rotas.
 - No celular, consolidado e rotas sao empilhados para manter a leitura.
 
-14. Clientes visitados por rota
+15. Clientes visitados por rota
 
 - Resume os clientes ja visitados nas rotas ativas.
 - Mostra o total consolidado, o responsavel, a quantidade por rota e ate tres
@@ -275,6 +280,11 @@ Acoes clicaveis:
 2. Rotas com pendencias (lista)
 
 - Funcao: abrir diretamente a rota selecionada.
+
+3. Pesquisar rotas (somente administrador)
+
+- Funcao: abre a tela de Pesquisa de Rotas (ver secao 17), ao lado do
+  titulo do grupo Rotas.
 
 ## 9. Tela Rotas - Lista de rotas
 
@@ -705,7 +715,53 @@ Areas e botoes:
 
 - As telas internas principais exibem um cabecalho com icone, titulo e descricao no mesmo padrao visual da tela Rotas.
 
-## 17. Governanca de documentacao
+## 17. Tela Pesquisa de Rotas (somente admin)
+
+Tela: busca de clientes dentro de qualquer rota, uma linha por
+cliente-agendado (nao por rota inteira). Complementa a tela Rotas, que so
+lista rotas completas.
+
+Acesso: somente administrador. Botao "Pesquisar rotas" aparece no Meu Dia
+(ao lado de "Ver todas as rotas") e no Dashboard (grupo Rotas).
+
+Filtros (todos combinaveis e aplicados na hora, sem precisar confirmar):
+
+1. Buscar
+
+- Texto livre: nome do cliente, codigo ou cidade.
+
+2. Status do cliente
+
+- Todos / Pendente / Visitado / Cancelado.
+
+3. Status da rota
+
+- Todas / Aberta / Fechada / Em andamento / Finalizada.
+
+4. Responsavel pela rota
+
+- Lista todos os usuarios ativos.
+
+5. Incluido por
+
+- Lista todos os usuarios ativos. Mostra quem adicionou aquele cliente na
+  rota - pode ser diferente do responsavel pela rota (ex.: admin incluindo
+  cliente na rota de um tecnico).
+
+6. Data prevista de / ate
+
+- Filtra pelo intervalo da data prevista de visita.
+
+7. Limpar filtros
+
+- Volta todos os filtros ao padrao (sem nenhum aplicado).
+
+Cada resultado aparece como um cartao resumido (cliente, rota, cidade,
+selo de status, data e horario previstos). Ao tocar no cartao ("Detalhes"),
+expande mostrando status da rota, responsavel, sequencia, quem incluiu o
+cliente e quando, e o botao "Abrir rota" (leva direto para a rota).
+
+## 18. Governanca de documentacao
 
 1. Este manual deve ser atualizado sempre que houver alteracao funcional aprovada no sistema.
 2. O arquivo de contexto do projeto tambem deve ser atualizado no mesmo bloco de entrega.
