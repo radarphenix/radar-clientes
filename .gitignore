@@ -29,3 +29,6 @@ __pycache__/
 # Backups locais e cache do Supabase CLI
 .codex-backups/
 supabase/.temp/
+
+# Credenciais de teste locais (nunca versionar - conta real no Supabase)
+CREDENCIAIS_TESTE_LOCAL.md

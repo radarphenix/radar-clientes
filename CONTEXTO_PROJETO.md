@@ -6,6 +6,11 @@
 - Antes de qualquer alteracao de codigo, criar backup local com data/hora em `.codex-backups/`.
 - Manter este arquivo atualizado ao final de cada bloco de trabalho relevante.
 - Sempre atualizar `MANUAL_USUARIO.md` quando alteracoes funcionais forem concluidas com sucesso.
+- Testes que inserem dados no Supabase remoto (rotas, clientes na rota,
+  amostras, etc.) devem ter esses dados apagados ao final do teste. Usar o
+  usuario demo documentado em `CREDENCIAIS_TESTE_LOCAL.md` (fora do git)
+  para login automatizado em QA; esse usuario/perfil pode permanecer, mas
+  os registros de teste que ele gerar, nao.
 
 ## Snapshot Atual
 
@@ -101,10 +106,15 @@
     em `package.json`;
   - usuario de teste criado via Auth Admin API (service role) para permitir
     login automatizado sem usar credenciais reais: `Demo Teste`
-    (`demo.teste.horario@radarclientes.local`), perfil `admin`, e rota
-    `ROTA DEMO TESTE (apagar)` com 2 clientes de exemplo (`EMPRESA MODELO
-    LTDA` e filial) ja existentes na base; permanecem no Supabase remoto
-    para reuso em testes futuros ate serem removidos deliberadamente;
+    (perfil `admin`, ativo) - credenciais completas em
+    `CREDENCIAIS_TESTE_LOCAL.md` (fora do git, ver `.gitignore`); esse
+    usuario e reutilizavel por qualquer IA/ferramenta que precise logar
+    para QA neste projeto;
+  - a rota de teste usada nesta sessao (`ROTA DEMO TESTE (apagar)`, com 2
+    clientes de exemplo ja existentes na base) foi removida do Supabase
+    remoto apos o QA - regra fixada: dados inseridos para teste (rotas,
+    rota_clientes, etc.) devem ser apagados ao final; o usuario/perfil
+    demo em si pode permanecer, pois e infraestrutura reutilizavel;
   - screenshots confirmaram que os selos de data/horario (Planejamento,
     Operacao, Meu Dia) ficaram bons em todas as larguras;
   - bug encontrado: no Planejamento, em telas >900px, os campos "Data
