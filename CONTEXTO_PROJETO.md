@@ -9,11 +9,12 @@
 
 ## Snapshot Atual
 
-- Data: 2026-08-05
+- Data: 2026-08-10
 - Branch atual: `main`
 - Situacao de sincronizacao: lote de commits (reordenacao de rotas, Meu Dia
   mobile, menu mobile, Promocao Veste Phenix e documentacao) enviado para
-  `origin/main` em 2026-08-05.
+  `origin/main` em 2026-08-05; alteracoes posteriores (horario previsto de
+  chegada na rota) commitadas apenas localmente, aguardando push oficial.
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Backup da evolucao de repeticao e reordenacao:
   `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
@@ -66,6 +67,23 @@
   - ajuste aplicado para desktop e mobile;
   - backup anterior:
     `.codex-backups/20260727_175447_ajuste_visual_reordenacao_manutencao`.
+
+- [Concluido em 2026-08-10] Horario previsto de chegada por cliente da rota:
+  - migration `20260810120000_rota_clientes_horario_previsto_visita.sql`
+    adiciona `public.rota_clientes.horario_previsto_visita time`;
+  - `RotasPlanejamento.jsx` ganhou campo de horario ao lado da data prevista,
+    permitindo ao responsavel pela rota (tecnico ou admin) definir a hora de
+    chegada esperada em cada cliente;
+  - o campo fica bloqueado quando a rota esta `FINALIZADA`, seguindo a mesma
+    regra da data prevista;
+  - a lista de clientes da rota exibe um selo com o horario definido, ao lado
+    do selo de data;
+  - `App.jsx` persiste a alteracao em `rota_clientes.horario_previsto_visita`
+    e mantem o resumo das rotas sincronizado;
+  - validacoes concluidas: lint (`eslint`) e build (`vite build`); migration
+    ainda nao aplicada no Supabase remoto (Docker local indisponivel para
+    testar `supabase db push` nesta maquina) - aplicar quando o push oficial
+    for autorizado.
 
 ## Meu Dia
 

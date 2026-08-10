@@ -1201,8 +1201,28 @@
 
 .linha-planejamento-rota-meta .badge-status-rota,
 .linha-planejamento-rota-meta .badge-data-rota,
+.linha-planejamento-rota-meta .badge-horario-rota,
 .linha-planejamento-rota-meta .badge-aviso-whatsapp {
   margin-top: 0;
+}
+
+.badge-horario-rota {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.linha-planejamento-rota-agendamento {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.linha-planejamento-rota-agendamento .data-prevista-cliente-rota {
+  flex: 1 1 160px;
 }
 
 .data-prevista-cliente-rota {
@@ -1718,7 +1738,7 @@
     grid-template-columns: 64px minmax(0, 1fr);
   }
 
-  .data-prevista-cliente-rota,
+  .linha-planejamento-rota-agendamento,
   .acoes-planejamento-rota {
     grid-column: 1 / -1;
   }
@@ -1972,6 +1992,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+
+  .planejamento-mobile .linha-planejamento-rota-agendamento {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .planejamento-mobile .data-prevista-cliente-rota {

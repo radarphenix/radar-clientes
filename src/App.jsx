@@ -2526,7 +2526,7 @@ function App() {
     const { data: itensRota, error: erroItens } = await supabase
       .from("rota_clientes")
       .select(
-        "id, rota_id, cliente_id, status, visitado, sequencia, aviso_whatsapp_em, data_prevista_visita",
+        "id, rota_id, cliente_id, status, visitado, sequencia, aviso_whatsapp_em, data_prevista_visita, horario_previsto_visita",
       );
 
     if (erroItens) {
@@ -2655,6 +2655,43 @@ function App() {
               clientes_agendados: (rota.clientes_agendados || []).map((item) =>
                 item.id === itemRota.id
                   ? { ...item, data_prevista_visita: dataPrevista }
+                  : item,
+              ),
+            }
+          : rota,
+      ),
+    );
+  }
+
+  async function alterarHorarioPrevistoClienteRota(itemRota, novoHorario) {
+    const horarioPrevisto = novoHorario || null;
+
+    const { error } = await supabase
+      .from("rota_clientes")
+      .update({ horario_previsto_visita: horarioPrevisto })
+      .eq("id", itemRota.id);
+
+    if (error) {
+      alert("Falha ao atualizar o horário previsto: " + error.message);
+      return;
+    }
+
+    setClientesDaRota((itensAtuais) =>
+      itensAtuais.map((item) =>
+        item.id === itemRota.id
+          ? { ...item, horario_previsto_visita: horarioPrevisto }
+          : item,
+      ),
+    );
+
+    setRotas((rotasAtuais) =>
+      rotasAtuais.map((rota) =>
+        rota.id === itemRota.rota_id
+          ? {
+              ...rota,
+              clientes_agendados: (rota.clientes_agendados || []).map((item) =>
+                item.id === itemRota.id
+                  ? { ...item, horario_previsto_visita: horarioPrevisto }
                   : item,
               ),
             }
@@ -5400,6 +5437,7 @@ function App() {
             abrirRotaCompleta={abrirRotaCompleta}
             alterarSequenciaClienteRota={alterarSequenciaClienteRota}
             alterarDataPrevistaClienteRota={alterarDataPrevistaClienteRota}
+            alterarHorarioPrevistoClienteRota={alterarHorarioPrevistoClienteRota}
             iniciarRota={iniciarRota}
             finalizarRota={finalizarRota}
             abrirAcompanhamento={abrirAcompanhamento}

@@ -485,7 +485,16 @@ Botoes principais:
 - A data alimenta as secoes Hoje, Atrasados, Proximos dias e Sem data do
   Meu Dia.
 
-10. Responsavel pela rota (admin)
+10. Horario previsto
+
+- Funcao: definir o horario estimado de chegada do tecnico em cada cliente
+  da rota.
+- Fica ao lado do campo Data prevista, na mesma linha do cliente.
+- O campo e opcional e independente da data.
+- Rotas finalizadas exibem o horario sem permitir alteracao.
+- O horario definido aparece como selo na lista de clientes da rota.
+
+11. Responsavel pela rota (admin)
 
 - Funcao: trocar responsavel da rota.
 - Regra: lista apenas usuarios ativos.

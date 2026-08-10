@@ -18,6 +18,7 @@ function RotasPlanejamento({
   removerClienteDaRota,
   alterarSequenciaClienteRota,
   alterarDataPrevistaClienteRota,
+  alterarHorarioPrevistoClienteRota,
   fecharRota,
   modoReordenar,
   setModoReordenar,
@@ -259,6 +260,11 @@ function RotasPlanejamento({
                         {statusTexto}
                       </span>
                       <span className="badge-data-rota">{dataResumo}</span>
+                      {item.horario_previsto_visita && (
+                        <span className="badge-horario-rota">
+                          {item.horario_previsto_visita.slice(0, 5)}
+                        </span>
+                      )}
                       {item.aviso_whatsapp_em && (
                         <span className="badge-aviso-whatsapp">
                           Avisado no WhatsApp
@@ -266,20 +272,37 @@ function RotasPlanejamento({
                       )}
                     </div>
 
-                    <label className="data-prevista-cliente-rota">
-                      <span>Data prevista</span>
-                      <input
-                        type="date"
-                        value={item.data_prevista_visita || ""}
-                        disabled={rotaSelecionada.status === "FINALIZADA"}
-                        onChange={(evento) =>
-                          alterarDataPrevistaClienteRota(
-                            item,
-                            evento.target.value,
-                          )
-                        }
-                      />
-                    </label>
+                    <div className="linha-planejamento-rota-agendamento">
+                      <label className="data-prevista-cliente-rota">
+                        <span>Data prevista</span>
+                        <input
+                          type="date"
+                          value={item.data_prevista_visita || ""}
+                          disabled={rotaSelecionada.status === "FINALIZADA"}
+                          onChange={(evento) =>
+                            alterarDataPrevistaClienteRota(
+                              item,
+                              evento.target.value,
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label className="data-prevista-cliente-rota horario-previsto-cliente-rota">
+                        <span>Horário previsto</span>
+                        <input
+                          type="time"
+                          value={item.horario_previsto_visita || ""}
+                          disabled={rotaSelecionada.status === "FINALIZADA"}
+                          onChange={(evento) =>
+                            alterarHorarioPrevistoClienteRota(
+                              item,
+                              evento.target.value,
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   {rotaSelecionada.status !== "FINALIZADA" && (
