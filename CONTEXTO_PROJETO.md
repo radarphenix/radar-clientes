@@ -18,10 +18,11 @@
 - Branch atual: `main`
 - Situacao de sincronizacao: lote de commits (reordenacao de rotas, Meu Dia
   mobile, menu mobile, Promocao Veste Phenix e documentacao) enviado para
-  `origin/main` em 2026-08-05; alteracoes posteriores (horario previsto de
-  chegada na rota) commitadas apenas localmente no git, aguardando push
-  oficial para o GitHub - a migration correspondente ja foi aplicada no
-  Supabase remoto para permitir teste local.
+  `origin/main` em 2026-08-05; segundo lote (horario previsto de chegada,
+  selo de status na Manutencao, `rota_clientes.incluido_por` e a tela
+  Pesquisa de Rotas) enviado para `origin/main` em 2026-08-10 - todas as
+  migrations correspondentes ja estavam aplicadas no Supabase remoto desde
+  os testes locais.
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Backup da evolucao de repeticao e reordenacao:
   `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
