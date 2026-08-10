@@ -2797,6 +2797,7 @@ function App() {
       status: "PENDENTE",
       visitado: false,
       data_prevista_visita: dataInicial,
+      incluido_por: session.user.id,
     });
 
     if (error) {

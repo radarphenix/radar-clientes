@@ -149,6 +149,22 @@
     instante do clique;
   - validado visualmente com Playwright antes/depois do clique (sem
     reload) - confirmado que o selo muda de cor imediatamente.
+- [Concluido em 2026-08-10] Auditoria de quem incluiu cliente na rota:
+  - migration `20260810170000_rota_clientes_incluido_por.sql` adiciona
+    `public.rota_clientes.incluido_por uuid` (sem FK, mesmo padrao de
+    `aviso_whatsapp_por`);
+  - `adicionarClienteNaRota` em `App.jsx` passou a gravar
+    `session.user.id` em `incluido_por` a cada inclusao; a data de
+    inclusao ja fica registrada em `created_at` (existente, automatico);
+  - objetivo: se um admin incluir/alterar algo na rota de outro usuario,
+    fica rastreavel quem fez a inclusao - relevante porque admins podem
+    mexer em rotas de qualquer responsavel;
+  - por pedido do usuario, nesta etapa so a gravacao foi implementada;
+    exibir esse dado em alguma tela fica para uma proxima tarefa;
+  - validado end-to-end com Playwright: login real, clique em "Adicionar"
+    no Planejamento, e conferido via REST que a linha criada tinha
+    `incluido_por` = id do usuario logado e `created_at` preenchido;
+    dado de teste removido do Supabase remoto ao final.
 
 ## Meu Dia
 
