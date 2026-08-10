@@ -289,7 +289,7 @@ function RotasPlanejamento({
                       </label>
 
                       <label className="data-prevista-cliente-rota horario-previsto-cliente-rota">
-                        <span>Horário previsto</span>
+                        <span>Horário</span>
                         <input
                           type="time"
                           value={item.horario_previsto_visita || ""}

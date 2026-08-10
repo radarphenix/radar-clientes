@@ -93,6 +93,36 @@
   - validacoes concluidas: lint (`eslint`) e build (`vite build`); servidor
     local (`npm run dev`) iniciado para validacao manual do usuario (login
     real necessario, nao automatizado pelo assistente).
+- [Correcao em 2026-08-10] QA visual do horario previsto (desktop/tablet/mobile)
+  encontrou e corrigiu um bug real de layout:
+  - Playwright (Chromium headless) instalado localmente como devDependency
+    ad-hoc (`npm install --no-save playwright` + `npx playwright install
+    chromium`) para permitir screenshots automatizados; nao ficou registrado
+    em `package.json`;
+  - usuario de teste criado via Auth Admin API (service role) para permitir
+    login automatizado sem usar credenciais reais: `Demo Teste`
+    (`demo.teste.horario@radarclientes.local`), perfil `admin`, e rota
+    `ROTA DEMO TESTE (apagar)` com 2 clientes de exemplo (`EMPRESA MODELO
+    LTDA` e filial) ja existentes na base; permanecem no Supabase remoto
+    para reuso em testes futuros ate serem removidos deliberadamente;
+  - screenshots confirmaram que os selos de data/horario (Planejamento,
+    Operacao, Meu Dia) ficaram bons em todas as larguras;
+  - bug encontrado: no Planejamento, em telas >900px, os campos "Data
+    prevista" e "Horario" dividiam a linha lado a lado com `flex: 1 1
+    160px`, deixando so ~72px para o `<input>` (rotulo de 80px + gap) -
+    o valor aparecia cortado (ex.: data mostrando so "10/01" e o icone do
+    seletor sobrepondo a borda);
+  - correcao: dentro de `.linha-planejamento-rota-agendamento`, os campos
+    passaram a empilhar rotulo acima do input (mesmo padrao ja usado no
+    mobile) em vez de rotulo-esquerda/input-direita, entao o input recebe
+    a largura cheia do campo;
+  - efeito colateral encontrado e corrigido no mesmo lote: o
+    `align-items: flex-start` adicionado para resolver o esticamento do
+    par de campos no desktop vazava para o breakpoint `<=900px`, onde
+    a mesma propriedade controla a largura (eixo cruzado) do modo coluna,
+    fazendo os campos empilhados encolherem para o conteudo em vez de
+    ocupar a linha inteira; corrigido com `align-items: stretch` explicito
+    dentro do bloco `@media (max-width: 900px)` do `.planejamento-mobile`.
 
 ## Meu Dia
 

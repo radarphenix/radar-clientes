@@ -1218,11 +1218,15 @@
 .linha-planejamento-rota-agendamento {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 8px;
 }
 
 .linha-planejamento-rota-agendamento .data-prevista-cliente-rota {
-  flex: 1 1 160px;
+  flex: 1 1 150px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
 }
 
 .data-prevista-cliente-rota {
@@ -1997,6 +2001,7 @@
   .planejamento-mobile .linha-planejamento-rota-agendamento {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 8px;
   }
 
