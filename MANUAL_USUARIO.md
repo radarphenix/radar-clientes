@@ -68,6 +68,8 @@ Regras:
   data.
 - Clientes atrasados sao aqueles com data anterior a hoje, status pendente e
   rota ainda ativa.
+- Quando o cliente tem horario previsto definido no Planejamento, o horario
+  aparece junto da rota e cidade em cada card da agenda.
 
 Areas e botoes:
 
@@ -385,6 +387,10 @@ Barra superior de acoes:
 
 Painel Cliente Atual:
 
+- Quando o cliente tem horario previsto definido no Planejamento, o painel
+  exibe "Horario previsto" junto dos demais dados (endereco, cidade,
+  telefone).
+
 1. Marcar visitado
 
 - Funcao: altera status do cliente para VISITADO.
@@ -402,6 +408,9 @@ Painel Cliente Atual:
 - Funcao: altera status do cliente para CANCELADO.
 
 Lista de Proximos Clientes:
+
+- Quando o cliente tem horario previsto definido no Planejamento, a linha
+  exibe um selo com o horario ao lado do status.
 
 1. Primeiro aviso / Reenviar aviso
 

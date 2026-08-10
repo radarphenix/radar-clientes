@@ -150,6 +150,13 @@ function RotasOperacao({
                       <strong>Telefone:</strong>{" "}
                       {buscarCliente(clienteAtual)?.telefone || "-"}
                     </p>
+
+                    {clienteAtual.horario_previsto_visita && (
+                      <p>
+                        <strong>Horário previsto:</strong>{" "}
+                        {clienteAtual.horario_previsto_visita.slice(0, 5)}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -250,6 +257,11 @@ function RotasOperacao({
 
                       <div className="linha-proximo-status">
                         <strong>{item.status || "PENDENTE"}</strong>
+                        {item.horario_previsto_visita && (
+                          <span className="badge-horario-rota">
+                            {item.horario_previsto_visita.slice(0, 5)}
+                          </span>
+                        )}
                         {item.aviso_whatsapp_em && (
                           <span className="badge-aviso-whatsapp">Avisado</span>
                         )}

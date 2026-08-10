@@ -201,6 +201,9 @@ function MeuDia({
           <small>
             {item.rota.nome} · {item.cliente?.cidade || "Cidade não informada"}
             {item.cliente?.uf ? `/${item.cliente.uf}` : ""}
+            {item.horario_previsto_visita
+              ? ` · ${item.horario_previsto_visita.slice(0, 5)}`
+              : ""}
           </small>
         </span>
         <span className="meu-dia-cliente-sequencia">

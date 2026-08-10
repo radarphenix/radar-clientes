@@ -14,7 +14,9 @@
 - Situacao de sincronizacao: lote de commits (reordenacao de rotas, Meu Dia
   mobile, menu mobile, Promocao Veste Phenix e documentacao) enviado para
   `origin/main` em 2026-08-05; alteracoes posteriores (horario previsto de
-  chegada na rota) commitadas apenas localmente, aguardando push oficial.
+  chegada na rota) commitadas apenas localmente no git, aguardando push
+  oficial para o GitHub - a migration correspondente ja foi aplicada no
+  Supabase remoto para permitir teste local.
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Backup da evolucao de repeticao e reordenacao:
   `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
@@ -80,10 +82,17 @@
     do selo de data;
   - `App.jsx` persiste a alteracao em `rota_clientes.horario_previsto_visita`
     e mantem o resumo das rotas sincronizado;
-  - validacoes concluidas: lint (`eslint`) e build (`vite build`); migration
-    ainda nao aplicada no Supabase remoto (Docker local indisponivel para
-    testar `supabase db push` nesta maquina) - aplicar quando o push oficial
-    for autorizado.
+  - `RotasOperacao.jsx` passou a exibir o horario previsto no painel do
+    Cliente Atual e como selo em cada item de Proximos Clientes;
+  - `MeuDia.jsx` passou a exibir o horario previsto junto da rota/cidade em
+    cada card da agenda (atrasados, hoje, sem data, proximos);
+  - migration aplicada no Supabase remoto (projeto usado tambem para
+    desenvolvimento local) via `supabase db push --linked` em 2026-08-10;
+    nao ha ambiente Docker local nesta maquina, entao o teste local roda
+    contra o mesmo projeto remoto vinculado;
+  - validacoes concluidas: lint (`eslint`) e build (`vite build`); servidor
+    local (`npm run dev`) iniciado para validacao manual do usuario (login
+    real necessario, nao automatizado pelo assistente).
 
 ## Meu Dia
 
