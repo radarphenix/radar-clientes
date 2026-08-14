@@ -72,7 +72,10 @@ function montarEvento(item: {
 }) {
   const uid = `rota-cliente-${item.id}@radar-clientes`;
   const label = statusLegivel(item.status, item.visitado);
-  const status = item.status === "CANCELADO" ? "CANCELLED" : "CONFIRMED";
+  // Nao usar STATUS:CANCELLED do iCal: Google Calendar (e a maioria dos
+  // apps de agenda) oculta esses eventos por completo em vez de riscar.
+  // O prefixo "[Cancelado]" no titulo ja comunica isso mantendo o evento visivel.
+  const status = "CONFIRMED";
   const prefixo = label === "Pendente" ? "" : `[${label}] `;
   const summary = escaparTextoIcs(
     `${prefixo}Visita: ${item.clienteNome || "Cliente"}`,
