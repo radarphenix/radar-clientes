@@ -14,7 +14,7 @@
 
 ## Snapshot Atual
 
-- Data: 2026-08-10
+- Data: 2026-08-13
 - Branch atual: `main`
 - Situacao de sincronizacao: lote de commits (reordenacao de rotas, Meu Dia
   mobile, menu mobile, Promocao Veste Phenix e documentacao) enviado para
@@ -22,13 +22,112 @@
   selo de status na Manutencao, `rota_clientes.incluido_por` e a tela
   Pesquisa de Rotas) enviado para `origin/main` em 2026-08-10 - todas as
   migrations correspondentes ja estavam aplicadas no Supabase remoto desde
-  os testes locais.
+  os testes locais. Feed de Agenda do Tecnico (.ics) concluido em
+  2026-08-13, migration e edge function ja aplicadas no Supabase remoto;
+  gerenciamento do link redesenhado no mesmo dia para admin-only (via tela
+  Administracao) apos feedback de uso; Agenda Geral (todos os tecnicos) e
+  menu suspenso com "Adicionar ao Google Calendar" (Administracao e Meu
+  Dia) concluidos no mesmo dia - todas as mudancas de banco ja aplicadas
+  no Supabase remoto, front-end sem deploy adicional necessario. PWA
+  instalavel (icone + tela cheia no celular) concluido em 2026-08-14,
+  puramente front-end (sem mudanca de banco). Nada desse bloco foi
+  commitado/enviado ao GitHub ainda.
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Backup da evolucao de repeticao e reordenacao:
   `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
 - Migration de Amostras aplicada no Supabase remoto via `supabase db push --linked` em 2026-07-03.
 - Ajuste de contraste global aplicado em `src/app-global.css` e `src/index.css` para melhorar leitura de titulos e campos de busca.
 - Cabecalho de contexto padronizado em `src/App.jsx` com estilo compartilhado em `src/app-global.css` para clientes, amostras, dashboard, administracao e alterar senha.
+
+## PWA (aplicativo instalavel)
+
+- [Concluido em 2026-08-14] Radar de Clientes instalavel no celular
+  (icone na tela inicial, abre em tela cheia):
+  - motivacao: usuario listou algumas evolucoes possiveis do Radar e
+    escolheu comecar por essa - tecnicos abrindo o navegador e digitando
+    a URL toda vez; guardadas as demais ideias em memoria (QR check-in,
+    relatorio periodico, push, rota otimizada, historico do cliente);
+  - `vite-plugin-pwa` (novo devDependency) adicionado ao
+    `vite.config.js`: gera `manifest.webmanifest` e um service worker
+    (Workbox, `registerType: 'autoUpdate'`) automaticamente no build; sem
+    `runtimeCaching` customizado, entao so os arquivos do build (JS/CSS)
+    ficam em cache - chamadas ao Supabase/Nominatim/OSRM continuam
+    sempre indo pra rede, sem risco de mostrar dado desatualizado como
+    se fosse atual;
+  - **icone do app**: nao existia nenhum icone quadrado da marca Phenix
+    em lugar nenhum acessivel (procurado no proprio repo, em
+    `.codex-backups` e nos outros projetos do usuario -
+    `MWAgendador`/`MWMenuWhatsApp` - sem sucesso); usada a logo oficial
+    retangular (asa + "PHENIX") ja hotlinkada ao vivo no cabecalho do
+    app (`https://phenixonline.com.br/wp-content/uploads/2021/05/Logo-Branco-1.png`),
+    baixada para `src/pwa-icon-source.png` e composta sobre um fundo
+    solido na cor azul da marca (`#0057d8`, mesma dos botoes do app
+    inteiro) para virar um icone quadrado;
+  - **bug encontrado na ferramenta `@vite-pwa/assets-generator`**
+    (tentativa inicial, depois removida): ao usar essa ferramenta oficial
+    para gerar o conjunto de icones automaticamente a partir da logo
+    retangular, o resultado saia com a logo inteira sumindo (virava duas
+    faixas azuis solidas com um vao branco no meio, sem nenhum traço do
+    desenho) - a letterbox/enquadramento ficava certo, mas a composicao
+    da transparencia dentro da area do logo se perdia; tentei reconverter
+    o PNG de indexado para RGBA puro e o problema persistiu, ou seja nao
+    era o formato do arquivo de origem, e sim algo na propria composicao
+    de resize+background da ferramenta com essa imagem; a ferramenta foi
+    removida do projeto (`npm uninstall @vite-pwa/assets-generator`, TS
+    config apagado) para nao deixar configuracao quebrada/enganosa no
+    repo;
+  - **solucao usada**: script Node avulso com `sharp` (instalado
+    temporariamente so pra essa tarefa) fazendo a composicao em duas
+    etapas - primeiro redimensiona a logo mantendo a transparencia real
+    (`fit: 'inside'`, sem forcar canvas quadrado nesse passo), depois
+    cria um canvas solido azul do tamanho final e faz `composite()` da
+    logo redimensionada centralizada por cima; gerou `pwa-64x64.png`,
+    `pwa-192x192.png`, `pwa-512x512.png`, `apple-touch-icon-180x180.png`
+    (todos com a logo ocupando ~70% da largura) e
+    `maskable-icon-512x512.png` (logo menor, ~45%, dentro da area segura
+    de recorte adaptativo do Android) - todos movidos para `public/`;
+    sem `favicon.ico` (sharp nao gera esse formato) - o favicon usa o
+    PNG de 64x64 diretamente via `<link rel="icon" type="image/png">`,
+    suportado por todos os navegadores atuais;
+  - `index.html`: favicon local substitui a URL remota antiga
+    (`Logo-azul.png` do site da Phenix); adicionadas
+    `<meta name="theme-color">` e as meta tags de iOS
+    (`apple-mobile-web-app-capable`, `apple-mobile-web-app-title`,
+    `apple-touch-icon`) - o plugin injeta o `<link rel="manifest">` e o
+    script de registro do service worker automaticamente no build; `lang`
+    do `<html>` corrigido de `en` para `pt-BR` de passagem (app inteiro
+    em portugues);
+  - `vite.config.js`: bloco `manifest` com `name: "Radar de Clientes
+    Phenix"`, `short_name: "Radar Clientes"`, `display: "standalone"`,
+    `background_color: "#edf4fb"` (mesmo tom claro de fundo do app),
+    `theme_color: "#0057d8"`, `lang: "pt-BR"` (o plugin usa `"en"` como
+    padrao se essa chave nao for definida - corrigido explicitamente);
+  - validacoes: `npm run build` gera `dist/sw.js`,
+    `dist/manifest.webmanifest`, `dist/registerSW.js` sem erros; testado
+    com Playwright contra `npm run preview` (service worker so registra
+    em contexto seguro, por isso preview/produção, nao o `npm run dev`
+    comum): manifest retorna 200 com JSON valido (nome, short_name,
+    display, 4 icones corretos), cada arquivo de icone (incluindo
+    apple-touch-icon) retorna 200, `navigator.serviceWorker.getRegistrations()`
+    mostra 1 registro ativo no escopo certo, meta tags de iOS presentes
+    no DOM - cobre todo criterio tecnico de instalabilidade automatizavel;
+    o prompt real de "instalar app" do sistema operacional (Android/iOS)
+    nao e simulavel por Playwright, fica como teste manual pendente do
+    usuario no celular;
+  - nota tecnica: `npm run dev` nao ativa o service worker por padrao
+    (`devOptions` nao foi habilitado) - o comportamento de instalacao so
+    aparece no build de producao (`npm run preview` localmente, ou o
+    ambiente publicado); isso e o comportamento padrao/esperado do
+    `vite-plugin-pwa`, nao uma limitacao introduzida aqui;
+  - `npm audit`: a instalacao trouxe (e depois removeu, junto do
+    `@vite-pwa/assets-generator`) uma vulnerabilidade alta em `sharp`
+    (`libvips`, uso pontual/dev-only, sem exposicao em producao); `npm
+    audit fix` (sem `--force`) resolveu as demais vulnerabilidades que
+    apareceram com as novas dependencias; sobrou so a vulnerabilidade
+    pre-existente do `xlsx` (sem correcao disponivel, nao relacionada a
+    este trabalho);
+  - `MANUAL_USUARIO.md`: nova secao 18 "Instalacao como aplicativo
+    (PWA)" com o passo a passo de instalar no Android/iOS.
 
 ## Planejamento de Rotas
 
@@ -207,7 +306,499 @@
     (cenario real que motivou a feature), clique em "Abrir rota", desktop
     e mobile. Dados de teste inseridos via REST e removidos ao final.
 
+## Agenda do Tecnico (feed .ics)
+
+- [Concluido em 2026-08-13] Feed de calendario pessoal (.ics) por usuario:
+  - motivacao: usuario perguntou se dava para vincular a data/hora prevista
+    de cada rota a agenda (Google Calendar/Outlook) do tecnico usando o
+    email ja cadastrado - conclusao da conversa: nao da para escrever
+    direto na agenda de alguem so com o email (exige OAuth do proprio
+    usuario ou dominio Google Workspace administrado), entao a solucao
+    adotada foi um feed `.ics` proprio, combinando assinatura automatica
+    (fora do nosso controle, tipicamente 12-24h de atraso) com um botao de
+    atualizacao manual imediata usando o mesmo link;
+  - migration `20260813120000_perfis_calendario_token.sql` adiciona
+    `public.perfis.calendario_token uuid` (aleatorio, indice unico) -
+    token secreto por usuario, usado como autenticacao do feed via query
+    string (sem exigir login do Google, ja que o poller do Google Calendar
+    nao envia header de autenticacao);
+  - nova Edge Function `supabase/functions/agenda-tecnico-ics` (`verify_jwt
+    = false`, mesmo padrao ja usado em `inscrever-veste-phenix`): recebe
+    `?token=...`, resolve o usuario pelo `calendario_token`, busca as
+    rotas onde ele e `usuario_responsavel` e monta o `.ics` com as visitas
+    (`rota_clientes`) com `data_prevista_visita` entre 7 dias atras e 90
+    dias a frente; nao ha campo de "data de fechamento" da rota no schema,
+    entao a janela de datas da visita (nao o status da rota) e o que
+    decide o que entra no feed;
+  - cada visita gera um `VEVENT` com `UID` estavel
+    (`rota-cliente-<id>@radar-clientes`) - reimportar o arquivo atualiza o
+    evento existente em vez de duplicar; visitas `CANCELADO` aparecem como
+    `STATUS:CANCELLED` em vez de somem do feed; sem horario definido vira
+    evento de dia inteiro; com horario, duracao padrao de 1h, convertendo
+    de horario local (Brasil, UTC-3 fixo, sem horario de verao) para UTC;
+  - `src/supabaseClient.js` passou a exportar `supabaseUrl` (antes so
+    local) para montar a URL da function em outros arquivos;
+  - `src/MeuDia.jsx` ganhou o botao "Atualizar agenda agora" (link direto
+    para o `.ics`, com `download`) no toolbar, ao lado de "Ver todas as
+    rotas"; estilos em `src/meu-dia.css`;
+  - nova tela `src/MinhaAgenda.jsx` (+ `src/minha-agenda.css`), acessivel
+    pelo menu lateral ("Minha agenda"): mostra o link de assinatura
+    (`webcal://...`) com botao copiar, o link "Baixar agora" e o botao
+    "Gerar novo link" (regenera o token, invalidando o link anterior
+    imediatamente - util se o link vazar);
+  - `src/App.jsx` ganhou `regenerarTokenAgenda()` (atualiza
+    `perfis.calendario_token` via `crypto.randomUUID()`, com confirmacao
+    do usuario antes de invalidar o link atual) e monta a URL do feed a
+    partir de `perfil.calendario_token`;
+  - migration aplicada e function publicada no Supabase remoto via
+    `supabase db push` / `supabase functions deploy agenda-tecnico-ics`
+    (nao ha Docker local nesta maquina, entao nao e possivel rodar
+    `supabase functions serve` localmente contra uma copia da base - o
+    teste local roda contra o mesmo projeto remoto);
+  - validacoes concluidas: `eslint` e `vite build` sem erros; logica pura
+    de geracao do `.ics` (conversao de fuso, evento de dia inteiro,
+    escaping de texto, janela de datas) testada isoladamente em Node antes
+    do deploy; apos o deploy, testado via REST com o usuario demo
+    (`CREDENCIAIS_TESTE_LOCAL.md`): token invalido retorna 404, feed vazio
+    e valido sem rotas, e uma rota/visita de teste apareceu corretamente
+    no `.ics` (horario convertido, escaping, `LOCATION` do endereco do
+    cliente) - dados de teste (`ROTA DEMO TESTE AGENDA (apagar)`, id 22, e
+    seu `rota_clientes` id 78) removidos do Supabase remoto ao final;
+  - `MANUAL_USUARIO.md` atualizado (secao 4, item 16, e nova secao 18
+    "Tela Minha Agenda").
+
+- [Redesenho em 2026-08-13] Gerenciamento do link de agenda passou a ser
+  admin-only:
+  - motivacao: o usuario (admin) testou a v1 self-service e trouxe dois
+    pontos - (1) queria ver a agenda de um tecnico especifico (ex.: Diego)
+    na propria agenda pessoal, o que so era possivel se o proprio tecnico
+    pegasse e repassasse o link (tela "Minha agenda" era self-service);
+    (2) o item solto "Minha agenda" no menu lateral, disponivel pra
+    qualquer perfil, nao fazia sentido no fluxo de trabalho - quem
+    controla/distribui esse tipo de link e o admin, do mesmo jeito que ja
+    controla o aviso de visita por WhatsApp;
+  - removido: item de menu "Minha agenda" e a tela self-service
+    (`telaAtual === "minhaAgenda"`), acessivel antes a qualquer perfil
+    logado; removida tambem a funcao `regenerarTokenAgenda()` (ligada a
+    `session.user.id`);
+  - adicionado: a tela Administracao (`src/App.jsx`, lista de usuarios ja
+    existente) ganhou uma acao "Agenda" por usuario (ao lado de
+    "Editar"/"Atualizar senha"), abrindo um modal (mesmo padrao do modal
+    de contatos WhatsApp ja usado no projeto) com o link daquele usuario
+    especifico - copiar, baixar agora e gerar novo link;
+  - `regenerarTokenAgendaUsuario(usuario)` substitui a funcao antiga,
+    aceitando o usuario alvo (nao so o proprio logado), gated por
+    `perfil?.tipo_perfil === "admin"`; se o alvo for o proprio admin
+    logado, tambem atualiza o estado `perfil` para o botao "Atualizar
+    agenda agora" (Meu Dia) refletir o novo token na hora, sem reload;
+  - `src/MinhaAgenda.jsx` deixou de ser uma tela cheia (removido o
+    cabeçalho `secao-contexto` e o wrapper `<section className="painel-admin">`)
+    e virou um painel reutilizavel (`<div className="admin-bloco">`),
+    reaproveitado dentro do novo modal;
+  - `src/minha-agenda.css` ganhou as classes do modal
+    (`.modal-agenda-usuario-overlay/-usuario/-usuario-cabecalho`),
+    espelhando `.modal-contatos-whatsapp-*` (`src/clientes.css`);
+    `src/admin.css` (`.admin-card-acoes-usuario button`) ganhou
+    `display:inline-flex` + `gap` para o icone dos botoes de acao (Agenda
+    inclusive) nao ficar colado no texto - mesmo ajuste que ja tinha sido
+    necessario nos botoes do proprio `MinhaAgenda.jsx`;
+  - o que NAO mudou: botao "Atualizar agenda agora" no Meu Dia continua
+    disponivel pra qualquer perfil (self-download da propria agenda); a
+    edge function `agenda-tecnico-ics` e a migration
+    `perfis.calendario_token` nao mudaram - so a interface de
+    gerenciamento trocou de dono; nao foi necessario nenhum deploy novo
+    no Supabase;
+  - validacoes concluidas: `eslint` e `vite build` sem erros; validado
+    visualmente com Playwright (usuario demo admin): confirmado que
+    "Minha agenda" sumiu do menu lateral, que o botao "Agenda" aparece em
+    cada usuario da lista (inclusive um tecnico real, "Diego"), que o
+    modal abre com o link correto daquele usuario e fecha ao clicar fora;
+  - `MANUAL_USUARIO.md` atualizado: removida a secao 18 "Tela Minha
+    Agenda" (renumerando "Governanca de documentacao" para 18); acao
+    "Agenda" documentada dentro da secao 15.2 "Usuarios do sistema"; item
+    16 da secao 4 (botao "Atualizar agenda agora") ajustado para apontar
+    pra secao 15 em vez da secao removida.
+
+- [Ajuste em 2026-08-13] Feed `.ics` sem limite de data + tecnico
+  responsavel na descricao do evento:
+  - pedido do usuario apos usar a v2 (admin-only): manter todo o
+    historico de visitas no feed (nao so a janela de 7 dias atras/90 dias
+    a frente usada na v1) e mostrar o tecnico dono da rota em cada evento,
+    para identificar de quem e a visita quando o admin assina a agenda de
+    mais de um usuario no proprio calendario;
+  - `supabase/functions/agenda-tecnico-ics/index.ts`: removido o filtro
+    `gte`/`lte` por `data_prevista_visita` (mantido apenas
+    `not(..., "is", null)`, ja que uma visita sem data nao vira evento);
+    removida a funcao `formatarDataIso`, que so servia para esse filtro;
+    `montarEvento` ganhou o campo `tecnicoNome`, incluido na
+    `DESCRIPTION` do evento (`Rota: ... \nTecnico responsavel: ...`) - o
+    nome vem de `perfil.nome`, ja carregado ao resolver o token (todas as
+    rotas do feed pertencem a esse mesmo usuario, entao nao precisou de
+    query nova;
+  - function reimplantada via `supabase functions deploy
+    agenda-tecnico-ics` (sem migration, schema nao mudou);
+  - validado via REST com o usuario demo: uma visita de teste datada de
+    2025-01-15 (fora da antiga janela) apareceu no feed, com
+    `DESCRIPTION` mostrando `Tecnico responsavel: Demo Teste`; dados de
+    teste (`ROTA DEMO TESTE AGENDA HISTORICO (apagar)`, id 23, e seu
+    `rota_clientes` id 79) removidos do Supabase remoto ao final;
+  - `MANUAL_USUARIO.md` (secao 15.2, item 6 "Agenda") atualizado para
+    refletir o historico completo e o nome do tecnico na descricao.
+
+- [Concluido em 2026-08-13] Agenda geral (todos os tecnicos) para
+  diretores:
+  - pedido do usuario: manter as agendas individuais como estao, mas
+    criar uma agenda unica que junte as visitas de todos os tecnicos, para
+    diretores acompanharem tudo num lugar so (o nome do tecnico ja aparece
+    na descricao de cada evento, entao ao ver o cliente ja sabem quem vai);
+  - decisao de design: token proprio, independente de qualquer usuario -
+    se reaproveitasse o `calendario_token` de um admin, regenerar o link
+    pessoal desse admin quebraria tambem o link que os diretores usam;
+  - migration `20260813180000_agenda_geral_token.sql`: tabela
+    `public.configuracoes_agenda_geral`, linha unica (`id boolean primary
+    key default true` com `check (id)`, garantindo 1 linha so), coluna
+    `token uuid default gen_random_uuid()`; RLS restrita a admin
+    (`radar_perfil_atual_tipo() = 'admin'`, mesmo padrao de
+    `configuracoes_grupos`);
+  - nova edge function `supabase/functions/agenda-geral-ics/index.ts`
+    (`verify_jwt = false`, registrada em `config.toml`) - estrutura igual
+    a `agenda-tecnico-ics` mas sem filtrar `rotas.usuario_responsavel`:
+    busca todas as rotas + todos os `perfis` (mapa `user_id -> nome`) e
+    resolve o tecnico responsavel de cada rota individualmente (nao um
+    valor fixo, como no feed pessoal); mesmas regras ja validadas
+    (historico completo, `STATUS:CANCELLED`, `UID` estavel);
+  - `src/App.jsx`: estado `configuracaoAgendaGeral` (carregado junto com
+    `carregarUsuariosPerfis` sempre que `perfil.tipo_perfil === "admin"`),
+    `regenerarTokenAgendaGeral()` (mesmo padrao do regenerar por usuario,
+    mas atualiza a linha unica da nova tabela), botao "Agenda geral (todos
+    os tecnicos)" ao lado do titulo "Usuarios cadastrados" na tela
+    Administracao, abrindo o mesmo modal (`.modal-agenda-usuario-*`)
+    reaproveitando `<MinhaAgenda />`;
+  - migration e function publicadas no Supabase remoto; validado via REST
+    com o usuario demo: criadas 2 rotas de teste com responsaveis
+    diferentes (Demo Teste e Diego), cada uma com 1 visita - o feed geral
+    trouxe as duas juntas, cada uma com o nome de tecnico correto na
+    descricao, junto com as rotas reais ja existentes no sistema (Nicholas,
+    Diego); token invalido retornou 404; dados de teste (rotas id 25 e 26,
+    `rota_clientes` id 83 e 84) removidos ao final;
+  - validado visualmente com Playwright: botao aparece na tela
+    Administracao, modal abre com o link certo, fecha ao clicar em
+    Fechar;
+  - `MANUAL_USUARIO.md` (secao 15.2, novo item 7 "Agenda geral") e este
+    bloco documentam a feature.
+
+- [Concluido em 2026-08-13] Menu suspenso nos botoes de Agenda +
+  "Adicionar ao Google Calendar":
+  - pedido do usuario: em vez do botao "Agenda" abrir sempre um modal
+    inteiro, ele queria acoes rapidas direto no botao; tambem perguntou se
+    dava pra ter um link que abre o Google Calendar ja com a tela de
+    assinatura preenchida, em vez do usuario precisar copiar e colar
+    manualmente em Configuracoes -> Outras agendas -> Por URL;
+  - `src/lib/agendaLinks.js` (novo arquivo, para nao violar a regra de
+    lint `react-refresh/only-export-components` ao exportar funcoes puras
+    do mesmo arquivo de um componente): `urlWebcal(url)` (ja existia
+    dentro de `MinhaAgenda.jsx`, so foi extraida) e
+    `urlAdicionarGoogleCalendar(url)`, que monta
+    `https://calendar.google.com/calendar/render?cid=<link-webcal-codificado>`
+    - padrao nao documentado oficialmente pelo Google, mas usado ha anos
+      por diversas ferramentas para abrir direto a tela "Adicionar esta
+      agenda?"; funciona so no Google Calendar (Outlook/Apple Calendar
+      continuam exigindo colar o link manualmente); se a pessoa ja tiver
+      assinado antes, o Google reconhece a mesma URL e nao duplica;
+  - correcao junto: `MinhaAgenda.jsx` tinha uma inconsistencia onde o
+    campo exibia o link `webcal://` mas o botao "Copiar link" copiava a
+    versao `https://` - agora os dois usam a mesma versao (`webcal://`);
+  - `src/App.jsx`: os botoes "Agenda" (por usuario, na lista de
+    Administracao) e "Agenda geral" deixaram de abrir o modal diretamente
+    - agora abrem um menu suspenso (`menuAgendaAberto`, guardando o
+      `user_id` ou o literal `"geral"`) com 5 acoes: Copiar link,
+      Adicionar ao Google Calendar, Baixar agora, Ver painel completo
+      (abre o modal de sempre, pra quem quiser a explicacao completa) e
+      Gerar novo link;
+    - fecha sozinho ao clicar fora (`useEffect` com listener de
+      `mousedown` no documento, checando `data-menu-agenda-root`) ou ao
+      copiar o link (mostra "Copiado!" por ~1.1s antes de fechar);
+    - o modal (`MinhaAgenda.jsx` dentro de `.modal-agenda-usuario-*`)
+      continua existindo, agora acessivel via "Ver painel completo";
+  - `src/minha-agenda.css` ganhou `.menu-agenda-wrapper`/
+    `.menu-agenda-dropdown`/`.menu-agenda-divisor`;
+  - validacoes: `eslint`/`vite build` sem erros; validado com Playwright
+    (contexto com permissao de clipboard concedida, necessaria em Chromium
+    headless): menu abre com o link certo (conferido o `href` de "Adicionar
+    ao Google Calendar" ja no formato `calendar.google.com/calendar/render?cid=...`),
+    fecha ao clicar fora, "Copiar link" mostra "Copiado!" e fecha sozinho,
+    "Ver painel completo" abre o modal existente corretamente.
+
+- [Concluido em 2026-08-13] Menu suspenso tambem no botao "Atualizar
+  agenda" do Meu Dia (self-service, mobile-friendly):
+  - pedido do usuario apos usar a v3 (menu suspenso admin-only): notou que
+    o menu suspenso com "Adicionar ao Google Calendar" so existia na tela
+    Administracao - o proprio tecnico, logado com a conta dele, so tinha
+    o botao antigo de baixar o `.ics`, sem acesso ao atalho de assinatura
+    de um clique; pediu tambem atencao ao celular, ja que os tecnicos usam
+    bastante nesse formato e um menu flutuante pequeno nao funciona bem
+    ali;
+  - discussao previa relevante: usuario relatou uma duplicacao de agenda
+    no Google Calendar ao clicar em "Adicionar ao Google Calendar" para
+    "Todos os tecnicos" que ele ja tinha antes - causa identificada (nao e
+    bug do sistema): "baixar e importar" (snapshot estatico, sem memoria
+    da origem) e "assinar por link" (`cid=`, com URL rastreada pelo
+    Google) sao mecanismos independentes no Google Calendar - se a agenda
+    anterior foi adicionada por importacao manual, o Google nao reconhece
+    a nova assinatura como "a mesma", cria uma agenda separada e duplica
+    os eventos; solucao e apagar a copia antiga (estatica) e manter so a
+    assinatura nova (essa sim se atualiza sozinha) - nao ha correcao de
+    codigo possivel para esse caso, e comportamento do proprio Google;
+  - `src/MinhaAgenda.jsx` ganhou a prop `permiteRegenerar` (default
+    `true`, para nao quebrar os usos existentes no admin) - quando
+    `false`, esconde a secao "Gerar novo link"/aviso de troca de link,
+    mantendo essa acao exclusiva do administrador mesmo dentro do painel
+    completo;
+  - `src/MeuDia.jsx` passou a gerenciar seu proprio menu suspenso local
+    (`menuAgendaAberto`, `linkCopiado`, `painelCompletoAberto` - estado
+    interno do componente, sem precisar subir pra `App.jsx`, diferente do
+    padrao usado na Administracao que precisa lidar com uma lista de
+    varios usuarios); importa `MinhaAgenda` e renderiza o modal
+    "Como funciona?" diretamente, com `permiteRegenerar={false}`;
+  - novo arquivo `src/lib/agendaLinks.js` reaproveitado (`urlWebcal`,
+    `urlAdicionarGoogleCalendar`) - sem duplicar logica;
+  - `src/meu-dia.css`: como o gatilho do menu agora fica dentro de um
+    `<div className="menu-agenda-wrapper">` (e nao mais filho direto de
+    `.meu-dia-controles`), os seletores `.meu-dia-controles > button/> a`
+    (que usam combinador de filho direto) deixaram de alcancar o botao -
+    adicionada a classe `.meu-dia-atualizar-agenda` como seletor
+    explicito (nao dependente de posicao no DOM) com o mesmo visual, tanto
+    no bloco desktop quanto no bloco mobile (`max-width: 900px`, incluindo
+    a largura 100% do wrapper);
+  - `src/minha-agenda.css`: nova classe `.menu-agenda-dropdown-mobile`
+    (usada so no gatilho do Meu Dia, nao nos da Administracao) que, dentro
+    de `@media (max-width: 900px)`, muda o menu de "caixinha flutuante
+    ancorada no botao" para um painel fixo de largura cheia, ancorado na
+    parte de baixo da tela (`position: fixed; left/right: 12px; bottom:
+    12px`), com itens de toque maiores (`min-height: 46px`) - mais facil
+    de usar com o polegar;
+  - validado com Playwright em dois contextos (desktop 1366x900 e celular
+    390x844, com permissao de clipboard concedida): no desktop, o menu
+    abre encostado no botao com o link certo e o modal "Como funciona"
+    abre sem o botao "Gerar novo link" (confirmado por contagem zero); no
+    celular, o painel abre ancorado embaixo, cabe inteiro dentro dos
+    390px de largura (bounding box conferida) e fecha sozinho apos copiar
+    o link;
+  - `MANUAL_USUARIO.md` (secao 4, item 16) atualizado para descrever o
+    novo menu em vez do botao simples de download.
+
+- [Simplificado em 2026-08-13] Removido "Baixar agora"/"Como funciona"
+  dos menus de agenda; Meu Dia virou 2 botoes diretos (sem dropdown):
+  - motivacao (feedback do usuario apos testar a v4): (1) bug visual real
+    - no desktop, o botao "Atualizar agenda" do Meu Dia ficava menor que
+      os vizinhos e com texto cortado; (2) o usuario relatou ter sofrido
+      na pratica a duplicacao de agenda explicada na entrada anterior, e
+      concluiu (corretamente) que manter "Baixar agora" convivendo com
+      "Adicionar ao Google Calendar" so convida a esse problema de novo -
+      pediu para tirar a opcao de baixar manualmente; (3) "Ver painel
+      completo"/"Como funciona" foi considerado desnecessario, tambem
+      removido; (4) reforcou a preocupacao com celular (uso principal dos
+      tecnicos) ao pedir a troca do botao do Meu Dia;
+  - causa raiz do bug do item (1): o gatilho do Meu Dia tinha virado filho
+    de um novo `<div className="menu-agenda-wrapper">` (`display:
+    inline-flex`, sem stretch de largura no eixo principal) em vez de
+    filho direto de `.meu-dia-controles` (`display:flex;
+    align-items:stretch` no eixo cruzado da coluna) - o botao parou de
+    herdar o stretch de largura que os demais botoes do toolbar recebem,
+    ficando estreito (shrink-to-fit) mesmo com CSS dedicado adicionado
+    (`.meu-dia-atualizar-agenda`) tentando compensar;
+  - correcao definitiva: em vez de tentar consertar o wrapper, o Meu Dia
+    deixou de usar dropdown nesse ponto - agora sao 2 elementos (`button`
+    "Copiar link da agenda" e `a` "Adicionar ao Google Calendar")
+    filhos diretos de `.meu-dia-controles`, exatamente no padrao que ja
+    funcionava antes de qualquer wrapper existir; resolve o bug por
+    construcao e tambem simplifica a experiencia no celular (nada para
+    abrir/rolar - os botoes ja aparecem direto no toolbar);
+  - `src/App.jsx` e os dois menus suspensos da Administracao (por usuario
+    e "Agenda geral") perderam as opcoes "Baixar agora" e "Ver painel
+    completo", ficando com 3 itens: Copiar link / Adicionar ao Google
+    Calendar / (divisor) / Gerar novo link;
+  - como "Ver painel completo" foi removido de todo lugar, o modal e o
+    componente que ele abria (`src/MinhaAgenda.jsx`, junto com os states
+    `usuarioAgendaSelecionado`/`agendaGeralAberta` em `App.jsx` e
+    `painelCompletoAberto` em `MeuDia.jsx` e as funcoes
+    abrir/fechar correspondentes) ficaram sem nenhum uso -
+    `src/MinhaAgenda.jsx` foi deletado e todo esse codigo morto removido,
+    em vez de deixado inerte;
+  - CSS morto removido de `src/minha-agenda.css` (`.minha-agenda-link`,
+    `.minha-agenda-botao`, `.minha-agenda-aviso`, `.modal-agenda-usuario-*`,
+    `.menu-agenda-dropdown-mobile`) e de `src/meu-dia.css`
+    (`.meu-dia-atualizar-agenda` e a regra mobile do wrapper, que não são
+    mais necessárias); `App.jsx` passou a importar `./minha-agenda.css`
+    diretamente (antes vinha "de carona" via `MinhaAgenda.jsx`, que
+    deixou de existir) - sem isso os dois dropdowns da Administracao
+    ficariam sem estilo;
+  - validado com Playwright: no desktop, os 4 botoes do toolbar do Meu Dia
+    (Ver todas as rotas / Copiar link da agenda / Adicionar ao Google
+    Calendar / Pesquisar rotas) saem com a mesma largura exata
+    (`boundingBox` comparado, 361.28px os dois); no celular, os 2 botoes
+    aparecem direto na tela sem precisar rolar; nos dois menus da
+    Administracao, confirmado que restam exatamente 3 itens; "Copiar
+    link" testado isoladamente (grava no clipboard e alterna o texto para
+    "Link copiado!"/"Copiado!" corretamente - uma tentativa anterior com
+    varias interacoes na mesma sessao de teste deu falso negativo por
+    instabilidade do proprio script de teste, nao do app);
+  - `MANUAL_USUARIO.md` (secao 4 item 16, secao 15.2 itens 6 e 7)
+    atualizado para refletir os menus simplificados.
+
+- [Redesenho em 2026-08-13] Toolbar do Meu Dia: "Pesquisar rotas" movido
+  pro menu lateral + par de agenda compacto:
+  - feedback do usuario apos ver o Meu Dia com 4 botoes grandes
+    empilhados ("Ver todas as rotas", "Copiar link da agenda", "Adicionar
+    ao Google Calendar", "Pesquisar rotas"): ficou desproporcional/pesado
+    visualmente - pediu pra repensar tamanho e ate mover "Pesquisar
+    rotas" pra fora dali;
+  - `src/App.jsx`: novo item "Pesquisar rotas" no menu lateral
+    (`desktop-sidebar-nav`), admin-only, logo antes de "Administracao",
+    chamando a mesma `abrirPesquisaRotas()` que ja existia; removida a
+    prop `abrirPesquisaRotas` passada pro `<MeuDia>` (não é mais
+    necessária ali);
+  - `src/MeuDia.jsx`: removido o botao "Pesquisar rotas" do toolbar
+    (prop `abrirPesquisaRotas` tirada da assinatura do componente,
+    import nao usado do icone `Search` removido); "Copiar link da
+    agenda" e "Adicionar ao Google Calendar" passaram a ficar lado a
+    lado dentro de um `<div className="meu-dia-agenda-secundaria">`, com
+    estilo secundario/compacto (`.meu-dia-botao-secundario`: fundo azul
+    claro, borda, texto azul, ~36px de altura) em vez do mesmo visual
+    grande e solido do botao principal "Ver todas as rotas" - a ideia e
+    sinalizar visualmente que sao acoes de configurar uma vez, nao acoes
+    do dia a dia;
+  - `src/meu-dia.css`: novas classes `.meu-dia-agenda-secundaria` (linha
+    flex, 2 colunas) e `.meu-dia-botao-secundario`; como o wrapper e
+    filho direto de `.meu-dia-controles` (flex-column com
+    `align-items:stretch`), ele herda a largura total automaticamente,
+    sem repetir o problema de stretch quebrado do ajuste anterior;
+  - de quebra, os dois `window.confirm()` de "Gerar novo link"
+    (`regenerarTokenAgendaUsuario` e `regenerarTokenAgendaGeral`, em
+    `App.jsx`) ganharam um aviso explicito: como o token faz parte da
+    propria URL, gerar um link novo cria uma agenda **separada** no
+    Google de quem ja tinha assinado (a antiga so para de atualizar,
+    nao e substituida) - quem regenera precisa avisar as pessoas a
+    removerem a agenda antiga e assinarem a nova; motivado por uma
+    pergunta direta do usuario sobre esse comportamento;
+  - validado com Playwright: "Pesquisar rotas" some do toolbar do Meu
+    Dia e aparece no menu lateral (contagem 0 e 1, respectivamente),
+    clicar no item do menu abre a tela de Pesquisa de Rotas
+    normalmente; capturas em desktop e celular confirmam o layout mais
+    compacto (1 botao grande + par pequeno lado a lado, em vez de 4
+    botoes grandes empilhados);
+  - `MANUAL_USUARIO.md`: item "Pesquisar rotas" removido da lista de
+    botoes do Meu Dia (renumerando os itens seguintes da secao 4, de 8-16
+    para 7-15) e adicionado a "Menu lateral" (item 10); secao 17 (Tela
+    Pesquisa de Rotas) atualizada quanto a onde o acesso aparece agora.
+
+- [Ajuste em 2026-08-13] Reorganizacao do menu lateral + estilo dos
+  botoes de agenda do Meu Dia (segunda rodada de feedback):
+  - pedidos do usuario: (1) tirar o atalho "Pesquisar rotas" de dentro do
+    Dashboard, ja redundante com o item novo no menu lateral; (2) mover
+    "Pesquisar rotas" do menu lateral para logo abaixo de "Rotas" (estava
+    perto de "Administracao", mais dificil de achar); (3) manter os
+    botoes "Copiar link"/"Adicionar ao Google Calendar" do Meu Dia
+    pequenos e lado a lado (isso ele aprovou), mas com o mesmo visual do
+    botao "Ver todas as rotas" (fundo azul solido, texto branco) em vez
+    do estilo secundario/claro que foi usado antes; (4) encurtar o texto
+    "Google Calendar" para uma palavra so, pra caber sem precisar
+    diminuir a fonte - perguntado ao usuario entre "Agenda"/"Google"/
+    "Calendar" (essa ultima em ingles), escolhida "Agenda" por já ser o
+    termo usado em todo o resto da funcionalidade;
+  - `src/App.jsx`: removido o botao "Pesquisar rotas" de dentro do grupo
+    "Rotas" no Dashboard (`dashboard-grupo-topo`); o item do menu lateral
+    foi movido de perto de "Administracao" para logo depois do botao
+    "Rotas";
+  - `src/MeuDia.jsx`: texto do link mudou de "Google Calendar" para
+    "Agenda" (mantendo o icone `CalendarPlus` e o `title` completo
+    "Adicionar ao Google Calendar" no atributo, so o texto visivel
+    encurtou);
+  - `src/meu-dia.css`: `.meu-dia-botao-secundario` trocou de fundo claro
+    com borda (`#eef5ff`/`#bfd0e4`) para fundo azul solido `#0057d8` com
+    texto branco - mesma paleta do botao principal, so menor (`min-height:
+    38px` em vez de `44px`, `font-size: 13px`);
+  - validado com Playwright: ordem do menu lateral conferida via lista de
+    textos (`Rotas` seguido imediatamente por `Pesquisar rotas`, depois
+    `Dashboard`); confirmado que o grupo "Rotas" do Dashboard nao mostra
+    mais o atalho (checagem escopada ao `.dashboard-grupo-topo`, ja que
+    o texto "Pesquisar rotas" tambem existe no menu lateral, sempre
+    presente na pagina); captura visual confirma os botoes menores no
+    mesmo azul/branco do botao principal, com "Agenda" cabendo sem corte;
+  - `MANUAL_USUARIO.md`: secao 8 (Dashboard) perdeu o item "Pesquisar
+    rotas"; secao 4 item 15 atualizada com o novo texto/estilo dos
+    botoes; secao 4 item 10 (Menu lateral) passou a listar a ordem real
+    dos itens; secao 17 (Pesquisa de Rotas) atualizada removendo a
+    mencao ao atalho do Dashboard.
+
+- [Concluido em 2026-08-14] Status da visita (Pendente/Visitado/Cancelado)
+  legivel nos eventos do feed .ics:
+  - pergunta respondida antes da implementacao: usar "Copiar link" (colar
+    manualmente) e depois tambem clicar em "Adicionar ao Google Calendar"
+    NAO duplica, porque os dois botoes geram a mesma URL exata - o Google
+    reconhece pela URL de origem e trata como a mesma assinatura (esse e
+    o cenario oposto ao que causou a duplicacao registrada na entrada de
+    2026-08-13, onde a mistura foi entre "baixar/importar" e "assinar",
+    dois mecanismos diferentes usando o mesmo link);
+  - pedido do usuario: ja existia `STATUS:CANCELLED` no `.ics` para
+    visitas canceladas, mas isso e um campo estruturado que cada app de
+    calendario interpreta (e mostra) de um jeito diferente, as vezes de
+    forma sutil; o usuario queria texto explicito e visivel, e tambem
+    queria distinguir "Visitado" (que antes nao tinha nenhuma marcacao
+    diferente de "Pendente");
+  - `supabase/functions/agenda-tecnico-ics/index.ts` e
+    `supabase/functions/agenda-geral-ics/index.ts` (mesma mudanca nas
+    duas, seguindo o padrao ja existente de duplicar as funcoes puras em
+    vez de compartilhar codigo entre as duas functions): nova funcao
+    `statusLegivel(status, visitado)` retornando "Cancelado"/"Visitado"/
+    "Pendente" (cancelado tem prioridade sobre visitado; olha tanto a
+    coluna `status` quanto o booleano `visitado`, replicando a mesma
+    logica ja usada em `MeuDia.jsx` pra decidir se uma visita foi feita);
+    `montarEvento` ganhou o campo `visitado` e passou a prefixar o
+    `SUMMARY` com `[Visitado] `/`[Cancelado] ` (nada para Pendente, pra
+    nao poluir o caso comum) e adicionar uma linha `Status: ...` na
+    `DESCRIPTION`; a consulta a `rota_clientes` passou a selecionar
+    tambem a coluna `visitado`;
+  - como o feed e gerado na hora a cada acesso (nao e um snapshot),
+    qualquer mudanca de status feita no Radar aparece automaticamente na
+    proxima sincronizacao, sem precisar recriar o evento - so o texto do
+    evento existente (mesmo `UID`) muda;
+  - deploy: `supabase functions deploy` nas duas functions (sem
+    migration, schema nao mudou - `visitado` ja existia em
+    `rota_clientes`);
+  - validado via REST com o usuario demo: uma rota de teste com 3
+    visitas (pendente, visitada com `visitado=true`, cancelada) retornou
+    o `.ics` com `SUMMARY` sem prefixo pra pendente, `[Visitado] ` pra
+    visitada e `[Cancelado] ` pra cancelada, e a linha `Status: ...`
+    correspondente em cada `DESCRIPTION`; dados de teste (`ROTA DEMO
+    TESTE STATUS (apagar)`, id 27, `rota_clientes` id 85/86/87) removidos
+    do Supabase remoto ao final;
+  - `MANUAL_USUARIO.md` (secao 15.2, item 6) atualizado descrevendo o
+    prefixo no titulo e a linha de status na descricao.
+
 ## Meu Dia
+
+- [Correcao em 2026-08-13] Itens do menu lateral desktop cortados em
+  notebooks (telas de altura menor):
+  - usuario relatou que no notebook nao via o menu lateral inteiro;
+  - causa: `.desktop-sidebar` (`src/home.css`, bloco `min-width: 901px`) e
+    posicionado com `top`/`bottom` fixos (altura = viewport - 96px) mas
+    sem `overflow-y`, entao quando os itens do nav nao cabem nessa altura
+    (comum em notebooks com pouca altura efetiva de viewport, ex.: painel
+    fisico 768px menos barra de tarefas/chrome do navegador), os ultimos
+    botoes (ex.: Administracao) ficam renderizados abaixo da area visivel,
+    sem barra de rolagem para alcanca-los; a versao mobile do mesmo menu
+    (`.desktop-sidebar.menu-mobile-aberto`, bloco `max-width: 900px`) ja
+    tinha `overflow-y: auto` - a versao desktop nunca ganhou o mesmo ajuste;
+  - correcao: adicionado `overflow-y: auto` em `.desktop-sidebar` no bloco
+    desktop tambem;
+  - validado com Playwright em viewport de altura reduzida (1366x520):
+    antes da correcao "Administracao" ficava fora da area visivel do
+    container (bounding box abaixo dos 520px) sem conseguir rolar ate ele;
+    depois da correcao, rolar o menu traz o item para dentro da area
+    visivel normalmente;
+  - `npm run lint` (aviso esperado de arquivo CSS sem config de lint,
+    nao bloqueante) e `npm run build` executados com sucesso.
 
 - [Correcao em 2026-08-05] Navegacao do menu sumia no mobile:
   - o menu lateral (`desktop-sidebar`) sempre foi exclusivo do desktop
@@ -384,6 +975,59 @@
 
 ## Promocao Veste Phenix - 30 anos
 
+- [Correcao em 2026-08-05] Apuracao pela Loteria Federal - bug e evolucoes
+  (aplicadas no Supabase remoto via `supabase db push --linked`):
+  - `apurar_veste_phenix` retornava erro `column reference "numero_sorte"
+    is ambiguous`: o `RETURNS TABLE` da funcao declarava uma saida
+    `numero_sorte` que colidia com a coluna de mesmo nome usada sem
+    qualificacao dentro da funcao; todas as referencias de coluna passaram
+    a ser qualificadas (`t.numero_sorte`, `v.numero_sorte`);
+    `20260805120000_apuracao_veste_phenix_correcao_e_reversao.sql`;
+  - a mesma migration criou a reversao de apuracao de teste: a funcao
+    passou a devolver tambem `apuracao_id`, e
+    `reverter_apuracao_teste_veste_phenix(p_apuracao_id)` devolve a
+    inscricao vencedora para `valida` e marca a apuracao como
+    `revertida_em`/`revertida_por` (nunca apaga a linha, preservando a
+    auditoria); so aceita reverter apuracao cuja vencedora seja
+    `origem='formulario_teste'`;
+  - `20260805130000_apuracao_veste_phenix_desempate_visivel.sql` passou a
+    retornar tambem `criado_em` do vencedor e `total_empatados` (quantas
+    inscricoes validas empataram na menor diferenca); o painel so exibe a
+    data/hora de inscricao quando `total_empatados > 1`, deixando claro
+    quando o criterio de desempate por data foi realmente necessario;
+  - `20260805140000_apuracao_veste_phenix_bloqueia_duplicidade.sql`: cada
+    clique em Realizar apuracao escolhia sempre a proxima melhor inscricao
+    valida, entao cliques repetidos geravam varios contemplados ao mesmo
+    tempo; a funcao passou a recusar uma nova apuracao enquanto ja existir
+    uma inscricao com status `contemplada`;
+  - `20260805150000_apuracao_veste_phenix_reverter_todos_teste.sql` criou
+    `reverter_todos_contemplados_teste_veste_phenix()`, que reverte de uma
+    vez todos os contemplados de teste ainda ativos (util tanto para
+    destravar apos testes repetidos anteriores ao bloqueio de duplicidade
+    quanto para quando o resultado ja saiu da tela, ex.: apos atualizar a
+    pagina); mesma regra de nunca afetar inscricoes reais;
+  - `src/PromocaoVestePhenix.jsx` ganhou os botoes "Reverter apuracao
+    (teste)" (no card de resultado) e "Reverter todos os contemplados de
+    teste" (bloco Manutencao de testes, acima de Limpar inscricoes de
+    teste); Apuracao e Manutencao de testes subiram para o topo da pagina,
+    antes do resumo/tabela de inscricoes;
+  - `MANUAL_USUARIO.md` (secao 15.5) atualizado com os novos botoes e
+    regras.
+  - [Correcao em 2026-08-05] Limpar inscricoes de teste falhava com
+    violacao de foreign key quando a inscricao apagada era vencedora de
+    alguma apuracao (mesmo ja revertida), pois
+    `promocao_veste_phenix_30_anos_apuracoes.vencedor_inscricao_id`
+    bloqueava a exclusao:
+    - a constraint passou a ser `on delete set null`, permitindo apagar a
+      inscricao de teste sem apagar o registro de auditoria da apuracao;
+    - para nao perder a rastreabilidade quando isso acontece, a apuracao
+      passou a gravar copia do vencedor no momento da apuracao
+      (`vencedor_nome_completo`, `vencedor_numero_sorte`, `vencedor_cpf`);
+      o historico ja existente foi preenchido retroativamente antes da
+      constraint mudar;
+    - migration `20260805160000_apuracao_veste_phenix_preserva_auditoria_ao_limpar.sql`,
+      aplicada no Supabase remoto.
+
 - [Concluido em 2026-08-04] Inscricao publica, apuracao e painel admin:
   - a promocao vive no mesmo dominio do Radar, mas a inscricao publica NAO
     tem acesso monitorado/autenticado como o restante do sistema; o Supabase
@@ -424,10 +1068,25 @@
   - `src/RotasOperacao.jsx`
   - `src/admin.css`
   - `src/clientes.css`
+  - `src/MeuDia.jsx` / `src/meu-dia.css`
+  - `src/minha-agenda.css` (`src/MinhaAgenda.jsx` existiu brevemente nesta
+    mesma sessao e foi removido apos os menus serem simplificados)
+  - `src/lib/agendaLinks.js`
+  - `src/supabaseClient.js`
+  - `src/home.css`
+  - `index.html` / `vite.config.js` / `package.json` (PWA)
+  - `src/pwa-icon-source.png` e `public/pwa-*.png` /
+    `public/maskable-icon-512x512.png` /
+    `public/apple-touch-icon-180x180.png` (icones do PWA)
   - `MANUAL_USUARIO.md`
 - Supabase:
   - `supabase/migrations/20260629190000_configuracoes_grupos_whatsapp_rotas.sql`
   - `supabase/migrations/20260629234500_configuracoes_grupos_menu_amostras.sql`
+  - `supabase/migrations/20260813120000_perfis_calendario_token.sql`
+  - `supabase/migrations/20260813180000_agenda_geral_token.sql`
+  - `supabase/functions/agenda-tecnico-ics/`
+  - `supabase/functions/agenda-geral-ics/`
+  - `supabase/config.toml`
 
 ## Proximo Foco Sugerido
 

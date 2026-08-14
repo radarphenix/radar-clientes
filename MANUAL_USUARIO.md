@@ -103,34 +103,31 @@ Areas e botoes:
 
 - Abre o modulo completo de planejamento e execucao de rotas.
 
-7. Pesquisar rotas (somente administrador)
-
-- Abre a tela de Pesquisa de Rotas (ver secao 17), com busca por cliente
-  dentro de qualquer rota.
-
-8. Clientes
+7. Clientes
 
 - Abre a consulta completa de clientes permitidos para o perfil.
 
-9. Proximos
+8. Proximos
 
 - Abre clientes proximos e inicia busca com raio padrao.
 
-10. Dashboard
+9. Dashboard
 
 - Abre os indicadores consolidados.
 
-11. Menu lateral
+10. Menu lateral
 
 - Meu Dia substitui o antigo item Inicio.
-- Clientes, Proximos, Rotas, Dashboard, Amostras, Alterar senha e Administracao
-  continuam disponiveis conforme as permissoes do perfil.
+- Ordem: Meu Dia, Clientes, Proximos, Rotas, Pesquisar rotas (somente
+  admin, logo abaixo de Rotas), Dashboard, Amostras, Alterar senha,
+  Promocao 30 anos (somente admin) e Administracao (somente admin) -
+  conforme as permissoes do perfil.
 
-12. Sair
+11. Sair
 
 - Encerra a sessao e limpa os estados locais da navegacao.
 
-13. Meu Dia de (somente administrador)
+12. Meu Dia de (somente administrador)
 
 - Permite selecionar qualquer usuario ativo para acompanhar seus clientes.
 - A opcao Toda a equipe consolida os clientes de todos os responsaveis.
@@ -138,7 +135,7 @@ Areas e botoes:
   recalculados imediatamente.
 - O seletor ocupa uma linha propria no celular para preservar leitura e toque.
 
-14. Minhas rotas
+13. Minhas rotas
 
 - Na visao individual, mostra as rotas ABERTA, FECHADA e EM_ANDAMENTO
   atribuidas ao usuario selecionado.
@@ -149,12 +146,36 @@ Areas e botoes:
   quantidade de rotas, clientes e pendencias, alem da lista das rotas.
 - No celular, consolidado e rotas sao empilhados para manter a leitura.
 
-15. Clientes visitados por rota
+14. Clientes visitados por rota
 
 - Resume os clientes ja visitados nas rotas ativas.
 - Mostra o total consolidado, o responsavel, a quantidade por rota e ate tres
   clientes de cada rota.
 - Ao tocar ou clicar no cabecalho, abre a rota correspondente.
+
+15. Copiar link da agenda / Adicionar ao Google Calendar
+
+- Dois botoes compactos lado a lado (estilo secundario, menores que o
+  botao "Ver todas as rotas"), sempre da propria agenda do usuario logado
+  (nao muda conforme "Meu Dia de" - e sempre a agenda de quem esta
+  logado):
+  - Copiar link: copia o link de assinatura (`webcal://...`) para colar
+    manualmente em qualquer aplicativo de calendario (Outlook, Apple
+    Calendar, etc.).
+  - Agenda (icone de calendario, abre o Google Calendar numa aba nova ja
+    com a tela de assinatura preenchida - um clique a mais e pronto. So
+    funciona para Google Calendar).
+- Os dois botoes usam o mesmo estilo do botao "Ver todas as rotas" (fundo
+  azul, texto branco), so que menores e lado a lado, por serem acoes de
+  configurar uma vez, nao acoes do dia a dia.
+- Funciona para qualquer perfil (admin, tecnico, representante). Trocar o
+  link (gerar um novo) e uma acao exclusiva do administrador (ver secao
+  15, Tela Administracao, acao "Agenda" por usuario), que tambem pode
+  ver/copiar o link de qualquer usuario ou de todos juntos.
+- Nao existe mais opcao de "baixar o arquivo .ics" nessas telas: baixar e
+  importar manualmente cria uma copia estatica que nunca se atualiza,
+  podendo duplicar informacao se a pessoa tambem assinar pelo link depois
+  - por isso o fluxo foi simplificado para copiar/assinar diretamente.
 
 ## 5. Tela Alterar Senha
 
@@ -280,11 +301,6 @@ Acoes clicaveis:
 2. Rotas com pendencias (lista)
 
 - Funcao: abrir diretamente a rota selecionada.
-
-3. Pesquisar rotas (somente administrador)
-
-- Funcao: abre a tela de Pesquisa de Rotas (ver secao 17), ao lado do
-  titulo do grupo Rotas.
 
 ## 9. Tela Rotas - Lista de rotas
 
@@ -602,6 +618,72 @@ Botoes:
 
 - Funcao: enviar e-mail de redefinicao de senha ao usuario.
 
+6. Agenda (na lista)
+
+- Funcao: abre um menu suspenso com acoes rapidas sobre o link pessoal de
+  agenda (.ics) daquele usuario especifico:
+  - Copiar link (copia o link `webcal://` e fecha sozinho);
+  - Adicionar ao Google Calendar (abre o Google Calendar numa aba nova ja
+    com a tela de "assinar esta agenda" preenchida - funciona so para
+    Google Calendar; Outlook/Apple Calendar continuam exigindo colar o
+    link manualmente);
+  - Gerar novo link (invalida o anterior imediatamente, com confirmacao).
+- Clicar em qualquer lugar fora do menu fecha ele sem executar nada.
+- Nao ha opcao de "baixar o arquivo .ics" nem painel explicativo aqui -
+  baixar/importar manualmente cria uma copia estatica que nunca se
+  atualiza sozinha e pode duplicar eventos se a pessoa tambem assinar
+  pelo link depois (o Google trata as duas formas como fontes diferentes,
+  sem nenhuma relacao entre si); por isso o menu foi simplificado para so
+  oferecer as duas acoes que resultam numa assinatura de verdade.
+- Regra: gerenciar o link de agenda e uma funcao exclusiva do
+  administrador; usuarios comuns nao tem acesso a essa tela, apenas aos
+  botoes "Copiar link da agenda"/"Adicionar ao Google Calendar" no Meu
+  Dia (secao 4, item 15), sempre da propria agenda.
+- Uso tipico: o admin copia o link de um usuario (ex.: um tecnico) e
+  envia por fora (WhatsApp, por exemplo) para a pessoa assinar no proprio
+  calendario; o admin tambem pode assinar o link de qualquer usuario na
+  propria conta Google/Outlook, como agenda adicional, para acompanhar a
+  agenda de outra pessoa (ex.: acompanhar onde um tecnico especifico vai
+  estar em cada dia).
+- O link e baseado em um token secreto por usuario
+  (`perfis.calendario_token`), sem exigir login do Google - funciona com
+  qualquer email/calendario. O feed inclui todo o historico de visitas com
+  data prevista definida (sem limite de data para tras ou para frente), de
+  todas as rotas (qualquer status) em que aquele usuario e o responsavel.
+  A descricao de cada evento traz a rota e o nome do tecnico responsavel,
+  util quando o admin assina agendas de mais de um usuario no proprio
+  calendario.
+- Status da visita (Pendente/Visitado/Cancelado) aparece de forma
+  explicita e legivel em cada evento - visitas pendentes ficam sem
+  marcacao (titulo normal), mas visitas visitadas ou canceladas ganham um
+  prefixo no proprio titulo do evento (ex.: "[Cancelado] Visita: Cliente
+  X") e uma linha "Status: ..." na descricao. Isso atualiza sozinho a
+  cada sincronizacao - se o tecnico marcar uma visita como cancelada ou
+  visitada no Radar, o evento na agenda reflete isso na proxima
+  atualizacao, sem precisar remover ou recriar o evento.
+- Cada visita vira um evento estavel (mesmo identificador sempre) -
+  reimportar o arquivo atualiza o evento existente no calendario em vez
+  de duplicar.
+
+7. Agenda geral (todos os tecnicos)
+
+- Botao ao lado do titulo "Usuarios cadastrados", abre o mesmo menu
+  suspenso do item 6 (Copiar link, Adicionar ao Google Calendar, Gerar
+  novo link), mas para um unico link que junta as visitas de **todos os
+  tecnicos** (nao filtra por responsavel) - pensado para diretores/gestores
+  acompanharem tudo num lugar so, sem precisar assinar um link por pessoa.
+- Cada evento mostra a rota e o nome do tecnico responsavel na descricao,
+  para identificar de quem e a visita ao ver o cliente.
+- O link nao usa o token de nenhum usuario especifico - fica guardado
+  numa configuracao propria (`configuracoes_agenda_geral`), justamente
+  para que gerar um novo link pessoal de um usuario (item 6) nunca quebre
+  o link geral, e vice-versa.
+- Mesmas regras do link individual: historico completo sem limite de
+  data, visitas canceladas aparecem marcadas como canceladas, e reimportar
+  atualiza os eventos existentes em vez de duplicar.
+- Gerenciar (ver, copiar, baixar, gerar novo) tambem e exclusivo do
+  administrador.
+
 ### 15.3 Configuracao de WhatsApp por grupo
 
 Botoes:
@@ -645,18 +727,12 @@ login, hospedada no mesmo dominio; o Supabase do projeto e usado apenas para
 gravar os cadastros (via Edge Function dedicada) e nao aplica as regras de
 acesso por perfil do restante do sistema.
 
+A tela segue a ordem: apuracao e manutencao de testes no topo, resumo e
+tabela de inscricoes na sequencia.
+
 Areas e botoes:
 
-1. Resumo de inscricoes
-
-- Mostra o total de inscricoes e o total com status valida.
-
-2. Exportar Excel
-
-- Funcao: baixa planilha com todas as inscricoes (numero da sorte, dados do
-  participante, status e datas de auditoria).
-
-3. Apuracao pela Loteria Federal
+1. Apuracao pela Loteria Federal
 
 - Campos: numero apurado e data da extracao.
 - Funcao: registra oficialmente o resultado do sorteio.
@@ -664,7 +740,46 @@ Areas e botoes:
   numero apurado; em caso de empate, vence a inscricao valida mais antiga.
   A inscricao vencedora passa para o status contemplada e o resultado fica
   registrado para auditoria.
+- So pode existir um contemplado por vez: se ja houver uma inscricao
+  contemplada ativa, a apuracao e recusada ate que ela seja revertida.
 - Exige confirmacao explicita antes de executar, pois a apuracao e definitiva.
+- O card de resultado mostra numero, diferenca e, somente quando houve
+  empate na diferenca, a data/hora de inscricao da vencedora e quantas
+  inscricoes empataram (assim fica claro ate qual criterio foi necessario
+  para decidir).
+
+2. Reverter apuracao (teste)
+
+- Aparece junto do card de resultado logo apos uma apuracao.
+- Funcao: devolve a inscricao contemplada para o status valida.
+- Regra: so reverte apuracao cujo vencedor seja uma inscricao de teste;
+  inscricoes reais nunca podem ser revertidas por aqui. A apuracao nunca e
+  apagada, apenas marcada como revertida (data e usuario) para auditoria.
+
+3. Reverter todos os contemplados de teste
+
+- Bloco "Manutencao de testes".
+- Funcao: reverte de uma vez todos os contemplados de teste ainda ativos,
+  mesmo que o resultado nao esteja mais na tela (por exemplo apos atualizar
+  a pagina ou apos varios cliques acidentais em Realizar apuracao).
+- Regra: mesma protecao do item anterior (nunca afeta inscricoes reais;
+  mantem o historico de apuracoes para auditoria).
+
+4. Limpar inscricoes de teste
+
+- Bloco "Limpeza de inscricoes de teste".
+- Funcao: remove definitivamente as inscricoes feitas em modo teste.
+- Regra: nunca afeta inscricoes reais; cada remocao fica registrada na
+  auditoria automaticamente (trigger da tabela).
+
+5. Resumo de inscricoes
+
+- Mostra o total de inscricoes e o total com status valida.
+
+6. Exportar Excel
+
+- Funcao: baixa planilha com todas as inscricoes (numero da sorte, dados do
+  participante, status e datas de auditoria).
 
 ## 16. Regras de negocio consolidadas
 
@@ -721,8 +836,8 @@ Tela: busca de clientes dentro de qualquer rota, uma linha por
 cliente-agendado (nao por rota inteira). Complementa a tela Rotas, que so
 lista rotas completas.
 
-Acesso: somente administrador. Botao "Pesquisar rotas" aparece no Meu Dia
-(ao lado de "Ver todas as rotas") e no Dashboard (grupo Rotas).
+Acesso: somente administrador. Item "Pesquisar rotas" no menu lateral,
+logo abaixo de "Rotas".
 
 Filtros (todos combinaveis e aplicados na hora, sem precisar confirmar):
 
@@ -761,7 +876,37 @@ selo de status, data e horario previstos). Ao tocar no cartao ("Detalhes"),
 expande mostrando status da rota, responsavel, sequencia, quem incluiu o
 cliente e quando, e o botao "Abrir rota" (leva direto para a rota).
 
-## 18. Governanca de documentacao
+## 18. Instalacao como aplicativo (PWA)
+
+O Radar de Clientes pode ser instalado no celular como um aplicativo -
+ganha um icone na tela inicial e abre em tela cheia, sem barra de
+endereco do navegador, sem precisar digitar a URL toda vez.
+
+Como instalar:
+
+1. Android (Chrome): abra o Radar pelo navegador, toque no menu (tres
+   pontinhos) e escolha "Instalar aplicativo" (ou "Adicionar a tela
+   inicial") - as vezes o Chrome ja sugere isso sozinho com um banner.
+2. iPhone/iPad (Safari): abra o Radar no Safari, toque no icone de
+   compartilhar (quadrado com seta para cima) e escolha "Adicionar a
+   Tela de Inicio". Precisa ser pelo Safari - outros navegadores no iOS
+   nao suportam essa instalacao.
+3. Depois de instalado, o icone do Radar aparece normalmente entre os
+   outros aplicativos do celular. Abrir por ali entra direto, sem passar
+   pelo navegador.
+
+Regras:
+
+- Atualiza sozinho: sempre que o app for aberto com internet, ele busca a
+  versao mais nova automaticamente - nao precisa desinstalar/reinstalar
+  para pegar atualizacoes.
+- O login continua sendo o mesmo (e-mail e senha cadastrados) - instalar
+  como aplicativo nao muda nada sobre contas de acesso.
+- Nao funciona totalmente offline: o aplicativo abre rapido mesmo sem
+  internet, mas as informacoes de clientes, rotas etc. continuam
+  precisando de conexao (vem do banco de dados na hora).
+
+## 19. Governanca de documentacao
 
 1. Este manual deve ser atualizado sempre que houver alteracao funcional aprovada no sistema.
 2. O arquivo de contexto do projeto tambem deve ser atualizado no mesmo bloco de entrega.
