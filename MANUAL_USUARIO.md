@@ -432,6 +432,10 @@ Painel Cliente Atual:
 4. Cancelar
 
 - Funcao: altera status do cliente para CANCELADO.
+- Pede o motivo do cancelamento em texto livre (obrigatorio); sem motivo,
+  o cancelamento nao e confirmado.
+- O motivo fica visivel na Manutencao da Rota e tambem aparece na
+  descricao do evento na agenda (Google Calendar/ICS).
 
 Lista de Proximos Clientes:
 
@@ -661,6 +665,19 @@ Botoes:
   cada sincronizacao - se o tecnico marcar uma visita como cancelada ou
   visitada no Radar, o evento na agenda reflete isso na proxima
   atualizacao, sem precisar remover ou recriar o evento.
+- Quando uma visita e cancelada, o evento nunca usa o campo estruturado
+  `STATUS:CANCELLED` do padrao do calendario - varios apps (incluindo o
+  Google Calendar) ocultam esses eventos por completo em vez de mostrar
+  riscado, entao o Radar mantem o evento sempre visivel e usa o texto
+  ("[Cancelado]" no titulo) para comunicar isso. Quando o tecnico informa
+  um motivo ao cancelar, a descricao do evento ganha tambem a linha
+  "Motivo do cancelamento: ...".
+- O Google Calendar nao tem um botao de "atualizar agora" para agendas
+  assinadas por link - ele busca a atualizacao sozinho, em um intervalo
+  proprio (normalmente algumas horas, sem garantia). Clicar de novo no
+  link "Adicionar ao Google Calendar" so forca uma busca imediata se a
+  agenda ainda nao estiver na lista da pessoa; se ja estava assinada, e
+  preciso remover e adicionar de novo para contar como assinatura nova.
 - Cada visita vira um evento estavel (mesmo identificador sempre) -
   reimportar o arquivo atualiza o evento existente no calendario em vez
   de duplicar.

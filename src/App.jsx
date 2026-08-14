@@ -3147,11 +3147,29 @@ function App() {
       return;
     }
 
+    let motivoCancelamento = null;
+
+    if (novoStatus === "CANCELADO") {
+      const motivoInformado = window.prompt(
+        "Motivo do cancelamento (obrigatório):",
+      );
+
+      if (motivoInformado === null) return;
+
+      motivoCancelamento = motivoInformado.trim();
+
+      if (!motivoCancelamento) {
+        alert("Informe o motivo do cancelamento.");
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("rota_clientes")
       .update({
         status: novoStatus,
         visitado: novoStatus === "VISITADO",
+        motivo_cancelamento: motivoCancelamento,
       })
       .eq("id", itemRota.id);
 

@@ -63,6 +63,7 @@ function montarEvento(item: {
   id: number;
   status: string | null;
   visitado: boolean | null;
+  motivo_cancelamento: string | null;
   data_prevista_visita: string;
   horario_previsto_visita: string | null;
   rotaNome: string;
@@ -80,8 +81,12 @@ function montarEvento(item: {
   const summary = escaparTextoIcs(
     `${prefixo}Visita: ${item.clienteNome || "Cliente"}`,
   );
+  const linhaMotivo =
+    item.status === "CANCELADO" && item.motivo_cancelamento
+      ? `\nMotivo do cancelamento: ${item.motivo_cancelamento}`
+      : "";
   const description = escaparTextoIcs(
-    `Rota: ${item.rotaNome || "-"}\nTecnico responsavel: ${item.tecnicoNome || "-"}\nStatus: ${label}`,
+    `Rota: ${item.rotaNome || "-"}\nTecnico responsavel: ${item.tecnicoNome || "-"}\nStatus: ${label}${linhaMotivo}`,
   );
   const location = item.clienteEndereco
     ? `LOCATION:${escaparTextoIcs(item.clienteEndereco)}\r\n`
@@ -201,6 +206,7 @@ Deno.serve(async (req) => {
     rota_id: number;
     status: string | null;
     visitado: boolean | null;
+    motivo_cancelamento: string | null;
     data_prevista_visita: string;
     horario_previsto_visita: string | null;
   }> = [];
@@ -209,7 +215,7 @@ Deno.serve(async (req) => {
     const { data: itensRota, error: itensError } = await supabaseAdmin
       .from("rota_clientes")
       .select(
-        "id, cliente_id, rota_id, status, visitado, data_prevista_visita, horario_previsto_visita",
+        "id, cliente_id, rota_id, status, visitado, motivo_cancelamento, data_prevista_visita, horario_previsto_visita",
       )
       .in("rota_id", rotaIds)
       .not("data_prevista_visita", "is", null)
@@ -257,6 +263,7 @@ Deno.serve(async (req) => {
         id: item.id,
         status: item.status,
         visitado: item.visitado,
+        motivo_cancelamento: item.motivo_cancelamento,
         data_prevista_visita: item.data_prevista_visita,
         horario_previsto_visita: item.horario_previsto_visita,
         rotaNome: rota?.nome || "",

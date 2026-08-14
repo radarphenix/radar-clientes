@@ -14,7 +14,7 @@
 
 ## Snapshot Atual
 
-- Data: 2026-08-13
+- Data: 2026-08-14
 - Branch atual: `main`
 - Situacao de sincronizacao: lote de commits (reordenacao de rotas, Meu Dia
   mobile, menu mobile, Promocao Veste Phenix e documentacao) enviado para
@@ -22,16 +22,17 @@
   selo de status na Manutencao, `rota_clientes.incluido_por` e a tela
   Pesquisa de Rotas) enviado para `origin/main` em 2026-08-10 - todas as
   migrations correspondentes ja estavam aplicadas no Supabase remoto desde
-  os testes locais. Feed de Agenda do Tecnico (.ics) concluido em
-  2026-08-13, migration e edge function ja aplicadas no Supabase remoto;
-  gerenciamento do link redesenhado no mesmo dia para admin-only (via tela
-  Administracao) apos feedback de uso; Agenda Geral (todos os tecnicos) e
-  menu suspenso com "Adicionar ao Google Calendar" (Administracao e Meu
-  Dia) concluidos no mesmo dia - todas as mudancas de banco ja aplicadas
-  no Supabase remoto, front-end sem deploy adicional necessario. PWA
-  instalavel (icone + tela cheia no celular) concluido em 2026-08-14,
-  puramente front-end (sem mudanca de banco). Nada desse bloco foi
-  commitado/enviado ao GitHub ainda.
+  os testes locais. Terceiro lote (PWA instalavel, feed de Agenda do
+  Tecnico/Geral em .ics, melhorias de apuracao da Promocao Veste Phenix) e
+  a correcao de `STATUS:CANCELLED` sumindo do Google Calendar enviados
+  para `origin/main` em 2026-08-14 (4 commits separados por assunto);
+  migrations e edge functions correspondentes ja aplicadas/deployadas no
+  Supabase remoto. Pendente de solicitacao explicita do usuario pra subir:
+  motivo do cancelamento em texto livre no "Cancelar" da execucao de rota,
+  refletido na Manutencao da Rota e na `DESCRIPTION` do `.ics` (migration
+  `20260814120000_rota_clientes_motivo_cancelamento.sql` e deploy das
+  functions `agenda-geral-ics`/`agenda-tecnico-ics` ainda nao aplicados no
+  Supabase remoto, nada commitado/enviado ao GitHub).
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Backup da evolucao de repeticao e reordenacao:
   `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
@@ -775,6 +776,69 @@
     do Supabase remoto ao final;
   - `MANUAL_USUARIO.md` (secao 15.2, item 6) atualizado descrevendo o
     prefixo no titulo e a linha de status na descricao.
+
+- [Corrigido em 2026-08-14] Cliente cancelado sumindo da assinatura do
+  Google Calendar:
+  - usuario reportou que, mesmo ao assinar a Agenda Geral (todos os
+    tecnicos), um cliente cancelado no dia nao aparecia; investigado
+    buscando o `.ics` bruto direto da function (via `curl` com o token
+    real da `configuracoes_agenda_geral`) - o evento estava la, correto,
+    com `SUMMARY:[Cancelado] ...` e `DTSTART` no dia certo, mas com
+    `STATUS:CANCELLED`;
+  - causa: `STATUS:CANCELLED` e um campo estruturado do padrao iCal que
+    o Google Calendar (e a maioria dos apps de agenda) interpreta como
+    "evento nao acontece" e simplesmente **oculta** de calendarios
+    assinados, em vez de mostrar riscado como se poderia esperar - o
+    prefixo `[Cancelado]` no titulo (da entrada anterior) ja bastava pra
+    comunicar isso visualmente, entao nao havia motivo pra tambem usar o
+    `STATUS:CANCELLED` estrutural;
+  - `supabase/functions/agenda-geral-ics/index.ts` e
+    `supabase/functions/agenda-tecnico-ics/index.ts`: `status` do VEVENT
+    passou a ser sempre `CONFIRMED`, independente do status da visita;
+  - deploy: `supabase functions deploy` nas duas functions (sem
+    migration); validado buscando o `.ics` de novo apos o deploy e
+    confirmando `STATUS:CONFIRMED` no evento cancelado;
+  - explicado ao usuario que o Google Calendar nao tem botao de
+    "atualizar agora" pra calendarios assinados por URL (nem web nem
+    app) - o proprio Google decide quando vai buscar a atualizacao
+    (historicamente horas, sem garantia documentada), e clicar de novo
+    no link "Adicionar ao Google Calendar" so forca uma busca imediata
+    se for uma assinatura nova (calendario ainda nao estava na lista);
+    se ja estava assinado, o clique so reabre o que ja tinha em cache -
+    e preciso remover a assinatura e adicionar de novo pra contar como
+    nova.
+
+- [Concluido neste bloco, 2026-08-14] Motivo do cancelamento (texto
+  livre) na execucao da rota, refletido no calendario:
+  - pedido do usuario: quando o tecnico clica em "Cancelar" durante a
+    execucao da rota, o sistema deve perguntar o motivo em texto livre,
+    e esse motivo deve aparecer tambem no calendario;
+  - migration local
+    `supabase/migrations/20260814120000_rota_clientes_motivo_cancelamento.sql`
+    adiciona a coluna `motivo_cancelamento text` em `rota_clientes`;
+  - `src/App.jsx` (`alterarStatusClienteRota`): quando o novo status e
+    `CANCELADO`, pede o motivo via `window.prompt` (obrigatorio - `null`
+    ou texto vazio cancela a operacao sem alterar nada); ao mudar para
+    qualquer outro status, `motivo_cancelamento` volta pra `null`
+    automaticamente (fica sempre coerente com o status atual). Essa
+    funcao e compartilhada pelos dois lugares onde o tecnico pode marcar
+    "Cancelado" - o botao do Cliente Atual em `RotasOperacao.jsx` e os
+    botoes rapidos de status em `RotasManutencao.jsx` - entao a
+    pergunta acontece nos dois fluxos sem duplicar codigo;
+  - `src/RotasManutencao.jsx` passou a exibir o motivo (quando existe)
+    abaixo do selo de status de cada cliente cancelado;
+  - `supabase/functions/agenda-geral-ics/index.ts` e
+    `supabase/functions/agenda-tecnico-ics/index.ts`: consulta a
+    `rota_clientes` passou a selecionar tambem `motivo_cancelamento`;
+    `montarEvento` acrescenta a linha `Motivo do cancelamento: ...` na
+    `DESCRIPTION` quando o status e `CANCELADO` e ha motivo preenchido;
+  - validado localmente com `npm run lint`, `npm run build` e
+    `deno check` nas duas edge functions; migration e deploy das
+    functions **ainda nao aplicados no Supabase remoto** e nada deste
+    bloco foi commitado/enviado ao GitHub - aguardando solicitacao
+    explicita do usuario pra subir (regra reforçada em 2026-08-14: "pode
+    subir pra oficial" vale so pras alteracoes ja discutidas no momento
+    do pedido, nunca por antecipacao).
 
 ## Meu Dia
 

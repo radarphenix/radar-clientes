@@ -83,6 +83,12 @@ function RotasManutencao({
                       {statusTexto}
                     </span>
                   </p>
+
+                  {item.status === "CANCELADO" && item.motivo_cancelamento && (
+                    <p className="card-manutencao-motivo">
+                      <strong>Motivo:</strong> {item.motivo_cancelamento}
+                    </p>
+                  )}
                 </div>
               </div>
 
