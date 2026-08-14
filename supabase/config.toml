@@ -15,3 +15,15 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/inscrever-veste-phenix/deno.json"
 entrypoint = "./functions/inscrever-veste-phenix/index.ts"
+
+[functions.agenda-tecnico-ics]
+enabled = true
+verify_jwt = false
+import_map = "./functions/agenda-tecnico-ics/deno.json"
+entrypoint = "./functions/agenda-tecnico-ics/index.ts"
+
+[functions.agenda-geral-ics]
+enabled = true
+verify_jwt = false
+import_map = "./functions/agenda-geral-ics/deno.json"
+entrypoint = "./functions/agenda-geral-ics/index.ts"

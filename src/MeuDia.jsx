@@ -1,14 +1,17 @@
+import { useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
+  CalendarPlus,
   CheckCircle,
   ChevronRight,
   Clock3,
+  Copy,
   Route,
-  Search,
   UserCheck,
 } from "lucide-react";
 import "./meu-dia.css";
+import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 
 function chaveDataLocal(data = new Date()) {
   const ano = data.getFullYear();
@@ -45,8 +48,22 @@ function MeuDia({
   selecionarUsuario,
   abrirRota,
   abrirListaRotas,
-  abrirPesquisaRotas,
+  agendaIcsUrl,
 }) {
+  const [linkCopiado, setLinkCopiado] = useState(false);
+
+  async function copiarLinkAgenda() {
+    if (!agendaIcsUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(urlWebcal(agendaIcsUrl));
+      setLinkCopiado(true);
+      setTimeout(() => setLinkCopiado(false), 2000);
+    } catch {
+      alert("Não foi possível copiar automaticamente.");
+    }
+  }
+
   const hoje = chaveDataLocal();
   const mapaClientes = new Map(
     (clientes || []).map((cliente) => [cliente.id, cliente]),
@@ -259,10 +276,28 @@ function MeuDia({
           <button type="button" onClick={abrirListaRotas}>
             <Route size={18} /> Ver todas as rotas
           </button>
-          {administrador && (
-            <button type="button" onClick={abrirPesquisaRotas}>
-              <Search size={18} /> Pesquisar rotas
-            </button>
+          {agendaIcsUrl && (
+            <div className="meu-dia-agenda-secundaria">
+              <button
+                type="button"
+                className="meu-dia-botao-secundario"
+                onClick={copiarLinkAgenda}
+                title="Copiar link da agenda para colar no seu calendário"
+              >
+                <Copy size={15} />
+                {linkCopiado ? "Copiado!" : "Copiar link"}
+              </button>
+
+              <a
+                className="meu-dia-botao-secundario"
+                href={urlAdicionarGoogleCalendar(agendaIcsUrl)}
+                target="_blank"
+                rel="noreferrer"
+                title="Adicionar ao Google Calendar"
+              >
+                <CalendarPlus size={15} /> Agenda
+              </a>
+            </div>
           )}
         </div>
       </section>

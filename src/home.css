@@ -704,6 +704,7 @@
     display: flex;
     flex-direction: column;
     padding: 22px 20px 20px 20px;
+    overflow-y: auto;
     border-right: 1px solid #dbe7f5;
     background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   }

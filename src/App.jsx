@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { supabase } from "./supabaseClient";
+import { supabase, supabaseUrl } from "./supabaseClient";
 import "./app-global.css";
 import "./home.css";
 import "./clientes.css";
@@ -15,6 +15,8 @@ import "./modal-cidade.css";
 import Rotas from "./Rotas.jsx";
 import RotasPesquisa from "./RotasPesquisa.jsx";
 import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
+import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
+import "./minha-agenda.css";
 import "./promocao.css";
 import { calcularSequenciasPendentes } from "./lib/rotasSequencia.js";
 import {
@@ -38,7 +40,11 @@ import {
   ClipboardList,
   Menu,
   ArrowLeft,
+  Copy,
+  CalendarPlus,
+  RefreshCw,
   Search,
+  CalendarClock,
 } from "lucide-react";
 
 function detectarLinkRecuperacao() {
@@ -447,6 +453,12 @@ function App() {
   const [mostrarNovaSenhaInterna, setMostrarNovaSenhaInterna] = useState(false);
   const [mostrarConfirmarSenhaInterna, setMostrarConfirmarSenhaInterna] =
     useState(false);
+  const [, setRegenerandoTokenAgenda] = useState(false);
+  const [configuracaoAgendaGeral, setConfiguracaoAgendaGeral] =
+    useState(null);
+  const [, setRegenerandoTokenAgendaGeral] = useState(false);
+  const [menuAgendaAberto, setMenuAgendaAberto] = useState(null);
+  const [linkAgendaCopiado, setLinkAgendaCopiado] = useState(null);
   const [clientes, setClientes] = useState([]);
   const [filtro, setFiltro] = useState("");
   const [amostras, setAmostras] = useState([]);
@@ -517,8 +529,22 @@ function App() {
   useEffect(() => {
     if (perfil?.tipo_perfil === "admin") {
       carregarUsuariosPerfis(perfil);
+      carregarConfiguracaoAgendaGeral();
     }
   }, [perfil]);
+
+  useEffect(() => {
+    if (!menuAgendaAberto) return;
+
+    function aoClicarFora(evento) {
+      if (!evento.target.closest("[data-menu-agenda-root]")) {
+        setMenuAgendaAberto(null);
+      }
+    }
+
+    document.addEventListener("mousedown", aoClicarFora);
+    return () => document.removeEventListener("mousedown", aoClicarFora);
+  }, [menuAgendaAberto]);
 
   useEffect(() => {
     if (session?.user && perfil && telaAtual === "home") {
@@ -962,6 +988,118 @@ function App() {
       setConfirmarSenhaInterna("");
     } finally {
       setAlterandoSenhaInterna(false);
+    }
+  }
+
+  function alternarMenuAgenda(id) {
+    setMenuAgendaAberto((atual) => (atual === id ? null : id));
+  }
+
+  function fecharMenuAgenda() {
+    setMenuAgendaAberto(null);
+  }
+
+  async function copiarLinkAgendaMenu(id, agendaIcsUrl) {
+    try {
+      await navigator.clipboard.writeText(urlWebcal(agendaIcsUrl));
+      setLinkAgendaCopiado(id);
+      setTimeout(() => {
+        setLinkAgendaCopiado(null);
+        setMenuAgendaAberto(null);
+      }, 1100);
+    } catch {
+      alert("Não foi possível copiar automaticamente. Abra o painel completo e copie manualmente.");
+    }
+  }
+
+  async function regenerarTokenAgendaUsuario(usuario) {
+    if (perfil?.tipo_perfil !== "admin" || !usuario?.user_id) return;
+
+    if (
+      !window.confirm(
+        `Gerar um novo link de agenda para ${usuario.nome || usuario.email} vai invalidar o link atual, inclusive em quem já assinou.\n\nImportante: quem já tinha assinado precisará REMOVER a agenda antiga (ela vai parar de atualizar) e assinar a nova - o Google trata os dois links como agendas completamente separadas, não há como "atualizar" a antiga automaticamente.\n\nDeseja continuar?`,
+      )
+    ) {
+      return;
+    }
+
+    setRegenerandoTokenAgenda(true);
+
+    try {
+      const novoToken = crypto.randomUUID();
+
+      const { error } = await supabase
+        .from("perfis")
+        .update({ calendario_token: novoToken })
+        .eq("user_id", usuario.user_id);
+
+      if (error) {
+        alert("Não foi possível gerar um novo link: " + error.message);
+        return;
+      }
+
+      setUsuariosPerfis((atual) =>
+        atual.map((item) =>
+          item.user_id === usuario.user_id
+            ? { ...item, calendario_token: novoToken }
+            : item,
+        ),
+      );
+
+      if (usuario.user_id === session?.user?.id) {
+        setPerfil((atual) =>
+          atual ? { ...atual, calendario_token: novoToken } : atual,
+        );
+      }
+    } finally {
+      setRegenerandoTokenAgenda(false);
+    }
+  }
+
+  async function carregarConfiguracaoAgendaGeral() {
+    const { data, error } = await supabase
+      .from("configuracoes_agenda_geral")
+      .select("token")
+      .eq("id", true)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao carregar configuracao da agenda geral:", error);
+      return;
+    }
+
+    setConfiguracaoAgendaGeral(data || null);
+  }
+
+  async function regenerarTokenAgendaGeral() {
+    if (perfil?.tipo_perfil !== "admin") return;
+
+    if (
+      !window.confirm(
+        'Gerar um novo link da agenda geral vai invalidar o link atual, inclusive em quem já assinou.\n\nImportante: quem já tinha assinado precisará REMOVER a agenda antiga (ela vai parar de atualizar) e assinar a nova - o Google trata os dois links como agendas completamente separadas, não há como "atualizar" a antiga automaticamente.\n\nDeseja continuar?',
+      )
+    ) {
+      return;
+    }
+
+    setRegenerandoTokenAgendaGeral(true);
+
+    try {
+      const novoToken = crypto.randomUUID();
+
+      const { error } = await supabase
+        .from("configuracoes_agenda_geral")
+        .update({ token: novoToken, atualizado_por: session?.user?.id })
+        .eq("id", true);
+
+      if (error) {
+        alert("Não foi possível gerar um novo link: " + error.message);
+        return;
+      }
+
+      setConfiguracaoAgendaGeral({ token: novoToken });
+    } finally {
+      setRegenerandoTokenAgendaGeral(false);
     }
   }
 
@@ -4136,6 +4274,20 @@ function App() {
             Rotas
           </button>
 
+          {perfil?.tipo_perfil === "admin" && (
+            <button
+              type="button"
+              className={telaAtual === "pesquisaRotas" ? "ativo" : ""}
+              onClick={() => {
+                abrirPesquisaRotas();
+                setMenuMobileAberto(false);
+              }}
+            >
+              <Search size={20} />
+              Pesquisar rotas
+            </button>
+          )}
+
           <button
             type="button"
             className={telaAtual === "dashboard" ? "ativo" : ""}
@@ -4235,7 +4387,11 @@ function App() {
           selecionarUsuario={setUsuarioMeuDiaId}
           abrirRota={abrirRotaPeloMeuDia}
           abrirListaRotas={() => abrirListaRotas()}
-          abrirPesquisaRotas={abrirPesquisaRotas}
+          agendaIcsUrl={
+            perfil?.calendario_token
+              ? `${supabaseUrl}/functions/v1/agenda-tecnico-ics?token=${perfil.calendario_token}`
+              : null
+          }
         />
       )}
 
@@ -4758,7 +4914,79 @@ function App() {
             </div>
 
             <div className="admin-lista-usuarios">
-              <h3>Usuários cadastrados</h3>
+              <div className="admin-bloco-topo">
+                <div>
+                  <h3>Usuários cadastrados</h3>
+                  <p>
+                    Gerencie o link de agenda individual pelo botão "Agenda"
+                    de cada usuário, ou use a agenda geral abaixo para ver as
+                    visitas de todos os técnicos em um só lugar.
+                  </p>
+                </div>
+
+                <div className="menu-agenda-wrapper" data-menu-agenda-root>
+                  <button
+                    type="button"
+                    className="admin-botao-secundario"
+                    onClick={() => alternarMenuAgenda("geral")}
+                  >
+                    <CalendarClock size={16} />
+                    Agenda geral (todos os técnicos)
+                  </button>
+
+                  {menuAgendaAberto === "geral" &&
+                    (() => {
+                      const urlAgendaGeral = configuracaoAgendaGeral?.token
+                        ? `${supabaseUrl}/functions/v1/agenda-geral-ics?token=${configuracaoAgendaGeral.token}`
+                        : null;
+
+                      return (
+                        <div className="menu-agenda-dropdown">
+                          <button
+                            type="button"
+                            disabled={!urlAgendaGeral}
+                            onClick={() =>
+                              copiarLinkAgendaMenu("geral", urlAgendaGeral)
+                            }
+                          >
+                            <Copy size={16} />
+                            {linkAgendaCopiado === "geral"
+                              ? "Copiado!"
+                              : "Copiar link"}
+                          </button>
+
+                          <a
+                            href={
+                              urlAgendaGeral
+                                ? urlAdicionarGoogleCalendar(urlAgendaGeral)
+                                : undefined
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={fecharMenuAgenda}
+                            aria-disabled={!urlAgendaGeral}
+                          >
+                            <CalendarPlus size={16} />
+                            Adicionar ao Google Calendar
+                          </a>
+
+                          <div className="menu-agenda-divisor" />
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              fecharMenuAgenda();
+                              regenerarTokenAgendaGeral();
+                            }}
+                          >
+                            <RefreshCw size={16} />
+                            Gerar novo link
+                          </button>
+                        </div>
+                      );
+                    })()}
+                </div>
+              </div>
 
               {carregandoUsuarios ? (
                 <p>Carregando usuários...</p>
@@ -4818,6 +5046,77 @@ function App() {
                       >
                         Atualizar senha
                       </button>
+
+                      <div
+                        className="menu-agenda-wrapper"
+                        data-menu-agenda-root
+                      >
+                        <button
+                          type="button"
+                          className="admin-botao-secundario"
+                          onClick={() => alternarMenuAgenda(usuario.user_id)}
+                        >
+                          <CalendarClock size={16} />
+                          Agenda
+                        </button>
+
+                        {menuAgendaAberto === usuario.user_id &&
+                          (() => {
+                            const urlAgendaUsuario = usuario.calendario_token
+                              ? `${supabaseUrl}/functions/v1/agenda-tecnico-ics?token=${usuario.calendario_token}`
+                              : null;
+
+                            return (
+                              <div className="menu-agenda-dropdown">
+                                <button
+                                  type="button"
+                                  disabled={!urlAgendaUsuario}
+                                  onClick={() =>
+                                    copiarLinkAgendaMenu(
+                                      usuario.user_id,
+                                      urlAgendaUsuario,
+                                    )
+                                  }
+                                >
+                                  <Copy size={16} />
+                                  {linkAgendaCopiado === usuario.user_id
+                                    ? "Copiado!"
+                                    : "Copiar link"}
+                                </button>
+
+                                <a
+                                  href={
+                                    urlAgendaUsuario
+                                      ? urlAdicionarGoogleCalendar(
+                                          urlAgendaUsuario,
+                                        )
+                                      : undefined
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={fecharMenuAgenda}
+                                  aria-disabled={!urlAgendaUsuario}
+                                >
+                                  <CalendarPlus size={16} />
+                                  Adicionar ao Google Calendar
+                                </a>
+
+                                <div className="menu-agenda-divisor" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    fecharMenuAgenda();
+                                    regenerarTokenAgendaUsuario(usuario);
+                                  }}
+                                >
+                                  <RefreshCw size={16} />
+                                  Gerar novo link
+                                </button>
+                              </div>
+                            );
+                          })()}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -5296,17 +5595,6 @@ function App() {
                   <Route size={22} />
                   Rotas
                 </h3>
-
-                {perfil?.tipo_perfil === "admin" && (
-                  <button
-                    type="button"
-                    className="dashboard-botao-pesquisa"
-                    onClick={abrirPesquisaRotas}
-                  >
-                    <Search size={16} />
-                    Pesquisar rotas
-                  </button>
-                )}
               </div>
 
               <div className="dashboard-indicadores">
