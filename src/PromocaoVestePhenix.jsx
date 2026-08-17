@@ -290,9 +290,13 @@ export default function PromocaoVestePhenix() {
                 {inscricoes.map((i) => (
                   <tr key={i.id}>
                     <td className="promocao-numeros">
-                      {i.numeros_sorte
-                        .map((n) => String(n).padStart(5, "0"))
-                        .join(", ")}
+                      <div className="promocao-numeros-lista">
+                        {i.numeros_sorte.map((n) => (
+                          <span key={n} className="promocao-numero-chip">
+                            {String(n).padStart(5, "0")}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td>
                       {i.nome_completo}
