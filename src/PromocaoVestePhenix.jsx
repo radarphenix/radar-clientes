@@ -17,9 +17,9 @@ export default function PromocaoVestePhenix() {
   async function carregar() {
     setCarregando(true);
     const { data: d, error } = await supabase
-      .from("promocao_veste_phenix_30_anos")
+      .from("promocao_veste_phenix_30_anos_com_numeros")
       .select("*")
-      .order("numero_sorte");
+      .order("criado_em");
     setInscricoes(d || []);
     setErro(error ? "Não foi possível carregar as inscrições." : "");
     setCarregando(false);
@@ -32,7 +32,9 @@ export default function PromocaoVestePhenix() {
 
   function exportar() {
     const linhas = inscricoes.map((i) => ({
-      "Número da sorte": String(i.numero_sorte).padStart(5, "0"),
+      "Números da sorte": i.numeros_sorte
+        .map((n) => String(n).padStart(5, "0"))
+        .join(", "),
       Nome: i.nome_completo,
       CPF: i.cpf,
       "E-mail": i.email,
@@ -276,7 +278,7 @@ export default function PromocaoVestePhenix() {
             <table>
               <thead>
                 <tr>
-                  <th>Nº</th>
+                  <th>Números</th>
                   <th>Participante</th>
                   <th>Empresa</th>
                   <th>CPF</th>
@@ -287,8 +289,10 @@ export default function PromocaoVestePhenix() {
               <tbody>
                 {inscricoes.map((i) => (
                   <tr key={i.id}>
-                    <td>
-                      <b>{String(i.numero_sorte).padStart(5, "0")}</b>
+                    <td className="promocao-numeros">
+                      {i.numeros_sorte
+                        .map((n) => String(n).padStart(5, "0"))
+                        .join(", ")}
                     </td>
                     <td>
                       {i.nome_completo}
