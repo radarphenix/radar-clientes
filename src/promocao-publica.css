@@ -3,12 +3,12 @@
 .promo-publica{font-family:Montserrat,Arial,sans-serif;color:#082b50;background:#f3f7fa;font-synthesis:none;overflow-x:hidden}
 .promo-publica *{box-sizing:border-box}
 
-.promo-publica header{height:110px;padding:14px clamp(18px,5vw,72px);display:flex;align-items:center;gap:16px;justify-content:space-between;background:#fff;border-bottom:1px solid #dce7ef}
+.promo-publica header{height:84px;padding:12px clamp(18px,5vw,72px);display:flex;align-items:center;gap:16px;justify-content:space-between;background:#fff;border-bottom:1px solid #dce7ef}
 .promo-publica header img,
-.promo-publica .marca-30-cabecalho{width:auto;height:84px;object-fit:contain}
+.promo-publica .marca-30-cabecalho{width:auto;height:64px;object-fit:contain}
 .promo-publica header span{font-weight:800;color:#0e5886;letter-spacing:.1em;font-size:clamp(13px,2.6vw,16px);white-space:nowrap}
 
-.promo-publica .layout{min-height:calc(100vh - 160px);max-width:1360px;margin:0 auto;display:grid;grid-template-columns:minmax(280px,.9fr) minmax(320px,1.2fr);gap:5vw;padding:56px clamp(18px,6vw,90px);background:radial-gradient(circle at 15% 30%,#0e5886 0,#082d57 44%,#041b35 100%)}
+.promo-publica .layout{min-height:calc(100vh - 130px);max-width:1360px;margin:0 auto;display:grid;grid-template-columns:minmax(280px,.9fr) minmax(320px,1.2fr);gap:5vw;padding:32px clamp(18px,6vw,90px);background:radial-gradient(circle at 15% 30%,#0e5886 0,#082d57 44%,#041b35 100%)}
 .promo-publica .hero{color:#ffffff;position:relative;padding-top:30px;min-width:0}
 .promo-publica .eyebrow{letter-spacing:.18em;font-weight:800;color:#8ed7e8}
 .promo-publica .hero h1{color:#ffffff;font-size:clamp(32px,5vw,70px);line-height:1.05;margin:.2em 0}
@@ -56,13 +56,13 @@
   .promo-publica .hero{text-align:center;padding-top:10px}
   .promo-publica .card{padding:24px}
   .promo-publica .grid{grid-template-columns:1fr}
-  .promo-publica header{padding:10px 16px;height:88px}
-  .promo-publica header img,.promo-publica .marca-30-cabecalho{height:62px}
+  .promo-publica header{padding:10px 16px;height:72px}
+  .promo-publica header img,.promo-publica .marca-30-cabecalho{height:48px}
 }
 
 @media(max-width:420px){
-  .promo-publica header{height:76px}
-  .promo-publica header img,.promo-publica .marca-30-cabecalho{height:50px}
+  .promo-publica header{height:64px}
+  .promo-publica header img,.promo-publica .marca-30-cabecalho{height:40px}
   .promo-publica header span{font-size:12px;letter-spacing:.06em}
   .promo-publica .layout{padding:20px 14px;gap:24px}
   .promo-publica .card{padding:18px}
@@ -70,9 +70,9 @@
 }
 
 @media(min-width:881px){
-  .promo-publica .layout{padding-top:24px;padding-bottom:24px;align-items:center}
-  .promo-publica .hero{padding-top:0}
-  .promo-publica .card{padding:26px 32px}
+  .promo-publica .layout{height:calc(100vh - 130px);min-height:0;padding-top:20px;padding-bottom:20px;align-items:stretch}
+  .promo-publica .hero{padding-top:0;display:flex;flex-direction:column;justify-content:center;overflow-y:auto}
+  .promo-publica .card{padding:22px 30px;max-height:100%;overflow-y:auto}
   .promo-publica .grid{gap:8px 12px}
   .promo-publica .card label{gap:3px}
   .promo-publica .card input,.promo-publica .card select{padding:9px 11px}
