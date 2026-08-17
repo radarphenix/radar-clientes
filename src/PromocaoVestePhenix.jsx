@@ -155,6 +155,10 @@ export default function PromocaoVestePhenix() {
     setLimpando(false);
   }
 
+  const numerosOrdenados = inscricoes
+    .flatMap((i) => i.numeros_sorte.map((numero) => ({ ...i, numero })))
+    .sort((a, b) => a.numero - b.numero);
+
   return (
     <section className="painel-admin promocao-admin">
       <div className="secao-contexto">
@@ -278,7 +282,7 @@ export default function PromocaoVestePhenix() {
             <table>
               <thead>
                 <tr>
-                  <th>Números</th>
+                  <th>Número</th>
                   <th>Participante</th>
                   <th>Empresa</th>
                   <th>CPF</th>
@@ -287,16 +291,10 @@ export default function PromocaoVestePhenix() {
                 </tr>
               </thead>
               <tbody>
-                {inscricoes.map((i) => (
-                  <tr key={i.id}>
-                    <td className="promocao-numeros">
-                      <div className="promocao-numeros-lista">
-                        {i.numeros_sorte.map((n) => (
-                          <span key={n} className="promocao-numero-chip">
-                            {String(n).padStart(5, "0")}
-                          </span>
-                        ))}
-                      </div>
+                {numerosOrdenados.map((i) => (
+                  <tr key={`${i.id}-${i.numero}`}>
+                    <td>
+                      <b>{String(i.numero).padStart(5, "0")}</b>
                     </td>
                     <td>
                       {i.nome_completo}
