@@ -456,6 +456,13 @@
     e o paragrafo final) atualizado para mencionar a sugestao de nomes de
     rota e o cabecalho de marca nos relatorios.
 
+- [Ajuste em 2026-08-18] Impressao da Pesquisa de Rotas restrita a paleta
+  Phenix:
+  - removidos os acentos laranja e as cores verde/vermelha dos status no
+    modelo impresso;
+  - divisor, numeracao do roteiro, status e motivo de cancelamento passaram
+    a usar azul Phenix (`#0057d8`), azul profundo (`#032b63`) e tons neutros.
+
 ## Agenda do Tecnico (feed .ics)
 
 - [Concluido em 2026-08-13] Feed de calendario pessoal (.ics) por usuario:

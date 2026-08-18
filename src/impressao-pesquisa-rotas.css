@@ -81,7 +81,7 @@
   gap: 14px;
   margin: 10px 0 14px;
   padding-bottom: 8px;
-  border-bottom: 2px solid #ea580c;
+  border-bottom: 2px solid #0057d8;
 }
 
 .impressao-filtros {
@@ -135,15 +135,15 @@
 }
 
 .impressao-status-visitado {
-  color: #047857;
+  color: #0057d8;
 }
 
 .impressao-status-cancelado {
-  color: #b91c1c;
+  color: #032b63;
 }
 
 .impressao-status-pendente {
-  color: #c2410c;
+  color: #64748b;
 }
 
 .impressao-roteiro-lista {
@@ -169,7 +169,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #ea580c;
+  background: #0057d8;
   color: #ffffff;
   font-size: 11px;
   font-weight: 800;
@@ -201,7 +201,7 @@
 
 .impressao-roteiro-motivo {
   margin: 4px 0 0;
-  color: #b91c1c;
+  color: #032b63;
   font-size: 11px;
 }
 
