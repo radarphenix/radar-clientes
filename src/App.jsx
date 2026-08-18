@@ -15,9 +15,13 @@ import "./modal-cidade.css";
 import Rotas from "./Rotas.jsx";
 import RotasPesquisa from "./RotasPesquisa.jsx";
 import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
+import HistoricoCliente from "./HistoricoCliente.jsx";
+import ImpressaoPesquisaRotas from "./ImpressaoPesquisaRotas.jsx";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
+import "./historico-cliente.css";
+import "./impressao-pesquisa-rotas.css";
 import { calcularSequenciasPendentes } from "./lib/rotasSequencia.js";
 import {
   Users,
@@ -66,6 +70,7 @@ const TELAS_PERSISTIDAS = new Set([
   "admin",
   "promocaoVestePhenix",
   "pesquisaRotas",
+  "historicoCliente",
 ]);
 
 const FILTROS_PESQUISA_ROTAS_INICIAIS = {
@@ -74,9 +79,44 @@ const FILTROS_PESQUISA_ROTAS_INICIAIS = {
   statusRota: "",
   responsavel: "",
   incluidoPor: "",
+  cidade: "",
+  nomeRota: "",
   dataInicio: "",
   dataFim: "",
 };
+
+function formatarDataISO(data) {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function calcularPeriodoPreset(preset) {
+  const hoje = new Date();
+
+  if (preset === "hoje") {
+    const valor = formatarDataISO(hoje);
+    return { dataInicio: valor, dataFim: valor };
+  }
+
+  if (preset === "semana") {
+    const diaSemana = hoje.getDay();
+    const inicio = new Date(hoje);
+    inicio.setDate(hoje.getDate() - diaSemana);
+    const fim = new Date(inicio);
+    fim.setDate(inicio.getDate() + 6);
+    return { dataInicio: formatarDataISO(inicio), dataFim: formatarDataISO(fim) };
+  }
+
+  if (preset === "mes") {
+    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    return { dataInicio: formatarDataISO(inicio), dataFim: formatarDataISO(fim) };
+  }
+
+  return { dataInicio: "", dataFim: "" };
+}
 
 const TELA_ATUAL_STORAGE_KEY = "radarClientes:telaAtual";
 const ROTA_SELECIONADA_STORAGE_KEY = "radarClientes:rotaSelecionadaId";
@@ -475,6 +515,13 @@ function App() {
   const [filtrosPesquisaRotas, setFiltrosPesquisaRotas] = useState(
     FILTROS_PESQUISA_ROTAS_INICIAIS,
   );
+  const [clienteHistorico, setClienteHistorico] = useState(null);
+  const [amostrasHistoricoCliente, setAmostrasHistoricoCliente] = useState(
+    [],
+  );
+  const [carregandoAmostrasHistorico, setCarregandoAmostrasHistorico] =
+    useState(false);
+  const [impressaoAtiva, setImpressaoAtiva] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [importando, setImportando] = useState(false);
   const [resumoGeo, setResumoGeo] = useState(null);
@@ -741,6 +788,16 @@ function App() {
     };
     // Configura o historico interno uma unica vez por montagem do app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    function aoTerminarImpressao() {
+      document.body.classList.remove("modo-impressao");
+      setImpressaoAtiva(null);
+    }
+
+    window.addEventListener("afterprint", aoTerminarImpressao);
+    return () => window.removeEventListener("afterprint", aoTerminarImpressao);
   }, []);
 
   useEffect(() => {
@@ -2355,6 +2412,54 @@ function App() {
     );
   }, [rotas, clientes, usuariosPerfis]);
 
+  const eventosHistoricoCliente = useMemo(() => {
+    if (!clienteHistorico) return [];
+
+    const eventosVisitas = linhasPesquisaRotas
+      .filter((linha) => linha.cliente_id === clienteHistorico.id)
+      .map((linha) => {
+        const tipo =
+          linha.status === "CANCELADO"
+            ? "cancelamento"
+            : linha.status === "VISITADO"
+              ? "visita"
+              : "pendente";
+
+        return {
+          chave: `visita-${linha.id}`,
+          tipo,
+          data: linha.data_prevista_visita || linha.created_at,
+          rotaNome: linha.rota?.nome || "Rota sem nome",
+          responsavelNome: linha.rota?.responsavel_nome || "",
+          horario: linha.horario_previsto_visita || "",
+          motivoCancelamento: linha.motivo_cancelamento || "",
+        };
+      });
+
+    const eventosAmostras = permiteMenuAmostrasGrupoAtual
+      ? amostrasHistoricoCliente.map((amostra) => ({
+          chave: `amostra-${amostra.id}`,
+          tipo: "amostra",
+          data: amostra.updated_at || amostra.created_at,
+          produto: amostra.descricao_produto || amostra.cd_produto || "",
+          maquina: amostra.maquina || "",
+          fornecedor: amostra.fornecedor_concorrente || "",
+          origemAmostra: obterOrigemAmostra(amostra),
+        }))
+      : [];
+
+    return [...eventosVisitas, ...eventosAmostras].sort((a, b) => {
+      const dataA = a.data ? new Date(a.data).getTime() : 0;
+      const dataB = b.data ? new Date(b.data).getTime() : 0;
+      return dataB - dataA;
+    });
+  }, [
+    clienteHistorico,
+    linhasPesquisaRotas,
+    amostrasHistoricoCliente,
+    permiteMenuAmostrasGrupoAtual,
+  ]);
+
   async function atualizarCoordenadasPendentes() {
     if (perfil.tipo_perfil !== "admin") {
       alert("Somente administrador pode atualizar coordenadas.");
@@ -2630,6 +2735,54 @@ function App() {
     setFiltrosPesquisaRotas(FILTROS_PESQUISA_ROTAS_INICIAIS);
   }
 
+  function aplicarPeriodoPresetPesquisaRotas(preset) {
+    setFiltrosPesquisaRotas((filtrosAtuais) => ({
+      ...filtrosAtuais,
+      ...calcularPeriodoPreset(preset),
+    }));
+  }
+
+  function dispararImpressao(dados) {
+    setImpressaoAtiva(dados);
+    document.body.classList.add("modo-impressao");
+    requestAnimationFrame(() => {
+      window.print();
+    });
+  }
+
+  function imprimirListaPesquisaRotas(linhasFiltradas, resumoFiltros) {
+    if (!linhasFiltradas || linhasFiltradas.length === 0) {
+      alert("Nenhum resultado para imprimir com os filtros atuais.");
+      return;
+    }
+
+    dispararImpressao({
+      tipo: "lista",
+      linhas: linhasFiltradas,
+      resumoFiltros,
+      geradoEm: new Date(),
+    });
+  }
+
+  function imprimirRoteiroRota(rota) {
+    const clientesRota = linhasPesquisaRotas
+      .filter((linha) => linha.rota_id === rota.id)
+      .slice()
+      .sort((a, b) => (a.sequencia || 0) - (b.sequencia || 0));
+
+    if (clientesRota.length === 0) {
+      alert("Esta rota não possui clientes para imprimir.");
+      return;
+    }
+
+    dispararImpressao({
+      tipo: "roteiro",
+      rota,
+      clientes: clientesRota,
+      geradoEm: new Date(),
+    });
+  }
+
   function voltarTelaAnterior() {
     if (telaAtual === "home") {
       return;
@@ -2714,7 +2867,7 @@ function App() {
     const { data: itensRota, error: erroItens } = await supabase
       .from("rota_clientes")
       .select(
-        "id, rota_id, cliente_id, status, visitado, sequencia, aviso_whatsapp_em, data_prevista_visita, horario_previsto_visita, incluido_por, created_at",
+        "id, rota_id, cliente_id, status, visitado, sequencia, aviso_whatsapp_em, data_prevista_visita, horario_previsto_visita, incluido_por, created_at, motivo_cancelamento",
       );
 
     if (erroItens) {
@@ -3957,6 +4110,36 @@ function App() {
 
     setFiltrosAmostras(filtrosLimpos);
     carregarAmostras(filtrosLimpos);
+  }
+
+  async function abrirHistoricoCliente(item) {
+    setClienteHistorico(item);
+    setTelaAtual("historicoCliente");
+
+    if (!permiteMenuAmostrasGrupoAtual) {
+      setAmostrasHistoricoCliente([]);
+      return;
+    }
+
+    setCarregandoAmostrasHistorico(true);
+
+    const { data, error } = await montarConsultaAmostras({
+      cliente: item.codigo_cliente || item.cliente || "",
+      produto: "",
+      fornecedor: "",
+      maquina: "",
+      tipo: "",
+    });
+
+    if (error) {
+      console.error("Falha ao carregar amostras do histórico:", error);
+      setAmostrasHistoricoCliente([]);
+      setCarregandoAmostrasHistorico(false);
+      return;
+    }
+
+    setAmostrasHistoricoCliente(data || []);
+    setCarregandoAmostrasHistorico(false);
   }
 
   function limparFormularioUsuarioPerfil() {
@@ -5358,6 +5541,14 @@ function App() {
                               Amostras
                             </button>
                           )}
+
+                          <button
+                            type="button"
+                            className="botao-acao"
+                            onClick={() => abrirHistoricoCliente(item)}
+                          >
+                            Histórico
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -5787,8 +5978,29 @@ function App() {
             filtros={filtrosPesquisaRotas}
             setFiltros={setFiltrosPesquisaRotas}
             limparFiltros={limparFiltrosPesquisaRotas}
+            aplicarPeriodoPreset={aplicarPeriodoPresetPesquisaRotas}
             abrirRotaDaPesquisa={abrirRotaPeloMeuDia}
+            imprimirLista={imprimirListaPesquisaRotas}
+            imprimirRoteiro={imprimirRoteiroRota}
           />
+        )}
+
+        {telaAtual === "historicoCliente" && clienteHistorico && (
+          <HistoricoCliente
+            cliente={clienteHistorico}
+            eventos={eventosHistoricoCliente}
+            permiteAmostras={permiteMenuAmostrasGrupoAtual}
+            carregandoAmostras={carregandoAmostrasHistorico}
+          />
+        )}
+
+        {telaAtual === "historicoCliente" && !clienteHistorico && (
+          <section className="painel">
+            <p>Nenhum cliente selecionado.</p>
+            <button type="button" onClick={() => setTelaAtual("clientes")}>
+              Voltar para Clientes
+            </button>
+          </section>
         )}
 
         {telaAtual === "rotas" && (
@@ -6007,6 +6219,10 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {impressaoAtiva && (
+        <ImpressaoPesquisaRotas impressao={impressaoAtiva} />
       )}
     </div>
   );

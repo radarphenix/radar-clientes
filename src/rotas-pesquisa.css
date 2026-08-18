@@ -30,6 +30,112 @@
   white-space: nowrap;
 }
 
+.pesquisa-rotas-busca-rapida {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.pesquisa-rotas-busca-rapida input[type="text"] {
+  flex: 1 1 260px;
+  height: 44px;
+  border: 1px solid #cfe0f3;
+  border-radius: 10px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.pesquisa-rotas-busca-rapida input[type="text"]:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  outline: none;
+}
+
+.pesquisa-rotas-periodo-presets {
+  display: flex;
+  gap: 6px;
+}
+
+.pesquisa-rotas-periodo-presets button {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 12px;
+  height: 44px;
+  white-space: nowrap;
+}
+
+.pesquisa-rotas-periodo-presets button:hover {
+  background: #dbeafe;
+}
+
+.pesquisa-rotas-botao-imprimir {
+  height: 44px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+.pesquisa-rotas-filtros-avancados {
+  margin-bottom: 14px;
+  border: 1px solid #dbe8f8;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 0;
+}
+
+.pesquisa-rotas-filtros-avancados > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  color: #1d4ed8;
+  font-weight: 800;
+  font-size: 13px;
+  list-style: none;
+}
+
+.pesquisa-rotas-filtros-avancados > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pesquisa-rotas-filtros-avancados > summary::before {
+  content: "▸ ";
+}
+
+.pesquisa-rotas-filtros-avancados[open] > summary::before {
+  content: "▾ ";
+}
+
+.pesquisa-rotas-badge-contagem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.pesquisa-rotas-filtros-avancados .pesquisa-rotas-filtros {
+  padding: 0 14px 14px;
+}
+
+.pesquisa-rotas-filtros-avancados .pesquisa-rotas-acoes {
+  padding: 0 14px 14px;
+  margin: 0;
+}
+
 .pesquisa-rotas-filtros {
   display: grid;
   grid-template-columns: repeat(4, minmax(150px, 1fr));
@@ -214,11 +320,21 @@
 .pesquisa-rotas-card-abrir {
   display: flex;
   align-items: flex-end;
+  gap: 8px;
 }
 
 .pesquisa-rotas-card-abrir button {
-  width: 100%;
+  flex: 1;
   min-height: 38px;
+}
+
+.pesquisa-rotas-botao-secundario {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.pesquisa-rotas-botao-secundario:hover {
+  background: #cbd5e1;
 }
 
 @media (max-width: 900px) {
@@ -275,5 +391,31 @@
     grid-template-columns: 1fr;
     gap: 8px;
     padding: 11px 12px 13px;
+  }
+
+  .pesquisa-rotas-busca-rapida {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pesquisa-rotas-busca-rapida input[type="text"] {
+    flex: none;
+    height: 44px;
+  }
+
+  .pesquisa-rotas-periodo-presets {
+    justify-content: space-between;
+  }
+
+  .pesquisa-rotas-periodo-presets button {
+    flex: 1;
+  }
+
+  .pesquisa-rotas-botao-imprimir {
+    width: 100%;
+  }
+
+  .pesquisa-rotas-card-abrir {
+    flex-direction: column;
   }
 }

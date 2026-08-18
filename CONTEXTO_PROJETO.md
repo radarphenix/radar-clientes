@@ -27,12 +27,18 @@
   a correcao de `STATUS:CANCELLED` sumindo do Google Calendar enviados
   para `origin/main` em 2026-08-14 (4 commits separados por assunto);
   migrations e edge functions correspondentes ja aplicadas/deployadas no
-  Supabase remoto. Pendente de solicitacao explicita do usuario pra subir:
-  motivo do cancelamento em texto livre no "Cancelar" da execucao de rota,
-  refletido na Manutencao da Rota e na `DESCRIPTION` do `.ics` (migration
-  `20260814120000_rota_clientes_motivo_cancelamento.sql` e deploy das
-  functions `agenda-geral-ics`/`agenda-tecnico-ics` ainda nao aplicados no
-  Supabase remoto, nada commitado/enviado ao GitHub).
+  Supabase remoto. Quarto commit do mesmo dia (`58620ea`, motivo do
+  cancelamento em texto livre no "Cancelar" da execucao de rota, refletido
+  na Manutencao da Rota e na `DESCRIPTION` do `.ics`) tambem ja foi
+  enviado para `origin/main` e sua migration/functions ja aplicadas no
+  Supabase remoto - confirmado via `supabase migration list`/`functions
+  list` (o texto anterior desta secao, que dizia "pendente de solicitacao
+  pra subir", ficou desatualizado por nao ter sido revisado logo apos o
+  envio). Trabalho em andamento (nao commitado ainda): nova tela
+  "Historico do Cliente" (botao no card de cliente, timeline de visitas +
+  amostras) e reforma da Pesquisa de Rotas (filtros reorganizados, cidade/UF,
+  nome da rota, atalhos de periodo, impressao de lista/roteiro) - ver
+  secoes dedicadas abaixo.
 - Backup pre-alteracoes mais recente: `.codex-backups/20260724_102912_visitas_agendadas_meu_dia`
 - Backup da evolucao de repeticao e reordenacao:
   `.codex-backups/20260727_173924_rotas_repeticao_reordenacao`.
@@ -306,6 +312,149 @@
     "incluido por" de um usuario diferente do responsavel pela rota
     (cenario real que motivou a feature), clique em "Abrir rota", desktop
     e mobile. Dados de teste inseridos via REST e removidos ao final.
+
+- [Redesenho em 2026-08-14] Filtros reorganizados + campos novos +
+  impressao (lista filtrada e roteiro de rota):
+  - motivacao: usuario relatou que a tela "nao parece atender bem com os
+    filtros" - esclarecido via perguntas que o problema era usabilidade
+    (muitos campos sempre visiveis) e falta de campos (cidade/UF, nome da
+    rota, atalhos de periodo); pediu tambem um "imprimir para gerar PDF";
+  - `FILTROS_PESQUISA_ROTAS_INICIAIS` (`App.jsx`) ganhou `cidade` e
+    `nomeRota`; `RotasPesquisa.jsx` reorganizado em duas camadas: "busca
+    rapida" sempre visivel (texto livre + botoes de atalho "Hoje"/"Esta
+    semana"/"Este mes" que preenchem `dataInicio`/`dataFim` via
+    `calcularPeriodoPreset()` em `App.jsx` + botao "Imprimir lista") e um
+    painel `<details className="pesquisa-rotas-filtros-avancados">`
+    recolhivel com os demais 8 campos (status cliente/rota, responsavel,
+    incluido por, cidade/UF, nome da rota, datas manuais, limpar filtros),
+    com badge mostrando quantos desses estao ativos mesmo fechado
+    (`contarFiltrosAvancadosAtivos`);
+  - filtro "Cidade/UF" busca em `cliente.cidade + cliente.uf` (texto
+    solto, ex.: buscar so "SC" pega todo mundo de Santa Catarina); filtro
+    "Nome da rota" busca em `rota.nome` - ambos independentes do campo de
+    busca livre (que continua buscando cliente/codigo/cidade/rota junto);
+  - impressao usa a API nativa `window.print()` do navegador (sem
+    biblioteca de PDF nova) - o dialogo de impressao do proprio sistema ja
+    oferece "Salvar como PDF" como destino, que era o pedido original;
+  - novo estado `impressaoAtiva` (`App.jsx`) guarda o que deve ser
+    impresso (`{tipo:"lista", linhas, resumoFiltros}` ou
+    `{tipo:"roteiro", rota, clientes}`); `dispararImpressao(dados)` seta o
+    estado, adiciona a classe `modo-impressao` no `<body>` e chama
+    `window.print()` num `requestAnimationFrame` (pra garantir que o React
+    ja renderizou o conteudo antes do navegador abrir o dialogo); um
+    listener de `window.addEventListener("afterprint", ...)` limpa o
+    estado e a classe quando o usuario fecha o dialogo;
+  - `imprimirListaPesquisaRotas(linhas, resumoFiltros)`: recebe a lista ja
+    filtrada de dentro de `RotasPesquisa.jsx` (via prop `imprimirLista`,
+    chamada com `linhasFiltradas` do proprio `useMemo` do componente, sem
+    duplicar a logica de filtro em `App.jsx`) e um resumo textual dos
+    filtros ativos (`montarResumoFiltros()`, dentro de
+    `RotasPesquisa.jsx`); recusa com alerta se a lista estiver vazia;
+  - `imprimirRoteiroRota(rota)`: reaproveita `linhasPesquisaRotas` (ja
+    carregado, sem query nova), filtra por `rota_id` e ordena por
+    `sequencia` - roteiro pensado pro tecnico levar impresso (endereco
+    completo, telefone, data/hora prevista, motivo se cancelado);
+  - `carregarRotas()` (`App.jsx`) ampliou o `select` de `rota_clientes`
+    para incluir `motivo_cancelamento` (faltava ali; ja existia no
+    `select("*")` usado ao abrir uma rota especifica e no Historico do
+    Cliente) - necessario pro roteiro impresso mostrar o motivo;
+  - novo componente `src/ImpressaoPesquisaRotas.jsx` +
+    `src/impressao-pesquisa-rotas.css`: renderiza os dois tipos de
+    relatorio dentro de uma `<div className="area-impressao">` sempre
+    presente no fim do JSX de `App.jsx` (dentro de `.app`, so quando
+    `impressaoAtiva` existe) - fica invisivel (`display:none`) fora de
+    impressao; regra `@media print` com `body.modo-impressao .app > *:not(.area-impressao)
+    { display:none }` esconde cabecalho/sidebar/conteudo normal e mostra
+    so o relatorio;
+  - dois bugs de CSS encontrados e corrigidos durante o QA visual:
+    (1) `.app` tem `padding: 132px 30px 48px 310px` no desktop (espaco
+    reservado pro header fixo + sidebar) que continuava sendo aplicado
+    mesmo com os irmaos escondidos, empurrando o relatorio pra baixo/direita
+    com fundo azul claro do app around - corrigido com
+    `body.modo-impressao .app { padding:0 !important; background:#fff
+    !important }`; (2) todo o texto do relatorio saia centralizado (herdava
+    `text-align:center` de uma regra legada em `App.css`, tipo boilerplate
+    antigo de Create React App) - corrigido com `text-align:left` explicito
+    em `.area-impressao`;
+  - nota tecnica de QA: `window.print()` clicado via Playwright real
+    (`.click()`, evento "trusted") se comportou de forma inconsistente no
+    Chromium headless (a chamada real parece disparar `afterprint` quase
+    instantaneamente, limpando o estado antes de dar pra conferir); QA
+    visual do layout de impressao foi feito com `window.print` stubado
+    (`page.addInitScript(() => { window.print = () => {} })`) so no
+    contexto de teste - nao afeta o comportamento real do app, onde
+    `window.print()` abre o dialogo nativo do sistema operacional e so
+    dispara `afterprint` quando o usuario fecha esse dialogo;
+  - responsividade mobile: bug encontrado e corrigido - o campo de busca
+    (`input[type="text"]` com `flex: 1 1 260px` pensado pro layout em
+    linha do desktop) virava uma caixa gigante (~260px de altura) quando
+    o container trocava pra `flex-direction:column` no mobile, porque
+    `flex-basis` passou a controlar a altura (eixo principal) em vez da
+    largura; corrigido com `flex:none; height:44px` especifico dentro do
+    `@media (max-width:700px)`;
+  - validado com Playwright (usuario demo, dados reais, sem inserir nada
+    no Supabase): atalhos de periodo (conferido "Esta semana" preenchendo
+    as duas datas corretamente), filtro cidade/UF, filtro nome da rota,
+    "Limpar filtros", contador de resultados mudando a cada filtro,
+    conteudo e formatacao dos dois relatorios impressos (lista com 15
+    linhas reais e tabela completa, roteiro de uma rota real com 3
+    clientes, endereco e datas corretas), desktop (1366px) e mobile
+    (390px, incluindo o painel de filtros avancados e os dois botoes
+    "Abrir rota"/"Imprimir roteiro" empilhados no card);
+  - `lint`/`build` sem erros; `MANUAL_USUARIO.md` (secao 17) reescrita
+    para descrever a busca rapida, o painel "Mais filtros" e os dois
+    botoes de impressao.
+
+- [Ajuste em 2026-08-14] Sugestao de nome de rota + relatorios com
+  identidade visual Phenix:
+  - feedback do usuario logo apos usar a v1 dos relatorios impressos: (1)
+    o campo "Nome da rota" deveria sugerir rotas ja existentes ao digitar;
+    (2) o leiaute da impressao estava "longe de um leiaute decente e
+    padrao da Phenix que ja temos";
+  - investigacao (agente Explore) confirmou que nao havia nenhum
+    relatorio/PDF anterior no projeto pra reaproveitar - nem o Excel de
+    importacao de clientes (`XLSX.utils.book_new()` em `App.jsx`, puramente
+    tabular, sem marca) nem a Promocao Veste Phenix tem identidade visual
+    de documento; o "padrao Phenix" que o usuario tinha em mente e o
+    proprio cabecalho do app (`.home-topo` em `src/home.css:10-20`):
+    gradiente `linear-gradient(135deg, #032b63, #0057d8)`, `border-radius:
+    28px`, logo oficial branca hotlinkada
+    (`https://phenixonline.com.br/wp-content/uploads/2021/05/Logo-Branco-1.png`,
+    mesma usada no icone do PWA) e acento laranja (`#ea580c`/`#f97316`)
+    usado em detalhes pontuais;
+  - `RotasPesquisa.jsx`: novo `nomesRotasSugeridos` (`useMemo`, nomes
+    unicos de `linha.rota.nome` a partir de `linhas` - a lista completa,
+    nao a filtrada, pra sugestao nao encolher conforme o usuario digita);
+    campo "Nome da rota" ganhou `list="pesquisa-rotas-sugestoes-nome-rota"`
+    ligado a um `<datalist>` com essas opcoes - autocomplete nativo do
+    navegador, sem biblioteca nova;
+  - `ImpressaoPesquisaRotas.jsx` reescrito: novo `CabecalhoImpressao`
+    (componente interno compartilhado pelos dois tipos de relatorio) com
+    logo Phenix + faixa gradiente azul (replica `.home-topo`, em versao
+    compacta de cabecalho de documento em vez de hero da tela inicial);
+    status (Visitado/Cancelado/Pendente) agora aparece colorido (verde/
+    vermelho/laranja, mesma paleta do `badge-status-rota` do resto do
+    app) em vez de texto simples; roteiro ganhou numeracao em circulo
+    laranja (`#ea580c`) por parada, reforcando o acento de marca; rodape
+    fixo "Radar de Clientes Phenix · Relatorio gerado automaticamente"
+    nos dois relatorios;
+  - `impressao-pesquisa-rotas.css`: `-webkit-print-color-adjust: exact` /
+    `print-color-adjust: exact` adicionados (sem isso, muitos navegadores
+    omitem cores de fundo na impressao por padrao, o que apagaria o
+    gradiente da faixa); linha divisoria laranja (`border-bottom: 2px
+    solid #ea580c`) entre o cabecalho e o corpo do relatorio; tabela com
+    linhas zebradas (`tbody tr:nth-child(even)`) pra facilitar leitura de
+    listas longas;
+  - validado com Playwright (mesmo metodo da v1, `window.print` anulado
+    so no contexto de teste pra poder inspecionar o layout - ver nota na
+    entrada anterior): datalist do nome da rota retornou os 3 nomes reais
+    de rota existentes na base; os dois relatorios renderizaram com a
+    faixa azul/logo/acento laranja, status coloridos corretamente
+    (verde/laranja/vermelho batendo com o status real de cada linha) e
+    numeracao laranja no roteiro;
+  - `lint`/`build` sem erros; `MANUAL_USUARIO.md` (secao 17, itens 3 e 9,
+    e o paragrafo final) atualizado para mencionar a sugestao de nomes de
+    rota e o cabecalho de marca nos relatorios.
 
 ## Agenda do Tecnico (feed .ics)
 
@@ -833,12 +982,78 @@
     `montarEvento` acrescenta a linha `Motivo do cancelamento: ...` na
     `DESCRIPTION` quando o status e `CANCELADO` e ha motivo preenchido;
   - validado localmente com `npm run lint`, `npm run build` e
-    `deno check` nas duas edge functions; migration e deploy das
-    functions **ainda nao aplicados no Supabase remoto** e nada deste
-    bloco foi commitado/enviado ao GitHub - aguardando solicitacao
-    explicita do usuario pra subir (regra reforçada em 2026-08-14: "pode
-    subir pra oficial" vale so pras alteracoes ja discutidas no momento
-    do pedido, nunca por antecipacao).
+    `deno check` nas duas edge functions; [Atualizado] migration e deploy
+    das duas functions foram aplicados no Supabase remoto e o commit
+    (`58620ea`) foi enviado a `origin/main` ainda em 2026-08-14 - esta nota
+    ficou desatualizada por nao ter sido revisada logo apos o envio
+    (confirmado depois via `supabase migration list`/`functions list` e
+    `git log origin/main`, todos batendo com o local).
+
+## Histórico do Cliente
+
+- [Concluído em 2026-08-14] Nova tela com linha do tempo por cliente
+  (visitas + amostras):
+  - motivação: o usuário pediu sugestões de evolução do Radar; entre as
+    ideias guardadas em memória estava "histórico do cliente em linha do
+    tempo" - antes de implementar, foi pedido um mockup visual (Artifact
+    HTML, tema claro/escuro, cores/badges reaproveitados do app) para
+    validação; aprovado com uma ressalva: a parte de amostras precisa
+    continuar condicionada à mesma configuração por grupo que já controla
+    o menu Amostras (`permite_menu_amostras`), não aparecer incondicional;
+  - novo botão "Histórico" no card de cliente (`src/App.jsx`), ao lado de
+    "Acomp." e "Amostras" - sempre visível (não depende de permissão),
+    pois a parte de visitas é aberta a qualquer perfil;
+  - `abrirHistoricoCliente(item)` (`src/App.jsx`): guarda o cliente em
+    `clienteHistorico`, muda `telaAtual` para `"historicoCliente"` e, só
+    se `permiteMenuAmostrasGrupoAtual` for verdadeiro, consulta amostras
+    do cliente reaproveitando `montarConsultaAmostras({ cliente:
+    item.codigo_cliente })` (mesma função/mesmo filtro `ilike` já usado
+    pelo atalho "Amostras" do card) - resultado guardado em
+    `amostrasHistoricoCliente`, separado do estado da tela Amostras para
+    não interferir nos filtros de quem estiver navegando lá;
+  - `eventosHistoricoCliente` (`useMemo`): combina, sem nenhuma consulta
+    nova ao Supabase para visitas,
+    `linhasPesquisaRotas` (já carregado para Meu Dia/Pesquisa de Rotas)
+    filtrado por `cliente_id === clienteHistorico.id`, com as amostras
+    carregadas; cada visita vira evento `visita`/`cancelamento`/`pendente`
+    conforme `status`, cada amostra vira evento `amostra`; motivo do
+    cancelamento (`rota_clientes.motivo_cancelamento`, ver seção anterior)
+    incluído no evento quando existe; lista final ordenada por data
+    (mais recente primeiro) e agrupada por mês na tela;
+  - `carregarRotas()` (`App.jsx`) passou a selecionar também
+    `motivo_cancelamento` no `select` de `rota_clientes` (faltava ali;
+    já existia no `select("*")` usado ao abrir uma rota específica);
+  - novo componente `src/HistoricoCliente.jsx` + `src/historico-cliente.css`:
+    cabeçalho com nome/código/cidade do cliente, resumo em blocos (visitas
+    realizadas, cancelamentos, amostras enviadas - só quando permitido -,
+    última visita), filtros rápidos "Tudo/Visitas/Amostras" (chip "Amostras"
+    só aparece se `permiteAmostras`), timeline com marcador de mês e
+    cartões por evento; visitas reaproveitam a classe `badge-status-rota`
+    já usada em Rotas/Manutenção/Pesquisa de Rotas (mesmas cores
+    verde/vermelho/laranja); amostras reaproveitam a classe `amostra-origem`
+    já usada na tela Amostras (`MANUAL`/`ACOMPANHAMENTO`) - nenhuma cor
+    nova inventada para status já existentes, só um ponto roxo na timeline
+    para diferenciar visualmente evento de amostra de evento de visita;
+  - tela `"historicoCliente"` adicionada a `TELAS_PERSISTIDAS`
+    especificamente para o botão "Voltar"/botão-voltar-do-navegador
+    funcionar corretamente (sem isso, o histórico de navegação interno do
+    app pula direto para Home em vez de voltar para Clientes, pois só
+    telas em `TELAS_PERSISTIDAS` empilham estado no `window.history`);
+    efeito colateral aceito: um F5 enquanto essa tela está aberta perde o
+    cliente selecionado (não persistido) e mostra "Nenhum cliente
+    selecionado" com um botão de volta para Clientes - mesma limitação já
+    existente em filtros de outras telas (ex.: filtro de cliente da tela
+    Amostras também não sobrevive a F5);
+  - validado com Playwright (usuário demo, dados reais, sem inserir nada
+    novo no Supabase): cliente com 13 amostras reais (mix
+    MANUAL/ACOMPANHAMENTO, agrupamento por mês correto), cliente com uma
+    visita `CANCELADO` real (badge vermelho, motivo ausente nesse caso
+    específico não quebra o layout), estado vazio ("Nenhum evento
+    encontrado"), filtro "Amostras", botão "Voltar" retornando
+    corretamente para Clientes (confirma o ajuste de `TELAS_PERSISTIDAS`),
+    desktop (1366px) e mobile (390px);
+  - `lint`/`build` sem erros; `MANUAL_USUARIO.md` (seção 6, novo item 7)
+    documenta o botão.
 
 ## Meu Dia
 
@@ -1142,6 +1357,11 @@
   - `src/pwa-icon-source.png` e `public/pwa-*.png` /
     `public/maskable-icon-512x512.png` /
     `public/apple-touch-icon-180x180.png` (icones do PWA)
+  - `src/HistoricoCliente.jsx` / `src/historico-cliente.css` (novo,
+    tela "Historico do Cliente")
+  - `src/ImpressaoPesquisaRotas.jsx` / `src/impressao-pesquisa-rotas.css`
+    (novo, relatorios impressos da Pesquisa de Rotas)
+  - `src/RotasPesquisa.jsx` / `src/rotas-pesquisa.css`
   - `MANUAL_USUARIO.md`
 - Supabase:
   - `supabase/migrations/20260629190000_configuracoes_grupos_whatsapp_rotas.sql`

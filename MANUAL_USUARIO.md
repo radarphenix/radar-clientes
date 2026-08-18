@@ -249,6 +249,18 @@ Botoes principais:
 - Funcao: abre a tela Amostras com filtro inicial do cliente.
 - Regra: aparece somente para perfis liberados no painel administrativo.
 
+7. Historico (card de cliente)
+
+- Funcao: abre a tela Historico do Cliente, com linha do tempo de visitas
+  (rotas) e amostras enviadas, mais recente primeiro, agrupada por mes.
+- Mostra resumo (visitas realizadas, cancelamentos, amostras enviadas,
+  data da ultima visita), filtros rapidos (Tudo / Visitas / Amostras) e,
+  em cancelamentos, o motivo informado pelo tecnico quando existir.
+- Regra: o bloco de amostras (contador, filtro e eventos) so aparece para
+  perfis com acesso liberado a Amostras no painel administrativo; visitas
+  aparecem para qualquer perfil, dentro do que a rota da pessoa permite ver.
+- Disponivel para qualquer perfil (nao e restrito a admin).
+
 ## 7. Tela Amostras
 
 Tela: consulta da tabela amostras_phenix.
@@ -856,42 +868,78 @@ lista rotas completas.
 Acesso: somente administrador. Item "Pesquisar rotas" no menu lateral,
 logo abaixo de "Rotas".
 
-Filtros (todos combinaveis e aplicados na hora, sem precisar confirmar):
+Busca rapida (sempre visivel, no topo):
 
 1. Buscar
 
-- Texto livre: nome do cliente, codigo ou cidade.
+- Texto livre: nome do cliente, codigo, cidade ou nome da rota.
 
-2. Status do cliente
+2. Atalhos de periodo
+
+- Botoes "Hoje", "Esta semana" e "Este mes" preenchem sozinhos o
+  intervalo de data prevista (equivalente a preencher "Data prevista
+  de/ate" manualmente dentro de "Mais filtros").
+
+3. Imprimir lista
+
+- Gera um relatorio com cabecalho da marca Phenix (abre o dialogo de
+  impressao do navegador, de onde da para escolher uma impressora ou
+  "Salvar como PDF") com todos os resultados que estao sendo exibidos no
+  momento, respeitando todos os filtros aplicados (inclusive os de "Mais
+  filtros"). O relatorio mostra data/hora de geracao, um resumo dos
+  filtros aplicados e uma tabela com cliente, codigo, cidade/UF, rota,
+  responsavel, status (colorido), data prevista e quem incluiu.
+
+"Mais filtros" (painel recolhivel - clique para abrir/fechar; mostra um
+numero ao lado quando ha algum destes filtros aplicado, mesmo fechado):
+
+4. Status do cliente
 
 - Todos / Pendente / Visitado / Cancelado.
 
-3. Status da rota
+5. Status da rota
 
 - Todas / Aberta / Fechada / Em andamento / Finalizada.
 
-4. Responsavel pela rota
+6. Responsavel pela rota
 
 - Lista todos os usuarios ativos.
 
-5. Incluido por
+7. Incluido por
 
 - Lista todos os usuarios ativos. Mostra quem adicionou aquele cliente na
   rota - pode ser diferente do responsavel pela rota (ex.: admin incluindo
   cliente na rota de um tecnico).
 
-6. Data prevista de / ate
+8. Cidade/UF
 
-- Filtra pelo intervalo da data prevista de visita.
+- Texto livre, busca na cidade e na UF do cliente (separado do campo
+  "Buscar" para filtrar so por localidade sem precisar saber o nome do
+  cliente).
 
-7. Limpar filtros
+9. Nome da rota
 
-- Volta todos os filtros ao padrao (sem nenhum aplicado).
+- Texto livre, busca so pelo nome/apelido da rota. Ao digitar, sugere os
+  nomes de rota ja existentes (autocomplete nativo do navegador).
+
+10. Data prevista de / ate
+
+- Filtra pelo intervalo da data prevista de visita. Os atalhos de periodo
+  (item 2) preenchem estes dois campos automaticamente.
+
+11. Limpar filtros
+
+- Volta todos os filtros ao padrao (sem nenhum aplicado), inclusive os da
+  busca rapida.
 
 Cada resultado aparece como um cartao resumido (cliente, rota, cidade,
 selo de status, data e horario previstos). Ao tocar no cartao ("Detalhes"),
 expande mostrando status da rota, responsavel, sequencia, quem incluiu o
-cliente e quando, e o botao "Abrir rota" (leva direto para a rota).
+cliente e quando, o botao "Abrir rota" (leva direto para a rota) e o botao
+"Imprimir roteiro" - gera, tambem com o cabecalho da marca Phenix, uma
+folha de roteiro so daquela rota (sequencia numerada, cliente, endereco
+completo, telefone, data/horario previstos e, se cancelado, o motivo),
+pensada para o tecnico levar impressa ou salvar como PDF.
 
 ## 18. Instalacao como aplicativo (PWA)
 
