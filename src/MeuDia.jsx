@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import "./meu-dia.css";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
+import MinhaComissaoCard from "./MinhaComissaoCard.jsx";
 
 function chaveDataLocal(data = new Date()) {
   const ano = data.getFullYear();
@@ -49,6 +50,7 @@ function MeuDia({
   abrirRota,
   abrirListaRotas,
   agendaIcsUrl,
+  perfil,
 }) {
   const [linkCopiado, setLinkCopiado] = useState(false);
 
@@ -340,6 +342,14 @@ function MeuDia({
           </div>
         </article>
       </section>
+
+      {!visaoEquipe &&
+        perfil?.tipo_perfil === "representante" &&
+        perfil?.piloto_comissoes === true && (
+          <section className="meu-dia-financeiro" aria-label="Seus indicadores financeiros">
+            <MinhaComissaoCard perfil={perfil} />
+          </section>
+        )}
 
       <div className="meu-dia-conteudo meu-dia-conteudo-agenda">
         <section className="meu-dia-painel">

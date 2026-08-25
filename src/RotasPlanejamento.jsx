@@ -307,16 +307,17 @@ function RotasPlanejamento({
 
                   {rotaSelecionada.status !== "FINALIZADA" && (
                     <div className="acoes-planejamento-rota">
-                      <button
-                        type="button"
-                        className="btn-mini-status whatsapp"
-                        disabled={!permiteAvisoWhatsAppRotaGrupoAtual}
-                        onClick={() => reenviarAvisoWhatsAppCliente(item)}
-                      >
-                        {item.aviso_whatsapp_em
-                          ? "Reenviar aviso"
-                          : "Primeiro aviso"}
-                      </button>
+                      {permiteAvisoWhatsAppRotaGrupoAtual && (
+                        <button
+                          type="button"
+                          className="btn-mini-status whatsapp"
+                          onClick={() => reenviarAvisoWhatsAppCliente(item)}
+                        >
+                          {item.aviso_whatsapp_em
+                            ? "Reenviar aviso"
+                            : "Primeiro aviso"}
+                        </button>
+                      )}
 
                       <button
                         type="button"

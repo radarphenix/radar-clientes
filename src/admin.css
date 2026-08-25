@@ -1,4 +1,4 @@
-/* ADMIN */
+﻿/* ADMIN */
 
 .admin-container {
     display: flex;
@@ -72,6 +72,49 @@
     }
 }
 
+.admin-abas {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 22px;
+  border-bottom: 1px solid #dbe7f3;
+}
+
+.admin-abas button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border-radius: 10px 10px 0 0;
+  background: #eef4fb;
+  color: #334155;
+  font-weight: 800;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.admin-abas button.ativo {
+  background: #2563eb;
+  color: #fff;
+}
+
+.admin-abas-contagem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+}
+
+.admin-abas button:not(.ativo) .admin-abas-contagem {
+  background: #dbe7f3;
+  color: #334155;
+}
+
 .admin-bloco {
   background: #ffffff;
   border: 1px solid #dbe7f3;
@@ -98,19 +141,19 @@
   text-align: left;
 }
 
-.painel-admin > .admin-bloco:first-of-type {
+.admin-bloco-importacao {
   border-radius: 12px;
   padding: 22px;
 }
 
-.painel-admin > .admin-bloco:first-of-type > h3 {
+.admin-bloco-importacao > h3 {
   font-size: 20px;
   line-height: 1.2;
   margin: 0 0 6px 0;
   text-align: left;
 }
 
-.painel-admin > .admin-bloco:first-of-type > p {
+.admin-bloco-importacao > p {
   color: #475569;
   font-size: 14px;
   line-height: 1.45;
@@ -118,7 +161,7 @@
   text-align: left;
 }
 
-.painel-admin > .admin-bloco:first-of-type .resumo-geo {
+.admin-bloco-importacao .resumo-geo {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
@@ -129,7 +172,7 @@
   margin: 16px 0 18px 0;
 }
 
-.painel-admin > .admin-bloco:first-of-type .resumo-geo p {
+.admin-bloco-importacao .resumo-geo p {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -144,7 +187,7 @@
   text-align: left;
 }
 
-.painel-admin > .admin-bloco:first-of-type .resumo-geo strong {
+.admin-bloco-importacao .resumo-geo strong {
   color: #0f172a;
   font-size: 18px;
   line-height: 1.1;
@@ -258,7 +301,7 @@
 
 .admin-card-usuario {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(160px, 260px) auto;
   gap: 12px;
   align-items: center;
   padding: 14px;
@@ -273,10 +316,63 @@
   color: #0f172a;
 }
 
+.admin-card-usuario > div:nth-child(2) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .admin-card-usuario span {
   display: inline-flex;
   color: #64748b;
   font-size: 13px;
+}
+
+.admin-card-usuario .admin-badge {
+  margin-left: 0;
+}
+
+.admin-bloco-acessos h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-lista-online {
+  margin: 12px 0 24px;
+}
+
+.admin-online-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #16a34a;
+  margin-right: 8px;
+}
+
+.admin-tabela-log-acessos {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.admin-tabela-log-acessos table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-tabela-log-acessos th,
+.admin-tabela-log-acessos td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.admin-tabela-log-acessos th {
+  color: #64748b;
+  font-weight: 600;
 }
 
 .admin-card-acoes-usuario {
@@ -453,6 +549,23 @@
     gap: 12px;
   }
 
+  .admin-abas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    border-bottom: 0;
+  }
+
+  .admin-abas button {
+    padding: 9px 6px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+
+  .admin-abas button svg {
+    display: none;
+  }
+
   .admin-topo {
     align-items: stretch;
   }
@@ -477,16 +590,16 @@
     font-size: 21px;
   }
 
-  .painel-admin > .admin-bloco:first-of-type .resumo-geo {
+  .admin-bloco-importacao .resumo-geo {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
-  .painel-admin > .admin-bloco:first-of-type {
+  .admin-bloco-importacao {
     padding: 14px;
   }
 
-  .painel-admin > .admin-bloco:first-of-type .resumo-geo p {
+  .admin-bloco-importacao .resumo-geo p {
     min-height: 0;
     padding: 10px;
   }
@@ -531,7 +644,7 @@
 }
 
 @media (max-width: 420px) {
-  .painel-admin > .admin-bloco:first-of-type .resumo-geo {
+  .admin-bloco-importacao .resumo-geo {
     grid-template-columns: 1fr;
   }
 
@@ -539,3 +652,4 @@
     flex-direction: column;
   }
 }
+

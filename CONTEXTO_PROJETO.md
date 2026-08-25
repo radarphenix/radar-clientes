@@ -45,6 +45,10 @@
 - Migration de Amostras aplicada no Supabase remoto via `supabase db push --linked` em 2026-07-03.
 - Ajuste de contraste global aplicado em `src/app-global.css` e `src/index.css` para melhorar leitura de titulos e campos de busca.
 - Cabecalho de contexto padronizado em `src/App.jsx` com estilo compartilhado em `src/app-global.css` para clientes, amostras, dashboard, administracao e alterar senha.
+- Bloco de trabalho de 2026-08-18 (aba Comissões, card financeiro no Meu Dia,
+  `piloto_comissoes`) ainda **sem commit** - ver entrada detalhada na secao
+  de historico abaixo ("[Local em 2026-08-18] Aba Comissões revisada...").
+  Nao fazer push ate solicitacao explicita.
 
 ## PWA (aplicativo instalavel)
 
@@ -1586,3 +1590,52 @@
     - build e lint validados
     - tipografia, espacamentos, bordas e sombra suavizados sem remover dados
     - layout mobile mantido em coluna e build de producao validado
+  - [Local em 2026-08-18] Consulta de comissoes alinhada à decisão manual de devoluções:
+    - somente tratamentos aceitos são sincronizados
+    - estorno pago e comissão futura cancelada permanecem separados
+    - ajuste de faixa é informativo e não é descontado novamente
+    - alterações ainda não publicadas no ambiente oficial
+  - [Local em 2026-08-18] Aba Comissões revisada em bloco extenso de trabalho (push NAO feito):
+    - filtro da lista "a receber/pago" voltou a ser por `data_vencimento` (não
+      `data_emissao`) - bate com a tela de lançamentos financeiros do
+      MWComissoes; a visão por competência/emissão continua só no Histórico,
+      que já vem pronta das views do Oracle
+    - nova coluna "Mês origem" na lista "a receber", mostrando o mês de
+      emissão da nota ao lado do vencimento
+    - "Base válida após devoluções posteriores" (Histórico) ganhou
+      expansível mostrando quais devoluções reduziram a base daquele mês,
+      com NF de origem, data, valor e representante
+    - menu "Comissões" restrito a `tipo_perfil === admin` (antes também
+      aparecia para representante); acesso individual controlado por nova
+      coluna `perfis.piloto_comissoes` (migration
+      `20260818220000_perfis_piloto_comissoes.sql`), com checkbox de edição
+      no painel Administração > Usuários do sistema
+    - tentativa de "visualizar como" global no seletor "Meu Dia de" (admin
+      assumiria 100% a visão de Clientes/Rotas/Comissões/menus do usuário
+      selecionado) foi implementada e **revertida a pedido** - causou um bug
+      real (clique em "Clientes" recarregava com o perfil do admin por cima
+      da simulação) e o usuário preferiu manter o escopo do seletor restrito
+      ao original (só filtra as rotas do Meu Dia); para testar direitos de
+      representante, o combinado é logar de fato com a conta do
+      representante, não simular
+    - card financeiro novo no Meu Dia (`src/MinhaComissaoCard.jsx`), visível
+      só para representante com `piloto_comissoes = true`: três gráficos
+      lado a lado no topo da tela (Sua comissão, Faturamento, Comissões a
+      receber), últimos 6 meses, com variação vs mês anterior e progresso até
+      a próxima faixa de meta; "Comissões a receber" é calculado a partir de
+      `comissoes_lancamentos` por `data_vencimento` no mês (não pago), igual
+      à regra da aba principal - não é a diferença prevista/paga da
+      competência
+    - por decisão pontual, o card financeiro do Meu Dia passou a refletir o
+      usuário escolhido no seletor "Meu Dia de" (`usuarioMeuDiaSelecionado`),
+      diferente da simulação global revertida acima - essa é a única tela
+      onde o admin "vendo como outro usuário" também troca o que aparece
+    - depende de duas migrations locais aplicadas no Supabase real
+      (`comissoes_representantes_consulta` e
+      `comissoes_competencia_devolucao`, ambas de 18/08) e do MWComissoesSync
+      (projeto novo, fora deste repo) sincronizar dados reais - ver
+      `MWComissoesSync/MWCOMISSOESSYNC_ACOMPANHAMENTO.md`
+    - pendente: rodar `014_revisado_radar.sql` (MWComissoes) e recriar a view
+      `EX_MW_VW_RADAR_COMISSOES_LANC` no Oracle antes de qualquer dado real
+      aparecer para o piloto; nada disso foi testado ao vivo em navegador
+    - alterações ainda não publicadas no ambiente oficial (sem commit/push)

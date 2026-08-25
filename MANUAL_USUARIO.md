@@ -976,3 +976,30 @@ Regras:
 1. Este manual deve ser atualizado sempre que houver alteracao funcional aprovada no sistema.
 2. O arquivo de contexto do projeto tambem deve ser atualizado no mesmo bloco de entrega.
 3. O backup local pre-alteracao deve ser mantido conforme regra operacional.
+
+## 20. Devoluções na consulta de comissões
+
+O Radar é somente consultivo. Ele recebe apenas devoluções já analisadas e aceitas no MW Comissões. **Estorno pago** mostra o valor efetivamente descontado de comissões já pagas; **Futuro cancelado** mostra comissões que deixaram de ser devidas antes do pagamento. Devoluções pendentes ou com cobrança mantida não geram desconto no Radar.
+
+## 21. Acesso à aba Comissões (status: em revisão, não publicado)
+
+O menu "Comissões" só aparece para dois perfis:
+
+- **Administrador**: sempre vê, com o seletor "ver como representante" dentro da própria tela de Comissões.
+- **Representante marcado como piloto**: um administrador ativa a caixa "Piloto do menu Comissões" na edição do usuário (Administração > Usuários do sistema). Só esse representante específico vê o menu quando loga com a própria conta - não é simulação, é acesso real e individual, liberado com cautela enquanto a funcionalidade está em avaliação.
+
+Outros representantes não veem o menu nem a aba, mesmo que tenham código de representante configurado.
+
+### Lista "a receber/pago"
+
+O filtro de mês nessa lista é pelo **vencimento** do título (igual à tela "Lançamentos financeiros" do MWComissoes) - mostra o que vence naquele mês, não o que foi vendido naquele mês. A coluna "Mês origem" mostra separadamente em que mês a nota foi emitida.
+
+### Histórico anual
+
+Aqui sim a competência é pela **emissão** da nota, porque é o que define a faixa de comissão do mês. Quando uma devolução posterior reduz a base de vendas de um mês já fechado, aparece a linha "Base válida após devoluções posteriores" com um link "Ver devolução(ões) que reduziu(ram) a base" - mostra a nota de origem, a devolução, a data e o representante responsável.
+
+### Card de comissão no Meu Dia
+
+Representante-piloto vê, no topo da tela Meu Dia, três gráficos lado a lado dos últimos 6 meses: **Sua comissão** (prevista, com barra de progresso até a próxima faixa quando aplicável), **Faturamento** (vendas líquidas) e **Comissões a receber** (lançamentos com vencimento no mês, ainda não pagos - mesma regra da lista "a receber", não é a diferença entre previsto e pago da competência). Passar o mouse (ou navegar por teclado) numa barra mostra o valor daquele mês.
+
+Quando um **administrador** usa o seletor "Meu Dia de" para ver o dia de outro usuário, esse card também passa a mostrar os gráficos da pessoa selecionada (se ela for representante-piloto) - é a única tela do sistema em que escolher outro usuário no Meu Dia também troca o conteúdo financeiro exibido. Em qualquer outra tela (Clientes, Rotas, Administração), o admin continua vendo com seus próprios direitos, independentemente de quem estiver selecionado no Meu Dia.

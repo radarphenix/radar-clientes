@@ -17,11 +17,13 @@ import RotasPesquisa from "./RotasPesquisa.jsx";
 import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
 import HistoricoCliente from "./HistoricoCliente.jsx";
 import ImpressaoPesquisaRotas from "./ImpressaoPesquisaRotas.jsx";
+import ComissoesRepresentante from "./ComissoesRepresentante.jsx";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
 import "./historico-cliente.css";
 import "./impressao-pesquisa-rotas.css";
+import "./comissoes-representante.css";
 import { calcularSequenciasPendentes } from "./lib/rotasSequencia.js";
 import {
   Users,
@@ -49,6 +51,9 @@ import {
   RefreshCw,
   Search,
   CalendarClock,
+  DollarSign,
+  Radio,
+  History,
 } from "lucide-react";
 
 function detectarLinkRecuperacao() {
@@ -71,6 +76,7 @@ const TELAS_PERSISTIDAS = new Set([
   "promocaoVestePhenix",
   "pesquisaRotas",
   "historicoCliente",
+  "comissoes",
 ]);
 
 const FILTROS_PESQUISA_ROTAS_INICIAIS = {
@@ -546,6 +552,12 @@ function App() {
   const [observacaoVisita, setObservacaoVisita] = useState("");
   const [gravandoVisita, setGravandoVisita] = useState(false);
   const [telaAtual, setTelaAtual] = useState(carregarTelaSalva);
+  const [abaAdmin, setAbaAdmin] = useState("usuarios");
+  const [usuariosOnline, setUsuariosOnline] = useState([]);
+  const [logAcessos, setLogAcessos] = useState([]);
+  const [carregandoLogAcessos, setCarregandoLogAcessos] = useState(false);
+  const canalPresencaRef = useRef(null);
+  const ultimaTelaLogadaRef = useRef("");
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const [clientesDaRota, setClientesDaRota] = useState([]);
   const [historicoWhatsAppRota, setHistoricoWhatsAppRota] = useState([]);
@@ -601,6 +613,61 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, perfil, telaAtual]);
 
+  useEffect(() => {
+    if (!session?.user || !perfil) return;
+    if (ultimaTelaLogadaRef.current === telaAtual) return;
+
+    ultimaTelaLogadaRef.current = telaAtual;
+    registrarAcesso(session.user.id, "TELA", telaAtual);
+    // Loga a tela atual sempre que ela muda para um usuario autenticado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telaAtual, session?.user?.id, perfil]);
+
+  useEffect(() => {
+    if (!session?.user || !perfil) {
+      if (canalPresencaRef.current) {
+        supabase.removeChannel(canalPresencaRef.current);
+        canalPresencaRef.current = null;
+        setUsuariosOnline([]);
+      }
+      return;
+    }
+
+    const canal = supabase.channel("radar-presenca", {
+      config: { presence: { key: session.user.id } },
+    });
+
+    canal.on("presence", { event: "sync" }, () => {
+      const estado = canal.presenceState();
+      const lista = Object.values(estado)
+        .map((entradas) => entradas[0])
+        .filter(Boolean);
+      setUsuariosOnline(lista);
+    });
+
+    canal.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await canal.track({
+          user_id: session.user.id,
+          nome: perfil.nome,
+          tipo_perfil: perfil.tipo_perfil,
+          entrou_em: new Date().toISOString(),
+        });
+      }
+    });
+
+    canalPresencaRef.current = canal;
+
+    return () => {
+      supabase.removeChannel(canal);
+      if (canalPresencaRef.current === canal) {
+        canalPresencaRef.current = null;
+      }
+    };
+    // Reabre o canal de presenca quando o usuario loga/troca de perfil.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, perfil?.nome, perfil?.tipo_perfil]);
+
   const [usuariosPerfis, setUsuariosPerfis] = useState([]);
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
   const [salvandoUsuario, setSalvandoUsuario] = useState(false);
@@ -625,6 +692,7 @@ function App() {
     tipo_perfil: "representante",
     codigo_representante: "",
     ativo: true,
+    piloto_comissoes: false,
   });
 
   async function carregarResumoGeo() {
@@ -683,6 +751,7 @@ function App() {
 
         if (event === "SIGNED_IN") {
           carregarPerfil(sessionAtual.user.id);
+          registrarAcesso(sessionAtual.user.id, "LOGIN");
         }
       } else if (event === "SIGNED_OUT") {
         perfilCarregadoUsuarioRef.current = "";
@@ -1161,6 +1230,10 @@ function App() {
   }
 
   async function sair() {
+    if (session?.user?.id) {
+      await registrarAcesso(session.user.id, "LOGOUT");
+    }
+
     await supabase.auth.signOut();
 
     perfilCarregadoUsuarioRef.current = "";
@@ -2970,16 +3043,12 @@ function App() {
       return;
     }
 
-    const { error } = await supabase
-      .from("rota_clientes")
-      .update({ data_prevista_visita: dataPrevista })
-      .eq("id", itemRota.id);
+    const dataAnterior = itemRota.data_prevista_visita || null;
 
-    if (error) {
-      alert("Falha ao atualizar a data prevista: " + error.message);
-      return;
-    }
-
+    // Atualiza o estado local imediatamente (otimista), antes de aguardar o
+    // servidor - senao o campo controlado "perde" o que foi digitado (volta
+    // pro valor antigo) durante o intervalo entre terminar de digitar o ano
+    // e a resposta do Supabase chegar.
     setClientesDaRota((itensAtuais) =>
       itensAtuais.map((item) =>
         item.id === itemRota.id
@@ -3002,20 +3071,44 @@ function App() {
           : rota,
       ),
     );
+
+    const { error } = await supabase
+      .from("rota_clientes")
+      .update({ data_prevista_visita: dataPrevista })
+      .eq("id", itemRota.id);
+
+    if (error) {
+      alert("Falha ao atualizar a data prevista: " + error.message);
+
+      setClientesDaRota((itensAtuais) =>
+        itensAtuais.map((item) =>
+          item.id === itemRota.id
+            ? { ...item, data_prevista_visita: dataAnterior }
+            : item,
+        ),
+      );
+
+      setRotas((rotasAtuais) =>
+        rotasAtuais.map((rota) =>
+          rota.id === itemRota.rota_id
+            ? {
+                ...rota,
+                clientes_agendados: (rota.clientes_agendados || []).map(
+                  (item) =>
+                    item.id === itemRota.id
+                      ? { ...item, data_prevista_visita: dataAnterior }
+                      : item,
+                ),
+              }
+            : rota,
+        ),
+      );
+    }
   }
 
   async function alterarHorarioPrevistoClienteRota(itemRota, novoHorario) {
     const horarioPrevisto = novoHorario || null;
-
-    const { error } = await supabase
-      .from("rota_clientes")
-      .update({ horario_previsto_visita: horarioPrevisto })
-      .eq("id", itemRota.id);
-
-    if (error) {
-      alert("Falha ao atualizar o horário previsto: " + error.message);
-      return;
-    }
+    const horarioAnterior = itemRota.horario_previsto_visita || null;
 
     setClientesDaRota((itensAtuais) =>
       itensAtuais.map((item) =>
@@ -3039,6 +3132,39 @@ function App() {
           : rota,
       ),
     );
+
+    const { error } = await supabase
+      .from("rota_clientes")
+      .update({ horario_previsto_visita: horarioPrevisto })
+      .eq("id", itemRota.id);
+
+    if (error) {
+      alert("Falha ao atualizar o horário previsto: " + error.message);
+
+      setClientesDaRota((itensAtuais) =>
+        itensAtuais.map((item) =>
+          item.id === itemRota.id
+            ? { ...item, horario_previsto_visita: horarioAnterior }
+            : item,
+        ),
+      );
+
+      setRotas((rotasAtuais) =>
+        rotasAtuais.map((rota) =>
+          rota.id === itemRota.rota_id
+            ? {
+                ...rota,
+                clientes_agendados: (rota.clientes_agendados || []).map(
+                  (item) =>
+                    item.id === itemRota.id
+                      ? { ...item, horario_previsto_visita: horarioAnterior }
+                      : item,
+                ),
+              }
+            : rota,
+        ),
+      );
+    }
   }
 
   async function abrirRota(rota) {
@@ -3228,6 +3354,11 @@ function App() {
   }
 
   async function excluirRota(rota) {
+    if (rota.status === "FINALIZADA" && perfil?.tipo_perfil !== "admin") {
+      alert("Rota finalizada, não é possível excluir.");
+      return;
+    }
+
     const confirmar = confirm("Deseja excluir a rota " + rota.nome + "?");
 
     if (!confirmar) return;
@@ -3804,6 +3935,39 @@ function App() {
     });
   }
 
+  async function registrarAcesso(userId, evento, tela) {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from("log_acessos")
+      .insert({ user_id: userId, evento, tela: tela || null });
+
+    if (error) {
+      console.warn("Falha ao gravar log de acesso:", error.message);
+    }
+  }
+
+  async function carregarLogAcessos() {
+    if (perfil?.tipo_perfil !== "admin") return;
+
+    setCarregandoLogAcessos(true);
+
+    const { data, error } = await supabase
+      .from("log_acessos")
+      .select("id, user_id, evento, tela, criado_em")
+      .order("criado_em", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.warn("Falha ao carregar log de acessos:", error.message);
+      setCarregandoLogAcessos(false);
+      return;
+    }
+
+    setLogAcessos(data || []);
+    setCarregandoLogAcessos(false);
+  }
+
   async function carregarUsuariosPerfis(perfilAtual) {
     if (perfilAtual?.tipo_perfil !== "admin") {
       return;
@@ -4206,6 +4370,10 @@ function App() {
             )
           : null,
       ativo: usuarioPerfilForm.ativo,
+      piloto_comissoes:
+        usuarioPerfilForm.tipo_perfil === "representante"
+          ? usuarioPerfilForm.piloto_comissoes
+          : false,
     };
 
     setSalvandoUsuario(true);
@@ -4451,6 +4619,21 @@ function App() {
             Clientes
           </button>
 
+          {(perfil?.tipo_perfil === "admin" ||
+            perfil?.piloto_comissoes === true) && (
+            <button
+              type="button"
+              className={telaAtual === "comissoes" ? "ativo" : ""}
+              onClick={() => {
+                setTelaAtual("comissoes");
+                setMenuMobileAberto(false);
+              }}
+            >
+              <DollarSign size={20} />
+              Comissões
+            </button>
+          )}
+
           <button
             type="button"
             className={telaAtual === "proximos" ? "ativo" : ""}
@@ -4593,6 +4776,7 @@ function App() {
               ? `${supabaseUrl}/functions/v1/agenda-tecnico-ics?token=${perfil.calendario_token}`
               : null
           }
+          perfil={usuarioMeuDiaSelecionado}
         />
       )}
 
@@ -4722,7 +4906,7 @@ function App() {
         </section>
       )}
 
-      {perfil.tipo_perfil === "admin" && telaAtual === "admin" && (
+      {perfil?.tipo_perfil === "admin" && telaAtual === "admin" && (
         <section className="painel-admin">
           <SecaoContexto
             icone={Settings}
@@ -4730,7 +4914,123 @@ function App() {
             descricao="Importação, perfis e permissões do sistema."
           />
 
-          <div className="admin-bloco">
+          <div className="admin-abas" role="tablist" aria-label="Seções da área administrativa">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={abaAdmin === "usuarios"}
+              className={abaAdmin === "usuarios" ? "ativo" : ""}
+              onClick={() => setAbaAdmin("usuarios")}
+            >
+              <UserCheck size={16} />
+              Usuários
+              <span className="admin-abas-contagem">{usuariosPerfis.length}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={abaAdmin === "permissoes"}
+              className={abaAdmin === "permissoes" ? "ativo" : ""}
+              onClick={() => setAbaAdmin("permissoes")}
+            >
+              <Settings size={16} />
+              Permissões por grupo
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={abaAdmin === "importacao"}
+              className={abaAdmin === "importacao" ? "ativo" : ""}
+              onClick={() => setAbaAdmin("importacao")}
+            >
+              <Upload size={16} />
+              Importação de clientes
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={abaAdmin === "acessos"}
+              className={abaAdmin === "acessos" ? "ativo" : ""}
+              onClick={() => {
+                setAbaAdmin("acessos");
+                carregarLogAcessos();
+              }}
+            >
+              <History size={16} />
+              Acessos
+            </button>
+          </div>
+
+          {abaAdmin === "acessos" && (
+          <div className="admin-bloco admin-bloco-acessos">
+            <h3>
+              <Radio size={16} />
+              Usuários online agora
+            </h3>
+
+            {usuariosOnline.length === 0 ? (
+              <p>Nenhum usuário online no momento.</p>
+            ) : (
+              <div className="admin-lista-online">
+                {usuariosOnline.map((usuario) => (
+                  <div className="admin-card-usuario" key={usuario.user_id}>
+                    <div>
+                      <span className="admin-online-dot" />
+                      <strong>{usuario.nome}</strong>
+                    </div>
+                    <span className="admin-badge">{usuario.tipo_perfil}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="admin-bloco-topo">
+              <h3>Log de acesso</h3>
+              <button type="button" onClick={carregarLogAcessos}>
+                Atualizar
+              </button>
+            </div>
+
+            {carregandoLogAcessos ? (
+              <p>Carregando log de acessos...</p>
+            ) : logAcessos.length === 0 ? (
+              <p>Nenhum acesso registrado ainda.</p>
+            ) : (
+              <div className="admin-tabela-log-acessos">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Data/hora</th>
+                      <th>Usuário</th>
+                      <th>Evento</th>
+                      <th>Tela</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logAcessos.map((linha) => {
+                      const usuario = usuariosPerfis.find(
+                        (item) => item.user_id === linha.user_id,
+                      );
+                      return (
+                        <tr key={linha.id}>
+                          <td>
+                            {new Date(linha.criado_em).toLocaleString("pt-BR")}
+                          </td>
+                          <td>{usuario?.nome || linha.user_id}</td>
+                          <td>{linha.evento}</td>
+                          <td>{linha.tela || "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          )}
+
+          {abaAdmin === "importacao" && (
+          <div className="admin-bloco admin-bloco-importacao">
             <h3>Importação de Clientes</h3>
 
             <p>Importação completa da base de clientes exportada do Oracle.</p>
@@ -4801,7 +5101,10 @@ function App() {
             {geocodificando && <p>Atualizando coordenadas, aguarde...</p>}
             {importando && <p>Importando clientes, aguarde...</p>}
           </div>
+          )}
 
+          {abaAdmin === "permissoes" && (
+          <>
           <div className="admin-bloco">
             <div className="admin-bloco-topo">
               <div>
@@ -4945,7 +5248,10 @@ function App() {
               </button>
             </div>
           </div>
+          </>
+          )}
 
+          {abaAdmin === "usuarios" && (
           <div className="admin-bloco">
             <div className="admin-bloco-topo">
               <div>
@@ -5090,6 +5396,24 @@ function App() {
                   Usuário ativo
                 </label>
               </div>
+
+              {usuarioPerfilForm.tipo_perfil === "representante" && (
+                <div className="admin-check">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={usuarioPerfilForm.piloto_comissoes}
+                      onChange={(e) =>
+                        setUsuarioPerfilForm({
+                          ...usuarioPerfilForm,
+                          piloto_comissoes: e.target.checked,
+                        })
+                      }
+                    />
+                    Piloto do menu Comissões (libera só para este representante, mesmo com o menu restrito a admin)
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="admin-acoes">
@@ -5219,6 +5543,12 @@ function App() {
                       >
                         {usuario.ativo ? "Ativo" : "Inativo"}
                       </span>
+
+                      {usuario.piloto_comissoes && (
+                        <span className="admin-badge ativo">
+                          Piloto Comissões
+                        </span>
+                      )}
                     </div>
 
                     <div className="admin-card-acoes-usuario">
@@ -5234,6 +5564,8 @@ function App() {
                             codigo_representante:
                               usuario.codigo_representante || "",
                             ativo: usuario.ativo === true,
+                            piloto_comissoes:
+                              usuario.piloto_comissoes === true,
                           })
                         }
                       >
@@ -5324,6 +5656,7 @@ function App() {
               )}
             </div>
           </div>
+          )}
         </section>
       )}
 
@@ -5506,9 +5839,11 @@ function App() {
                         <div className="acoes">
                           <button onClick={() => abrirMaps(item)}>Waze</button>
 
-                          <button onClick={() => abrirWhatsApp(item)}>
-                            WhatsApp
-                          </button>
+                          {permiteAvisoWhatsAppRotaGrupoAtual && (
+                            <button onClick={() => abrirWhatsApp(item)}>
+                              WhatsApp
+                            </button>
+                          )}
 
                           <button
                             type="button"
@@ -5984,6 +6319,15 @@ function App() {
             imprimirRoteiro={imprimirRoteiroRota}
           />
         )}
+
+        {telaAtual === "comissoes" &&
+          (perfil?.tipo_perfil === "admin" ||
+            perfil?.piloto_comissoes === true) && (
+            <ComissoesRepresentante
+              perfil={perfil}
+              usuariosPerfis={usuariosPerfis}
+            />
+          )}
 
         {telaAtual === "historicoCliente" && clienteHistorico && (
           <HistoricoCliente

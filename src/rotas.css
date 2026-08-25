@@ -297,6 +297,13 @@
   padding: 0 !important;
 }
 
+.btn-rota-excluir:disabled {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border: 1px solid #e2e8f0 !important;
+  cursor: not-allowed;
+}
+
 /* ===============================
    TOPO DA ROTA ABERTA
    Componente: RotasTopoDetalhe.jsx
@@ -2054,8 +2061,10 @@
 
   .planejamento-mobile .btn-mini-status.remover {
     min-width: 42px;
+    max-width: 42px;
     height: 40px;
     padding: 0 !important;
+    justify-self: end;
   }
 }
 

@@ -265,16 +265,17 @@ function RotasOperacao({
                         {item.aviso_whatsapp_em && (
                           <span className="badge-aviso-whatsapp">Avisado</span>
                         )}
-                        <button
-                          type="button"
-                          className="btn-mini-status whatsapp"
-                          disabled={!permiteAvisoWhatsAppRotaGrupoAtual}
-                          onClick={() => reenviarAvisoWhatsAppCliente(item)}
-                        >
-                          {item.aviso_whatsapp_em
-                            ? "Reenviar aviso"
-                            : "Primeiro aviso"}
-                        </button>
+                        {permiteAvisoWhatsAppRotaGrupoAtual && (
+                          <button
+                            type="button"
+                            className="btn-mini-status whatsapp"
+                            onClick={() => reenviarAvisoWhatsAppCliente(item)}
+                          >
+                            {item.aviso_whatsapp_em
+                              ? "Reenviar aviso"
+                              : "Primeiro aviso"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

@@ -180,23 +180,19 @@ setFiltroStatusRotas={setFiltroStatusRotas}
   </div>
 )}
 
+{permiteAvisoWhatsAppRotaGrupoAtual && (
 <div className="painel-aviso-whatsapp-rota">
   <div>
     <strong>Aviso de visita por WhatsApp</strong>
     <span>
       {totalAvisadosWhatsApp} avisados · {totalAvisosPendentes} pendentes
     </span>
-    {!permiteAvisoWhatsAppRotaGrupoAtual && (
-      <span>
-        Envio desativado para o grupo {perfil?.tipo_perfil || "usuario"}.
-      </span>
-    )}
   </div>
 
   <button
     type="button"
     onClick={avisarProximoClienteRota}
-    disabled={!totalAvisosPendentes || !permiteAvisoWhatsAppRotaGrupoAtual}
+    disabled={!totalAvisosPendentes}
   >
     <MessageCircle size={16} />
     Avisar proximo cliente
@@ -210,6 +206,7 @@ setFiltroStatusRotas={setFiltroStatusRotas}
     Ver historico
   </button>
 </div>
+)}
 
 {modoTelaRota === "execucao" && (
   <>

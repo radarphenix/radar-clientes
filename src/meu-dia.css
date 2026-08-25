@@ -112,6 +112,67 @@
   gap: 12px;
   margin-bottom: 18px;
 }
+.meu-dia-financeiro {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.meu-dia-financeiro .meu-dia-painel-comissao {
+  min-width: 0;
+  margin: 0;
+  padding: 14px 16px;
+}
+.meu-dia-financeiro .meu-dia-painel-titulo {
+  margin-bottom: 8px;
+}
+.meu-dia-financeiro .meu-dia-painel-titulo span {
+  display: block;
+  min-height: 22px;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.meu-dia-financeiro .meu-dia-painel-titulo h3 {
+  font-size: 15px;
+}
+.meu-dia-financeiro .comissao-card-hero {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+}
+.meu-dia-financeiro .comissao-card-hero strong {
+  font-size: 21px;
+}
+.meu-dia-financeiro .comissao-card-delta {
+  font-size: 10px;
+}
+.comissao-card-delta.invisivel {
+  visibility: hidden;
+}
+.meu-dia-financeiro .comissao-card-faixa {
+  margin: 8px 0 10px;
+  padding-top: 8px;
+}
+.comissao-card-faixa.invisivel {
+  visibility: hidden;
+}
+.meu-dia-financeiro .comissao-card-grafico {
+  height: 56px;
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.meu-dia-financeiro .comissao-card-barra-trilho {
+  height: 34px;
+}
+.meu-dia-financeiro .comissao-card-legenda {
+  margin-top: 6px;
+  padding-top: 6px;
+}
+@media (max-width: 900px) {
+  .meu-dia-financeiro {
+    grid-template-columns: 1fr;
+  }
+}
 .meu-dia-indicadores article {
   min-width: 0;
   display: grid;
@@ -840,4 +901,135 @@
   .meu-dia-indicadores strong {
     font-size: 19px;
   }
+}
+
+/* Card "Sua comissão" */
+.comissao-card-hero {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.comissao-card-hero strong {
+  color: #12243e;
+  font-size: 30px;
+  font-variant-numeric: normal;
+  line-height: 1;
+}
+.comissao-card-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.comissao-card-delta.positivo {
+  color: #0ca30c;
+}
+.comissao-card-delta.negativo {
+  color: #d03b3b;
+}
+.comissao-card-faixa {
+  margin: 14px 0 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f7;
+}
+.comissao-card-faixa-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.comissao-card-faixa-linha span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.comissao-card-faixa-linha strong {
+  color: #0057d8;
+  font-size: 12px;
+  font-weight: 800;
+}
+.comissao-card-progresso {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eaf1fb;
+}
+.comissao-card-progresso-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #0057d8;
+  transition: width 0.3s ease;
+}
+.comissao-card-grafico {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+  height: 84px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f7;
+}
+.comissao-card-barra-item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.comissao-card-barra-trilho {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 56px;
+}
+.comissao-card-barra {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 4px 4px 2px 2px;
+  background: #cde2fb;
+  transition: height 0.25s ease, background-color 0.15s ease;
+}
+.comissao-card-barra-item:hover .comissao-card-barra,
+.comissao-card-barra-item:focus-visible .comissao-card-barra,
+.comissao-card-barra-item.ativo .comissao-card-barra {
+  background: #0057d8;
+}
+.comissao-card-barra-item small {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+}
+.comissao-card-barra-item:hover small,
+.comissao-card-barra-item:focus-visible small,
+.comissao-card-barra-item.ativo small {
+  color: #12243e;
+}
+.comissao-card-legenda {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eef2f7;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+.comissao-card-legenda strong {
+  color: #12243e;
+  font-size: 13px;
 }

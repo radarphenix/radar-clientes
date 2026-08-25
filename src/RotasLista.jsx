@@ -225,6 +225,16 @@ function RotasLista({
               <button
                 type="button"
                 className="btn-rota-excluir"
+                disabled={
+                  rota.status === "FINALIZADA" &&
+                  perfil?.tipo_perfil !== "admin"
+                }
+                title={
+                  rota.status === "FINALIZADA" &&
+                  perfil?.tipo_perfil !== "admin"
+                    ? "Rota finalizada, não é possível excluir"
+                    : undefined
+                }
                 onClick={() => excluirRota(rota)}
               >
                 <Trash2 size={14} />
