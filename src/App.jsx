@@ -1156,7 +1156,7 @@ function App() {
       const novoToken = crypto.randomUUID();
 
       const { error } = await supabase
-        .from("perfis")
+        .from("perfis_tokens")
         .update({ calendario_token: novoToken })
         .eq("user_id", usuario.user_id);
 
@@ -1302,8 +1302,14 @@ function App() {
       return false;
     }
 
+    const { data: tokenAgenda } = await supabase
+      .from("perfis_tokens")
+      .select("calendario_token")
+      .eq("user_id", userId)
+      .maybeSingle();
+
     setMensagemLogin("");
-    setPerfil(data);
+    setPerfil({ ...data, calendario_token: tokenAgenda?.calendario_token || null });
     setUsuarioResponsavelRota(userId);
     await carregarConfiguracoesWhatsAppGrupos(data);
     await carregarConfiguracoesAmostrasGrupos(data);
@@ -3997,7 +4003,20 @@ function App() {
       return;
     }
 
-    setUsuariosPerfis(data || []);
+    const { data: tokens } = await supabase
+      .from("perfis_tokens")
+      .select("user_id, calendario_token");
+
+    const tokenPorUsuario = new Map(
+      (tokens || []).map((item) => [item.user_id, item.calendario_token]),
+    );
+
+    setUsuariosPerfis(
+      (data || []).map((item) => ({
+        ...item,
+        calendario_token: tokenPorUsuario.get(item.user_id) || null,
+      })),
+    );
 
     setCarregandoUsuarios(false);
   }

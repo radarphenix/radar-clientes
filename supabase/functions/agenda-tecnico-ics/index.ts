@@ -154,10 +154,20 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  const { data: tokenRow, error: tokenError } = await supabaseAdmin
+    .from("perfis_tokens")
+    .select("user_id")
+    .eq("calendario_token", token)
+    .maybeSingle();
+
+  if (tokenError || !tokenRow) {
+    return textResponse("Agenda nao encontrada.", 404);
+  }
+
   const { data: perfil, error: perfilError } = await supabaseAdmin
     .from("perfis")
     .select("user_id, nome")
-    .eq("calendario_token", token)
+    .eq("user_id", tokenRow.user_id)
     .eq("ativo", true)
     .maybeSingle();
 
