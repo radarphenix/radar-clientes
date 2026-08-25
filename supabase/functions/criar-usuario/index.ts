@@ -113,6 +113,7 @@ Deno.serve(async (req) => {
       ? codigoRepresentanteRaw.padStart(6, "0")
       : null;
   const ativo = body.ativo !== false;
+  const logAcessoAtivo = body.log_acesso_ativo === true;
 
   if (!nome || !email || senhaProvisoria.length < 6) {
     return jsonResponse({ error: "Nome, e-mail e senha provisoria sao obrigatorios." }, 400);
@@ -166,6 +167,7 @@ Deno.serve(async (req) => {
         tipo_perfil: tipoPerfil,
         codigo_representante: codigoRepresentante,
         ativo,
+        log_acesso_ativo: logAcessoAtivo,
       },
       { onConflict: "user_id" },
     );

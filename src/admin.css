@@ -488,6 +488,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   margin-left: 6px;
   padding: 6px 10px;
   border-radius: 999px;

@@ -693,6 +693,7 @@ function App() {
     codigo_representante: "",
     ativo: true,
     piloto_comissoes: false,
+    log_acesso_ativo: false,
   });
 
   async function carregarResumoGeo() {
@@ -3938,6 +3939,14 @@ function App() {
   async function registrarAcesso(userId, evento, tela) {
     if (!userId) return;
 
+    const { data: perfilAtual, error: erroPerfil } = await supabase
+      .from("perfis")
+      .select("log_acesso_ativo")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (erroPerfil || !perfilAtual?.log_acesso_ativo) return;
+
     const { error } = await supabase
       .from("log_acessos")
       .insert({ user_id: userId, evento, tela: tela || null });
@@ -4374,6 +4383,7 @@ function App() {
         usuarioPerfilForm.tipo_perfil === "representante"
           ? usuarioPerfilForm.piloto_comissoes
           : false,
+      log_acesso_ativo: usuarioPerfilForm.log_acesso_ativo,
     };
 
     setSalvandoUsuario(true);
@@ -5397,6 +5407,23 @@ function App() {
                 </label>
               </div>
 
+              <div className="admin-check">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={usuarioPerfilForm.log_acesso_ativo}
+                    onChange={(e) =>
+                      setUsuarioPerfilForm({
+                        ...usuarioPerfilForm,
+                        log_acesso_ativo: e.target.checked,
+                      })
+                    }
+                  />
+                  Gravar log de acesso (login, logout e navegação entre
+                  telas deste usuário)
+                </label>
+              </div>
+
               {usuarioPerfilForm.tipo_perfil === "representante" && (
                 <div className="admin-check">
                   <label>
@@ -5534,6 +5561,13 @@ function App() {
                         </span>
                       )}
 
+                      {usuario.log_acesso_ativo && (
+                        <span className="admin-badge secundario">
+                          <History size={12} />
+                          Log ativo
+                        </span>
+                      )}
+
                       <span
                         className={
                           usuario.ativo
@@ -5566,6 +5600,8 @@ function App() {
                             ativo: usuario.ativo === true,
                             piloto_comissoes:
                               usuario.piloto_comissoes === true,
+                            log_acesso_ativo:
+                              usuario.log_acesso_ativo === true,
                           })
                         }
                       >
