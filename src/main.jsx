@@ -8,7 +8,6 @@ import FormularioPromocao from './FormularioPromocao.jsx'
 const ROTA_PROMOCAO_VESTE_PHENIX = '/promo/veste-phenix'
 const rota = window.location.pathname.replace(/\/+$/, '') || '/'
 const ehPromocao = rota === ROTA_PROMOCAO_VESTE_PHENIX
-const Pagina = ehPromocao ? FormularioPromocao : App
 
 if (ehPromocao) {
   document.title = 'Veste Phenix — 30 anos'
@@ -22,6 +21,6 @@ if (ehPromocao) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Pagina />
+    {ehPromocao ? <FormularioPromocao /> : <App />}
   </StrictMode>,
 )

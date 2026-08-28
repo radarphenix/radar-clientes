@@ -29,6 +29,11 @@ function Rotas({
   setBuscaClienteRota,
   clientes,
   adicionarClienteNaRota,
+  sugestoesPautaRota,
+  painelTodaPautaAberto,
+  todaPautaAtiva,
+  carregandoTodaPauta,
+  onAlternarPainelTodaPauta,
   abrirMaps,
   removerClienteDaRota,
   fecharRota,
@@ -260,6 +265,7 @@ setFiltroStatusRotas={setFiltroStatusRotas}
     setBuscaClienteRota={setBuscaClienteRota}
     clientes={clientes}
     adicionarClienteNaRota={adicionarClienteNaRota}
+    sugestoesPautaRota={sugestoesPautaRota}
     fecharRota={fecharRota}
     modoReordenar={modoReordenar}
     setModoReordenar={setModoReordenar}
@@ -308,6 +314,11 @@ setFiltroStatusRotas={setFiltroStatusRotas}
     setBuscaClienteRota={setBuscaClienteRota}
     buscarCliente={buscarCliente}
     adicionarClienteNaRota={adicionarClienteNaRota}
+    sugestoesPautaRota={sugestoesPautaRota}
+    painelTodaPautaAberto={painelTodaPautaAberto}
+    todaPautaAtiva={todaPautaAtiva}
+    carregandoTodaPauta={carregandoTodaPauta}
+    onAlternarPainelTodaPauta={onAlternarPainelTodaPauta}
     removerClienteDaRota={removerClienteDaRota}
     alterarSequenciaClienteRota={alterarSequenciaClienteRota}
     alterarDataPrevistaClienteRota={alterarDataPrevistaClienteRota}

@@ -50,10 +50,25 @@ function mesAnoOrigem(valor) {
   return ano && mes ? `${mes}/${ano}` : "-";
 }
 
+function rotuloLancamento(item) {
+  if (item.tipo_lancamento === "DESCONTO") return "Desconto";
+  if (item.tipo_lancamento === "AJUSTE_PERCENTUAL") return "Ajuste de percentual";
+  if (item.tipo_lancamento === "DEVOLUCAO" || item.lancamento_devolucao) return "Devolução";
+  return item.pago ? "Pago" : "A receber";
+}
+
 function normalizarCodigo(valor) {
   const apenasNumeros = String(valor || "").replace(/\D/g, "");
   return apenasNumeros.replace(/^0+/, "") || apenasNumeros;
 }
+
+// Código fictício que o MWComissoes grava quando a nota não tem representante
+// (nunca é um código real de empresa/representante no CIGAM - ver
+// ComissaoRepository.CodigoSemRepresentante, MWComissoes; mesmo tratamento já
+// existente em PainelBI.jsx). normalizarCodigo NÃO reduz "000000" a vazio (o
+// fallback `|| apenasNumeros` existe justamente pra não perder um código só
+// de zeros), então a checagem precisa comparar com este valor explicitamente.
+const CODIGO_SEM_REPRESENTANTE = "000000";
 
 function dadosDemonstrativos(ano, mes, codigosRepresentantes) {
   const competencia = `${ano}-${String(mes).padStart(2, "0")}`;
@@ -350,10 +365,16 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
 
   const totais = useMemo(() => {
     const validos = lancamentosVisiveis.filter((item) => item.considerar !== false);
+    const descontos = validos.filter((item) => item.tipo_lancamento === "DESCONTO");
+    const ajustesPercentual = validos.filter((item) => item.tipo_lancamento === "AJUSTE_PERCENTUAL");
+    const comissoes = validos.filter((item) => item.tipo_lancamento !== "DESCONTO");
     return {
-      base: validos.reduce((soma, item) => soma + Number(item.valor_base_comissao || 0), 0),
-      comissao: validos.reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
+      base: validos.filter((item) => !item.tipo_lancamento || item.tipo_lancamento === "COMISSAO").reduce((soma, item) => soma + Number(item.valor_base_comissao || 0), 0),
+      comissao: comissoes.reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
       pago: validos.filter((item) => item.pago).reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
+      aReceber: validos.filter((item) => !item.pago).reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
+      descontos: descontos.reduce((soma, item) => soma + Math.abs(Number(item.valor_comissao || 0)), 0),
+      ajustesPercentual: ajustesPercentual.reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
     };
   }, [lancamentosVisiveis]);
 
@@ -380,8 +401,10 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
   }, [administrador, codigoEmExibicao, exibeEquipe, perfil, representantesExibicao]);
 
   function nomeRepresentante(codigo) {
+    const normalizado = normalizarCodigo(codigo);
+    if (!normalizado || normalizado === CODIGO_SEM_REPRESENTANTE) return "Sem representante";
     return representantesExibicao.find(
-      (item) => normalizarCodigo(item.codigo_representante) === normalizarCodigo(codigo),
+      (item) => normalizarCodigo(item.codigo_representante) === normalizado,
     )?.nome || codigo || "-";
   }
 
@@ -483,8 +506,9 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
               <div className="comissoes-indicadores">
                 <article><span>Base de comissão</span><strong>{moeda(totais.base)}</strong></article>
                 <article><span>Comissão do mês</span><strong>{moeda(totais.comissao)}</strong></article>
-                <article className="destaque"><span>A receber</span><strong>{moeda(totais.comissao - totais.pago)}</strong></article>
+                <article className="destaque"><span>A receber</span><strong>{moeda(totais.aReceber)}</strong></article>
               </div>
+              {(totais.descontos > 0 || Math.abs(totais.ajustesPercentual) > 0.005) && <div className="comissoes-composicao"><span>Ajustes por percentual manual <strong>{moeda(totais.ajustesPercentual)}</strong></span><span>Descontos <strong>- {moeda(totais.descontos)}</strong></span></div>}
               <div className="comissoes-tabela-container">
                 <table className="comissoes-tabela">
                   <thead><tr>{exibeEquipe && <th>Representante</th>}<th>Vencimento</th><th>Mês origem</th><th>NF</th><th>Cliente</th><th>Base</th><th>%</th><th>Comissão</th><th>Situação</th></tr></thead>
@@ -498,11 +522,11 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                           {item.nota_fiscal || "-"}
                           {item.nota_origem_devolucao && <small className="comissoes-nf-origem">Origem: {item.nota_origem_devolucao}</small>}
                         </td>
-                        <td data-label="Cliente">{item.nome_cliente || item.codigo_cliente || "-"}</td>
-                        <td data-label="Base">{moeda(item.valor_base_comissao)}</td><td data-label="Percentual">{percentual(item.percentual_comissao)}</td><td data-label="Comissão"><strong>{moeda(item.valor_comissao)}</strong></td>
+                        <td data-label="Cliente">{item.tipo_lancamento === "DESCONTO" ? "Desconto na comissão" : item.tipo_lancamento === "AJUSTE_PERCENTUAL" ? "Ajuste de percentual" : item.nome_cliente || item.codigo_cliente || "-"}{item.motivo_ajuste && <small className="comissoes-motivo">Motivo: {item.motivo_ajuste}</small>}</td>
+                        <td data-label="Base">{moeda(item.valor_base_comissao)}</td><td data-label="Percentual">{item.tipo_lancamento === "DESCONTO" || item.tipo_lancamento === "AJUSTE_PERCENTUAL" ? "-" : percentual(item.percentual_comissao)}{item.percentual_manual != null && item.tipo_lancamento === "COMISSAO" && <small className="comissoes-percentual-manual">Sistema: {percentual(item.percentual_sistema)} → manual: {percentual(item.percentual_manual)}</small>}</td><td data-label="Comissão"><strong>{moeda(item.valor_comissao)}</strong>{Math.abs(Number(item.valor_ajuste_manual || 0)) > 0.005 && item.tipo_lancamento === "COMISSAO" && <small className="comissoes-percentual-manual">Antes: {moeda(item.valor_comissao_antes)} · ajuste: {moeda(item.valor_ajuste_manual)}</small>}</td>
                         <td data-label="Situação">
-                          <span className={`comissoes-status ${item.lancamento_devolucao || Number(item.valor_comissao) < 0 ? "devolucao" : item.pago ? "pago" : "receber"}`}>
-                            {item.lancamento_devolucao || Number(item.valor_comissao) < 0 ? "Estorno" : item.pago ? "Pago" : "A receber"}
+                          <span className={`comissoes-status ${item.tipo_lancamento === "DESCONTO" ? "desconto" : item.tipo_lancamento === "AJUSTE_PERCENTUAL" ? "ajuste" : item.lancamento_devolucao ? "devolucao" : item.pago ? "pago" : "receber"}`}>
+                            {rotuloLancamento(item)}
                           </span>
                         </td>
                       </tr>
@@ -566,8 +590,11 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
             <div className="comissoes-historico-grid">
               {resumosHistorico.map((item) => {
                 const descontoPago = Number(item.estorno_comissao || 0);
+                const ajustePercentualManual = Number(item.valor_ajuste_percentual_manual || 0);
                 const reducaoPendente = Number(item.comissao_futura_cancelada || 0);
                 const comissaoGerada = Number(item.comissao_gerada || 0) || Number(item.comissao_prevista || 0) + descontoPago;
+                const fixoPrevisto = Number(item.valor_fixo || 0);
+                const comissaoPercentual = comissaoGerada - fixoPrevisto;
                 const ajustesMes = lancamentosVisiveis.filter((lancamento) => {
                   if (!lancamento.lancamento_devolucao) return false;
                   const data = String(lancamento.data_emissao || "").slice(0, 10).split("-");
@@ -594,7 +621,11 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                         <div><dt>Base válida após devoluções posteriores</dt><dd>{moeda(item.vendas_liquidas)}</dd></div>
                       )}
                       <div><dt>{item.modalidade === "V" ? "Faixa válida atualmente" : "Modalidade"}</dt><dd>{item.modalidade === "V" ? `${moeda(item.meta_atingida)} · ${percentual(item.percentual_comissao)}` : `Fixa · ${percentual(item.percentual_comissao)}`}</dd></div>
-                      <div className="linha-total"><dt>Comissão gerada pelas notas</dt><dd>{moeda(comissaoGerada)}</dd></div>
+                      <div><dt>Comissão percentual</dt><dd>{moeda(comissaoPercentual)}</dd></div>
+                      <div><dt>Fixo previsto</dt><dd>{moeda(fixoPrevisto)}</dd></div>
+                      <div className="linha-total"><dt>Total comissão + fixo</dt><dd>{moeda(comissaoGerada)}</dd></div>
+                      {item.percentual_manual != null && <div className="linha-detalhe"><dt>Ajuste manual vigente ({percentual(item.percentual_sistema)} → {percentual(item.percentual_manual)})</dt><dd>{moeda(ajustePercentualManual)}</dd></div>}
+                      {item.percentual_manual != null && item.motivo_percentual_manual && <div className="linha-detalhe"><dt>Motivo do último ajuste manual</dt><dd>{item.motivo_percentual_manual}</dd></div>}
                     </dl>
                     {devolucoesQueReduziramBase.length > 0 && (
                       <details className="comissoes-origem-devolucoes">

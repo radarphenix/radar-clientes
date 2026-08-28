@@ -510,6 +510,28 @@
   color: #0057d8;
 }
 
+.sidebar-submenu-toggle {
+  grid-template-columns: 28px minmax(0, 1fr) 16px !important;
+  margin-top: 10px;
+}
+
+.desktop-sidebar-nav > .sidebar-submenu-toggle:first-child {
+  margin-top: 0;
+}
+
+.sidebar-submenu-seta {
+  color: #7a8ba6;
+  justify-self: end;
+}
+
+.sidebar-submenu {
+  display: grid;
+  gap: 7px;
+  padding-left: 18px;
+  border-left: 2px solid #dbe8f8;
+  margin-left: 14px;
+}
+
 .home-botao-menu-mobile {
   position: static !important;
   min-width: 104px !important;

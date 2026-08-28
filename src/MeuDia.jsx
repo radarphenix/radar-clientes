@@ -13,6 +13,7 @@ import {
 import "./meu-dia.css";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import MinhaComissaoCard from "./MinhaComissaoCard.jsx";
+import ClientesEmPauta from "./ClientesEmPauta.jsx";
 
 function chaveDataLocal(data = new Date()) {
   const ano = data.getFullYear();
@@ -51,6 +52,8 @@ function MeuDia({
   abrirListaRotas,
   agendaIcsUrl,
   perfil,
+  onCadastrarClienteEmPauta,
+  onVerClientesEmPauta,
 }) {
   const [linkCopiado, setLinkCopiado] = useState(false);
 
@@ -566,6 +569,13 @@ function MeuDia({
               </p>
             )}
           </section>
+
+          <ClientesEmPauta
+            perfil={perfil}
+            visaoEquipe={visaoEquipe}
+            onCadastrarNovo={onCadastrarClienteEmPauta}
+            onVerTodos={onVerClientesEmPauta}
+          />
         </aside>
       </div>
     </main>

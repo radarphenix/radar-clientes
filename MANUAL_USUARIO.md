@@ -314,6 +314,8 @@ Acoes clicaveis:
 
 - Funcao: abrir diretamente a rota selecionada.
 
+Também tem um grupo **Clientes em Pauta** com: cadastrados (total desde sempre), aguardando (ativos ou já numa rota esperando visita), atendidos, descartados, e o tempo médio até resolver um cadastro (em dias, contando da data do cadastro até ele ser atendido ou descartado).
+
 ## 9. Tela Rotas - Lista de rotas
 
 Tela: listagem inicial e criacao de rotas.
@@ -1003,3 +1005,78 @@ Aqui sim a competência é pela **emissão** da nota, porque é o que define a f
 Representante-piloto vê, no topo da tela Meu Dia, três gráficos lado a lado dos últimos 6 meses: **Sua comissão** (prevista, com barra de progresso até a próxima faixa quando aplicável), **Faturamento** (vendas líquidas) e **Comissões a receber** (lançamentos com vencimento no mês, ainda não pagos - mesma regra da lista "a receber", não é a diferença entre previsto e pago da competência). Passar o mouse (ou navegar por teclado) numa barra mostra o valor daquele mês.
 
 Quando um **administrador** usa o seletor "Meu Dia de" para ver o dia de outro usuário, esse card também passa a mostrar os gráficos da pessoa selecionada (se ela for representante-piloto) - é a única tela do sistema em que escolher outro usuário no Meu Dia também troca o conteúdo financeiro exibido. Em qualquer outra tela (Clientes, Rotas, Administração), o admin continua vendo com seus próprios direitos, independentemente de quem estiver selecionado no Meu Dia.
+
+## 22. Clientes em Pauta
+
+Lista compartilhada de clientes sinalizados manualmente por quem precisa de atenção (qualquer perfil pode cadastrar - representante só dentro da própria carteira). Cada cliente entra com um nível de criticidade, do mais urgente pro mais oportunístico:
+
+1. **Urgente**
+2. **Crítico**
+3. **Importante**
+4. **Aproveitamento de rota** - não é urgência, é "vale a pena visitar se a rota passar perto"
+
+### Como cadastrar
+
+- Na tela **Clientes**, cada cartão tem um botão **Pauta** (fica **Em Pauta**, em destaque, quando já cadastrado). Clicar abre uma janela pedindo o nível de criticidade e uma observação opcional. Se o cliente já estiver em pauta, o mesmo botão abre a janela em **modo edição**, já com os dados atuais preenchidos.
+- Na tela **Meu Dia**, o painel "Clientes em Pauta" (coluna da direita) tem um botão **Cadastrar** que leva direto pra tela Clientes para escolher o cliente, e um botão **Ver todos** que abre a tela de gestão completa.
+
+### Tela "Clientes em Pauta" (ver e gerenciar)
+
+Um item novo no menu lateral (com um contador vermelho mostrando quantos estão aguardando) abre a lista completa:
+
+- **Busca** por nome, código, cidade ou UF, e **filtro por nível** de criticidade.
+- Cada card mostra o cliente, o nível, a observação (se houver) e **quem cadastrou e há quantos dias** - fica com um destaque visual quando passa de 15 dias aguardando, pra não ser esquecido.
+- Botão **Editar** abre a mesma janela de cadastro, já preenchida, para trocar o nível ou a observação.
+- Botão **Remover** tira o cliente da pauta sem precisar de rota:
+  - se foi **você quem cadastrou**, só pede uma confirmação simples;
+  - se foi **outro usuário**, exige uma **justificativa por escrito** antes de remover - fica registrada no histórico.
+- Checkbox **Mostrar histórico** revela os clientes já atendidos ou removidos, com a data e (quando for o caso) o motivo da remoção.
+
+### Como a lista se comporta sozinha
+
+- Um cliente em pauta some da lista assim que é **incluído numa rota** - ele não fica sendo sugerido de novo enquanto já está esperando visita em outra rota.
+- Se ele for **removido da rota** antes de ser visitado (por engano, por exemplo), volta pra lista automaticamente, sem perguntar nada.
+- Quando a visita é **concluída** (status Visitado), o cliente é dado como atendido e sai da lista em definitivo.
+- Quando a visita é **cancelada**, além do motivo do cancelamento (já obrigatório), o sistema pergunta se o cliente deve voltar pra lista de pauta - responder "sim" o devolve como aguardando; "não" encerra esse ciclo (fica registrado no histórico, mas não volta a ser sugerido).
+
+### Sugestões ao montar uma rota
+
+Ao adicionar um cliente na rota (telas de Planejamento e Execução), aparece acima da busca um painel **"Clientes em pauta próximos"** com:
+
+- os clientes em pauta do **mesmo estado** do cliente que acabou de ser adicionado, ordenados por criticidade;
+- logo abaixo, clientes em pauta de **outros estados dentro de 300 km**, também ordenados por criticidade.
+
+O painel sempre mostra uma linha dizendo **com base em qual cliente** as distâncias foram calculadas: normalmente é o último cliente que você adicionou; se você remover um cliente da rota, a base passa a ser o cliente mais recente que ainda restou nela. Quando não há nenhuma sugestão por perto, o painel mostra essa mensagem em vez de simplesmente sumir.
+
+Cada sugestão tem um botão **Adicionar** que já inclui o cliente na rota que está sendo montada, sem precisar buscar manualmente.
+
+### Consultar toda a pauta na tela de Planejamento
+
+Enquanto o painel automático de sugestões não tem nada pra mostrar (por exemplo: antes de adicionar o primeiro cliente à rota), aparece na linha de ações do Planejamento (ao lado de "Reordenar rota"/"Ordenar por distância"/"Fechar rota") o botão **Clientes em Pauta** - abre uma lista com **todos** os clientes em pauta ativos, ordenados por criticidade, sem depender de estar perto de algum cliente já adicionado. Cada um tem seu botão **Adicionar**. Clicar de novo no botão ("Ocultar clientes em pauta") fecha a lista. Assim que o painel automático tiver alguma sugestão pra mostrar, esse botão desaparece - ele é só um substituto pra quando não há nenhuma sugestão automática.
+
+### Alerta de cliente preso numa rota que não fecha
+
+Se um cliente entra numa rota (status **Em rota**) e essa rota fica **15 dias ou mais** sem ser finalizada, a tela "Clientes em Pauta" mostra um aviso no topo com a quantidade de clientes nessa situação, e cada card afetado mostra "rota parada há X dias, ainda não finalizada" junto com o nome da rota - um jeito de perceber quando uma visita programada foi esquecida numa rota que nunca foi fechada.
+
+## 23. Painel BI (somente admin)
+
+Tela nova no menu lateral ("Painel BI", visível só para administrador), com uma visão consolidada de toda a equipe de vendas a partir dos dados de comissões - diferente da tela **Comissões**, que mostra o detalhe de um representante por vez, o Painel BI sempre soma a equipe inteira.
+
+### Filtro
+
+Um único filtro de **Mês/Ano** no topo, que atualiza todos os indicadores e gráficos da tela ao mesmo tempo.
+
+### O que a tela mostra
+
+- **Indicadores do mês**: vendas líquidas, comissão prevista, custo de comissão (comissão dividida pelas vendas, em %) e quantidade de representantes ativos - cada um comparado com o mês anterior (seta verde para cima quando é uma variação boa, vermelha para baixo quando não é; no custo de comissão, "bom" é o percentual cair, não subir).
+- **Tendência de vendas líquidas** e **tendência de custo de comissão** - dois gráficos de linha lado a lado, sempre mostrando os últimos 12 meses até o período selecionado.
+- **Ranking de representantes** - gráfico de barras com todos os representantes do mês, com botão para ordenar por vendas líquidas ou por comissão.
+- **Distribuição por faixa de meta** - quantos representantes estão em cada faixa de comissão no momento.
+- **Devoluções por mês** - valor devolvido, mês a mês, nos últimos 12 meses.
+- **Top 10 clientes por comissão** - os clientes que mais geraram comissão no mês selecionado.
+
+Passar o mouse (ou navegar com Tab e as setas do teclado, nos gráficos de linha) sobre qualquer ponto ou barra mostra o valor exato numa caixinha. Todo gráfico tem um botão **Ver como tabela**, que troca o desenho por uma tabela com os mesmos números - útil para conferência ou para quem prefere números a gráfico.
+
+### Impressão
+
+Botão **Imprimir painel** no topo gera uma versão para impressão/PDF só com os indicadores e gráficos, sem o menu nem os filtros.

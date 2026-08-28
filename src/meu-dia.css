@@ -1033,3 +1033,45 @@
   color: #12243e;
   font-size: 13px;
 }
+
+.meu-dia-pauta-rodape {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.meu-dia-pauta-rodape .meu-dia-botao-secundario {
+  flex: 1;
+  min-height: 40px;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+.cartao-pauta-meu-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  background: #f8fbff;
+  border: 1px solid #e4edf7;
+  font-size: 12px;
+}
+
+.cartao-pauta-meu-dia.atrasado {
+  background: #fdf1ef;
+  border-color: #f0c4bb;
+}
+
+.cartao-pauta-meu-dia strong {
+  font-size: 13px;
+  color: #12243e;
+}
+
+.cartao-pauta-meu-dia-nivel {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

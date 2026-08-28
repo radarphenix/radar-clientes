@@ -31,6 +31,12 @@
 .comissoes-status.receber { background:#dbeafe; color:#034da2; }
 .comissoes-status.pago { background:#e2e8f0; color:#475569; }
 .comissoes-status.devolucao { background:#dbe8f8; color:#032b63; }
+.comissoes-status.desconto { background:#fee2e2; color:#991b1b; }
+.comissoes-status.ajuste { background:#fef3c7; color:#854d0e; }
+.comissoes-motivo,.comissoes-percentual-manual { display:block; margin-top:4px; color:#64748b; font-size:9px; font-weight:700; line-height:1.35; }
+.comissoes-composicao { display:flex; justify-content:flex-end; gap:22px; margin:-6px 0 14px; padding:10px 14px; border:1px solid #dbe8f8; border-radius:10px; background:#f8fafc; color:#526b86; font-size:12px; }
+.comissoes-composicao strong { margin-left:6px; color:#17385f; }
+.comissoes-aviso-manual { margin:-4px 0 16px; padding:11px 14px; border:1px solid #f3cf8f; border-radius:10px; background:#fff8e8; color:#704700; font-size:12px; line-height:1.45; }
 .comissoes-progresso { padding:16px; margin-bottom:16px; border:1px solid #bfd5ee; border-radius:12px; background:#eef5ff; }
 .comissoes-progresso div { display:flex; justify-content:space-between; gap:12px; margin-bottom:9px; color:#032b63; }
 .comissoes-progresso progress { width:100%; height:13px; accent-color:#0057d8; }
@@ -40,6 +46,7 @@
 .comissoes-faixas span,.comissoes-faixas small { font-size:11px; }
 .comissoes-faixas strong { font-size:21px; }
 .comissoes-vazio { padding:28px; text-align:center; color:#64748b; }
+.comissoes-aviso-pendente { padding:11px 14px; border:1px solid #f3cf8f; border-radius:10px; color:#7a4a00; background:#fff6e8; font-weight:600; font-size:13px; margin-bottom:14px; }
 .comissoes-tabela.historico { min-width:1080px; table-layout:fixed; }
 .comissoes-tabela.historico th,.comissoes-tabela.historico td { padding:9px 6px; white-space:nowrap; }
 .comissoes-tabela.historico th { font-size:10px; }
@@ -113,6 +120,7 @@
   .comissoes-indicadores { grid-template-columns:1fr; }
   .comissoes-faixas { grid-template-columns:1fr 1fr; }
   .comissoes-status { padding:5px 8px; font-size:9px; }
+  .comissoes-composicao { display:grid; gap:7px; }
   .comissoes-tabela tbody { grid-template-columns:1fr; }
   .comissoes-tabela tr { grid-template-columns:1fr; padding:10px 13px; }
   .comissoes-tabela td,.comissoes-tabela.historico td { padding:8px 0; }

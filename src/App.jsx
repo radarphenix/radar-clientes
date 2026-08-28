@@ -8,6 +8,7 @@ import "./amostras.css";
 import "./login.css";
 import Login from "./Login.jsx";
 import MeuDia from "./MeuDia.jsx";
+import PautaClientes from "./PautaClientes.jsx";
 import "./admin.css";
 import "./rotas.css";
 import "./rotas-pesquisa.css";
@@ -18,13 +19,20 @@ import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
 import HistoricoCliente from "./HistoricoCliente.jsx";
 import ImpressaoPesquisaRotas from "./ImpressaoPesquisaRotas.jsx";
 import ComissoesRepresentante from "./ComissoesRepresentante.jsx";
+import PainelBI from "./PainelBI.jsx";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
 import "./historico-cliente.css";
 import "./impressao-pesquisa-rotas.css";
 import "./comissoes-representante.css";
+import "./pauta.css";
 import { calcularSequenciasPendentes } from "./lib/rotasSequencia.js";
+import {
+  NIVEIS_CRITICIDADE,
+  PESO_CRITICIDADE,
+  ROTULO_CRITICIDADE,
+} from "./lib/pautaCriticidade.js";
 import {
   Users,
   MapPin,
@@ -54,6 +62,12 @@ import {
   DollarSign,
   Radio,
   History,
+  LineChart,
+  KeyRound,
+  ChevronDown,
+  ChevronRight,
+  Briefcase,
+  CircleUserRound,
 } from "lucide-react";
 
 function detectarLinkRecuperacao() {
@@ -77,6 +91,8 @@ const TELAS_PERSISTIDAS = new Set([
   "pesquisaRotas",
   "historicoCliente",
   "comissoes",
+  "clientesEmPauta",
+  "painelBI",
 ]);
 
 const FILTROS_PESQUISA_ROTAS_INICIAIS = {
@@ -480,6 +496,28 @@ function SecaoContexto({
   );
 }
 
+function MenuGrupo({ titulo, icone: Icone, aberto, onToggle, children }) {
+  return (
+    <>
+      <button
+        type="button"
+        className={`sidebar-submenu-toggle${aberto ? " expandido" : ""}`}
+        onClick={onToggle}
+        aria-expanded={aberto}
+      >
+        <Icone size={20} />
+        {titulo}
+        {aberto ? (
+          <ChevronDown size={16} className="sidebar-submenu-seta" />
+        ) : (
+          <ChevronRight size={16} className="sidebar-submenu-seta" />
+        )}
+      </button>
+      {aberto && <div className="sidebar-submenu">{children}</div>}
+    </>
+  );
+}
+
 function App() {
   const ignorarProximoHistoricoRef = useRef(false);
   const ultimaTelaHistoricoRef = useRef(null);
@@ -546,6 +584,18 @@ function App() {
     });
   const [modalVisita, setModalVisita] = useState(false);
   const [clienteVisita, setClienteVisita] = useState(null);
+  const [modalPauta, setModalPauta] = useState(false);
+  const [clientePauta, setClientePauta] = useState(null);
+  const [criticidadePauta, setCriticidadePauta] = useState(null);
+  const [observacaoPauta, setObservacaoPauta] = useState("");
+  const [gravandoPauta, setGravandoPauta] = useState(false);
+  const [pautaPorCliente, setPautaPorCliente] = useState(new Map());
+  const [pautaEditandoId, setPautaEditandoId] = useState(null);
+  const [sugestoesPautaRota, setSugestoesPautaRota] = useState(null);
+  const [painelTodaPautaAberto, setPainelTodaPautaAberto] = useState(false);
+  const [todaPautaAtiva, setTodaPautaAtiva] = useState([]);
+  const [carregandoTodaPauta, setCarregandoTodaPauta] = useState(false);
+  const [metricasPauta, setMetricasPauta] = useState(null);
   const [clienteWhatsApp, setClienteWhatsApp] = useState(null);
   const [contatosWhatsApp, setContatosWhatsApp] = useState([]);
   const acaoContatoWhatsAppRef = useRef(null);
@@ -559,6 +609,16 @@ function App() {
   const canalPresencaRef = useRef(null);
   const ultimaTelaLogadaRef = useRef("");
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
+  const [gruposMenuAbertos, setGruposMenuAbertos] = useState({
+    comercial: true,
+    rotas: true,
+    gestaoAnalise: true,
+    conta: true,
+    administracao: true,
+  });
+  function alternarGrupoMenu(grupo) {
+    setGruposMenuAbertos((atual) => ({ ...atual, [grupo]: !atual[grupo] }));
+  }
   const [clientesDaRota, setClientesDaRota] = useState([]);
   const [historicoWhatsAppRota, setHistoricoWhatsAppRota] = useState([]);
   const [buscaClienteRota, setBuscaClienteRota] = useState("");
@@ -1315,6 +1375,7 @@ function App() {
     await carregarConfiguracoesAmostrasGrupos(data);
     await carregarUsuariosPerfis();
     await carregarClientes(data);
+    await carregarPautaPorCliente();
     return true;
   }
 
@@ -2627,6 +2688,304 @@ function App() {
     return raioTerra * c;
   }
 
+  async function carregarPautaPorCliente() {
+    const { data, error } = await supabase
+      .from("clientes_em_pauta")
+      .select("id, cliente_id, criticidade, status, observacao")
+      .in("status", ["ATIVO", "EM_ROTA"]);
+
+    if (error) {
+      console.warn("Falha ao carregar clientes em pauta:", error.message);
+      return;
+    }
+
+    setPautaPorCliente(
+      new Map((data || []).map((item) => [item.cliente_id, item])),
+    );
+  }
+
+  async function carregarMetricasPauta() {
+    const { data, error } = await supabase
+      .from("clientes_em_pauta")
+      .select("status, criado_em, resolvido_em");
+
+    if (error) {
+      console.warn("Falha ao carregar métricas de pauta:", error.message);
+      return;
+    }
+
+    const linhas = data || [];
+
+    const atendidos = linhas.filter(
+      (item) => item.status === "ATENDIDO",
+    ).length;
+    const descartados = linhas.filter(
+      (item) => item.status === "DESCARTADO",
+    ).length;
+    const aguardando = linhas.filter(
+      (item) => item.status === "ATIVO" || item.status === "EM_ROTA",
+    ).length;
+
+    const resolvidos = linhas.filter((item) => item.resolvido_em);
+    const tempoMedioDias = resolvidos.length
+      ? Math.round(
+          resolvidos.reduce((total, item) => {
+            const dias =
+              (new Date(item.resolvido_em) - new Date(item.criado_em)) /
+              (1000 * 60 * 60 * 24);
+            return total + dias;
+          }, 0) / resolvidos.length,
+        )
+      : null;
+
+    setMetricasPauta({
+      totalCadastrados: linhas.length,
+      atendidos,
+      descartados,
+      aguardando,
+      tempoMedioDias,
+    });
+  }
+
+  function abrirModalPauta(cliente) {
+    const pautaAtual = pautaPorCliente.get(cliente.id);
+
+    setClientePauta(cliente);
+    setPautaEditandoId(pautaAtual?.id || null);
+    setCriticidadePauta(pautaAtual?.criticidade || null);
+    setObservacaoPauta(pautaAtual?.observacao || "");
+    setModalPauta(true);
+  }
+
+  function abrirModalPautaParaEdicao(itemPauta) {
+    setClientePauta(itemPauta.clientes || { id: itemPauta.cliente_id });
+    setPautaEditandoId(itemPauta.id);
+    setCriticidadePauta(itemPauta.criticidade);
+    setObservacaoPauta(itemPauta.observacao || "");
+    setModalPauta(true);
+  }
+
+  function fecharModalPauta() {
+    setModalPauta(false);
+    setClientePauta(null);
+    setPautaEditandoId(null);
+    setCriticidadePauta(null);
+    setObservacaoPauta("");
+  }
+
+  async function salvarClienteEmPauta() {
+    if (!clientePauta) return;
+
+    if (!criticidadePauta) {
+      alert("Escolha o nível de criticidade.");
+      return;
+    }
+
+    setGravandoPauta(true);
+
+    const { error } = pautaEditandoId
+      ? await supabase
+          .from("clientes_em_pauta")
+          .update({
+            criticidade: criticidadePauta,
+            observacao: observacaoPauta.trim() || null,
+            atualizado_por: session.user.id,
+            atualizado_em: new Date().toISOString(),
+          })
+          .eq("id", pautaEditandoId)
+      : await supabase.from("clientes_em_pauta").insert({
+          cliente_id: clientePauta.id,
+          criticidade: criticidadePauta,
+          observacao: observacaoPauta.trim() || null,
+          criado_por: session.user.id,
+        });
+
+    setGravandoPauta(false);
+
+    if (error) {
+      if (error.code === "23505") {
+        alert("Este cliente já está em pauta.");
+      } else {
+        alert("Falha ao salvar a pauta: " + error.message);
+      }
+      return;
+    }
+
+    alert(pautaEditandoId ? "Pauta atualizada." : "Cliente adicionado à pauta.");
+    fecharModalPauta();
+    await carregarPautaPorCliente();
+  }
+
+  async function removerClienteDaPautaManual(item) {
+    const nomeCliente = item.clientes?.cliente || "este cliente";
+    const mesmoUsuario = item.criado_por === session.user.id;
+    let motivo = null;
+
+    if (mesmoUsuario) {
+      if (!window.confirm(`Remover ${nomeCliente} da pauta?`)) {
+        return false;
+      }
+    } else {
+      const motivoInformado = window.prompt(
+        `Este registro foi cadastrado por outro usuário. Informe o motivo para remover ${nomeCliente} da pauta (obrigatório):`,
+      );
+
+      if (motivoInformado === null) return false;
+
+      motivo = motivoInformado.trim();
+
+      if (!motivo) {
+        alert("Informe o motivo da remoção.");
+        return false;
+      }
+    }
+
+    const { error } = await supabase
+      .from("clientes_em_pauta")
+      .update({
+        status: "DESCARTADO",
+        motivo_remocao: motivo,
+        resolvido_em: new Date().toISOString(),
+        atualizado_por: session.user.id,
+        atualizado_em: new Date().toISOString(),
+      })
+      .eq("id", item.id);
+
+    if (error) {
+      alert("Falha ao remover da pauta: " + error.message);
+      return false;
+    }
+
+    await carregarPautaPorCliente();
+    return true;
+  }
+
+  async function carregarSugestoesPauta(cliente, idsClientesNaRotaAtual) {
+    if (!cliente?.uf) {
+      setSugestoesPautaRota(null);
+      return;
+    }
+
+    setSugestoesPautaRota({
+      referenciaClienteId: cliente.id,
+      referenciaClienteNome: cliente.cliente,
+      referenciaClienteCidadeUf: [cliente.cidade, cliente.uf]
+        .filter(Boolean)
+        .join(" / "),
+      mesmaUf: [],
+      raio: [],
+      carregando: true,
+    });
+
+    const { data, error } = await supabase
+      .from("clientes_em_pauta")
+      .select(
+        "id, criticidade, cliente_id, clientes(id, cliente, codigo_cliente, cidade, uf, latitude, longitude)",
+      )
+      .eq("status", "ATIVO");
+
+    if (error) {
+      console.warn("Falha ao carregar sugestões de pauta:", error.message);
+      setSugestoesPautaRota(null);
+      return;
+    }
+
+    const idsNaRota = new Set(idsClientesNaRotaAtual || []);
+
+    const candidatos = (data || []).filter(
+      (item) =>
+        item.clientes &&
+        item.cliente_id !== cliente.id &&
+        !idsNaRota.has(item.cliente_id),
+    );
+
+    const mesmaUf = candidatos
+      .filter((item) => item.clientes.uf === cliente.uf)
+      .sort(
+        (a, b) =>
+          PESO_CRITICIDADE[a.criticidade] - PESO_CRITICIDADE[b.criticidade],
+      );
+
+    const raio = candidatos
+      .filter((item) => item.clientes.uf !== cliente.uf)
+      .map((item) => {
+        if (
+          !cliente.latitude ||
+          !cliente.longitude ||
+          !item.clientes.latitude ||
+          !item.clientes.longitude
+        ) {
+          return null;
+        }
+
+        const distancia_km = calcularDistanciaKm(
+          cliente.latitude,
+          cliente.longitude,
+          item.clientes.latitude,
+          item.clientes.longitude,
+        );
+
+        return distancia_km <= 300 ? { ...item, distancia_km } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        const diffPeso =
+          PESO_CRITICIDADE[a.criticidade] - PESO_CRITICIDADE[b.criticidade];
+        return diffPeso !== 0 ? diffPeso : a.distancia_km - b.distancia_km;
+      });
+
+    setSugestoesPautaRota({
+      referenciaClienteId: cliente.id,
+      referenciaClienteNome: cliente.cliente,
+      referenciaClienteCidadeUf: [cliente.cidade, cliente.uf]
+        .filter(Boolean)
+        .join(" / "),
+      mesmaUf,
+      raio,
+      carregando: false,
+    });
+  }
+
+  async function carregarTodaPautaAtiva(idsClientesNaRotaAtual) {
+    setCarregandoTodaPauta(true);
+
+    const { data, error } = await supabase
+      .from("clientes_em_pauta")
+      .select(
+        "id, criticidade, cliente_id, clientes(id, cliente, codigo_cliente, cidade, uf)",
+      )
+      .eq("status", "ATIVO")
+      .order("criticidade_peso", { ascending: true });
+
+    setCarregandoTodaPauta(false);
+
+    if (error) {
+      console.warn("Falha ao carregar clientes em pauta:", error.message);
+      setTodaPautaAtiva([]);
+      return;
+    }
+
+    const idsNaRota = new Set(idsClientesNaRotaAtual || []);
+
+    setTodaPautaAtiva(
+      (data || []).filter(
+        (item) => item.clientes && !idsNaRota.has(item.cliente_id),
+      ),
+    );
+  }
+
+  async function alternarPainelTodaPauta() {
+    if (painelTodaPautaAberto) {
+      setPainelTodaPautaAberto(false);
+      return;
+    }
+
+    setPainelTodaPautaAberto(true);
+    await carregarTodaPautaAtiva(
+      (clientesDaRota || []).map((item) => item.cliente_id),
+    );
+  }
+
   useEffect(() => {
     if (!modoProximos || !localizacaoUsuario) {
       return undefined;
@@ -2801,11 +3160,6 @@ function App() {
   }
 
   function abrirPesquisaRotas() {
-    if (perfil?.tipo_perfil !== "admin") {
-      alert("Somente administrador pode acessar a Pesquisa de Rotas.");
-      return;
-    }
-
     setFiltrosPesquisaRotas(FILTROS_PESQUISA_ROTAS_INICIAIS);
     setTelaAtual("pesquisaRotas");
     carregarRotas();
@@ -3179,9 +3533,17 @@ function App() {
       setRotaSelecionada(null);
       setClientesDaRota([]);
       setHistoricoWhatsAppRota([]);
+      setSugestoesPautaRota(null);
+      setPainelTodaPautaAberto(false);
       window.localStorage.removeItem(ROTA_SELECIONADA_STORAGE_KEY);
       return;
     }
+
+    if (rotaSelecionada?.id !== rota.id) {
+      setSugestoesPautaRota(null);
+      setPainelTodaPautaAberto(false);
+    }
+
     setRotaSelecionada(rota);
     window.localStorage.setItem(ROTA_SELECIONADA_STORAGE_KEY, String(rota.id));
 
@@ -3264,19 +3626,49 @@ function App() {
       cliente?.data_prevista_visita || null,
     );
 
-    const { error } = await supabase.from("rota_clientes").insert({
-      rota_id: rotaSelecionada.id,
-      cliente_id: cliente.id,
-      sequencia: proximaSequencia,
-      status: "PENDENTE",
-      visitado: false,
-      data_prevista_visita: dataInicial,
-      incluido_por: session.user.id,
-    });
+    const { data: rotaClienteInserido, error } = await supabase
+      .from("rota_clientes")
+      .insert({
+        rota_id: rotaSelecionada.id,
+        cliente_id: cliente.id,
+        sequencia: proximaSequencia,
+        status: "PENDENTE",
+        visitado: false,
+        data_prevista_visita: dataInicial,
+        incluido_por: session.user.id,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       alert("Falha ao adicionar cliente na rota: " + error.message);
       return;
+    }
+
+    const { data: pautaAtiva } = await supabase
+      .from("clientes_em_pauta")
+      .select("id")
+      .eq("cliente_id", cliente.id)
+      .eq("status", "ATIVO")
+      .maybeSingle();
+
+    if (pautaAtiva) {
+      const { error: erroPautaEmRota } = await supabase
+        .from("clientes_em_pauta")
+        .update({
+          status: "EM_ROTA",
+          rota_cliente_id: rotaClienteInserido.id,
+          atualizado_por: session.user.id,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq("id", pautaAtiva.id);
+
+      if (erroPautaEmRota) {
+        console.warn(
+          "Falha ao atualizar status da pauta:",
+          erroPautaEmRota.message,
+        );
+      }
     }
 
     const { data: itensAtualizados, error: erroItensAtualizados } =
@@ -3327,6 +3719,18 @@ function App() {
         (rotaAnterior?.total_clientes || (clientesDaRota || []).length) + 1,
       total_pendentes: (rotaAnterior?.total_pendentes || 0) + 1,
     }));
+
+    await carregarPautaPorCliente();
+    await carregarSugestoesPauta(
+      cliente,
+      (itensAtualizados || []).map((item) => item.cliente_id),
+    );
+
+    if (painelTodaPautaAberto) {
+      await carregarTodaPautaAtiva(
+        (itensAtualizados || []).map((item) => item.cliente_id),
+      );
+    }
   }
 
   async function criarRota() {
@@ -3405,6 +3809,13 @@ function App() {
 
     if (!confirmar) return;
 
+    const { data: pautaVinculada } = await supabase
+      .from("clientes_em_pauta")
+      .select("id")
+      .eq("rota_cliente_id", itemRota.id)
+      .eq("status", "EM_ROTA")
+      .maybeSingle();
+
     const { error } = await supabase
       .from("rota_clientes")
       .delete()
@@ -3415,11 +3826,61 @@ function App() {
       return;
     }
 
+    if (pautaVinculada) {
+      const { error: erroPautaVolta } = await supabase
+        .from("clientes_em_pauta")
+        .update({
+          status: "ATIVO",
+          rota_cliente_id: null,
+          atualizado_por: session.user.id,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq("id", pautaVinculada.id);
+
+      if (erroPautaVolta) {
+        console.warn(
+          "Falha ao devolver cliente para a pauta:",
+          erroPautaVolta.message,
+        );
+      }
+    }
+
     if (rotaSelecionada) {
       await abrirRota(rotaSelecionada);
     }
 
     await carregarRotas();
+    await carregarPautaPorCliente();
+
+    const rotaIdAtual = itemRota.rota_id || rotaSelecionada?.id;
+
+    const { data: itensRestantes } = await supabase
+      .from("rota_clientes")
+      .select("cliente_id, created_at")
+      .eq("rota_id", rotaIdAtual);
+
+    const maisRecente = (itensRestantes || [])
+      .slice()
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+    const clienteReferencia = maisRecente
+      ? clientes.find((item) => item.id === maisRecente.cliente_id)
+      : null;
+
+    if (clienteReferencia) {
+      await carregarSugestoesPauta(
+        clienteReferencia,
+        (itensRestantes || []).map((item) => item.cliente_id),
+      );
+    } else {
+      setSugestoesPautaRota(null);
+    }
+
+    if (painelTodaPautaAberto) {
+      await carregarTodaPautaAtiva(
+        (itensRestantes || []).map((item) => item.cliente_id),
+      );
+    }
   }
 
   async function alterarStatusClienteRota(itemRota, novoStatus) {
@@ -3467,6 +3928,52 @@ function App() {
     if (error) {
       alert("Falha ao atualizar status: " + error.message);
       return;
+    }
+
+    if (novoStatus === "VISITADO" || novoStatus === "CANCELADO") {
+      const { data: pautaVinculada } = await supabase
+        .from("clientes_em_pauta")
+        .select("id")
+        .eq("rota_cliente_id", itemRota.id)
+        .eq("status", "EM_ROTA")
+        .maybeSingle();
+
+      if (pautaVinculada) {
+        let atualizacaoPauta;
+
+        if (novoStatus === "VISITADO") {
+          atualizacaoPauta = {
+            status: "ATENDIDO",
+            resolvido_em: new Date().toISOString(),
+          };
+        } else {
+          const devolverPauta = window.confirm(
+            "Este cliente estava em pauta. Deseja devolvê-lo para a lista de clientes em pauta?",
+          );
+
+          atualizacaoPauta = devolverPauta
+            ? { status: "ATIVO", rota_cliente_id: null }
+            : { status: "DESCARTADO", resolvido_em: new Date().toISOString() };
+        }
+
+        const { error: erroPautaStatus } = await supabase
+          .from("clientes_em_pauta")
+          .update({
+            ...atualizacaoPauta,
+            atualizado_por: session.user.id,
+            atualizado_em: new Date().toISOString(),
+          })
+          .eq("id", pautaVinculada.id);
+
+        if (erroPautaStatus) {
+          console.warn(
+            "Falha ao atualizar status da pauta:",
+            erroPautaStatus.message,
+          );
+        }
+
+        await carregarPautaPorCliente();
+      }
     }
 
     const rotaId = itemRota.rota_id || rotaSelecionada?.id;
@@ -4624,70 +5131,79 @@ function App() {
         aria-label="Menu principal"
       >
         <nav className="desktop-sidebar-nav">
-          <button
-            type="button"
-            className={telaAtual === "home" ? "ativo" : ""}
-            onClick={() => {
-              setTelaAtual("home");
-              setMenuMobileAberto(false);
-            }}
+          <MenuGrupo
+            titulo="Comercial"
+            icone={Briefcase}
+            aberto={gruposMenuAbertos.comercial}
+            onToggle={() => alternarGrupoMenu("comercial")}
           >
-            <Menu size={20} />
-            Meu Dia
-          </button>
-
-          <button
-            type="button"
-            className={telaAtual === "clientes" ? "ativo" : ""}
-            onClick={() => {
-              abrirTelaClientes();
-              setMenuMobileAberto(false);
-            }}
-          >
-            <Users size={20} />
-            Clientes
-          </button>
-
-          {(perfil?.tipo_perfil === "admin" ||
-            perfil?.piloto_comissoes === true) && (
             <button
               type="button"
-              className={telaAtual === "comissoes" ? "ativo" : ""}
+              className={telaAtual === "home" ? "ativo" : ""}
               onClick={() => {
-                setTelaAtual("comissoes");
+                setTelaAtual("home");
                 setMenuMobileAberto(false);
               }}
             >
-              <DollarSign size={20} />
-              Comissões
+              <Menu size={20} />
+              Meu Dia
             </button>
-          )}
 
-          <button
-            type="button"
-            className={telaAtual === "proximos" ? "ativo" : ""}
-            onClick={() => {
-              abrirTelaProximos();
-              setMenuMobileAberto(false);
-            }}
+            <button
+              type="button"
+              className={telaAtual === "clientes" ? "ativo" : ""}
+              onClick={() => {
+                abrirTelaClientes();
+                setMenuMobileAberto(false);
+              }}
+            >
+              <Users size={20} />
+              Clientes
+            </button>
+
+            <button
+              type="button"
+              className={telaAtual === "proximos" ? "ativo" : ""}
+              onClick={() => {
+                abrirTelaProximos();
+                setMenuMobileAberto(false);
+              }}
+            >
+              <MapPin size={20} />
+              Próximos
+            </button>
+          </MenuGrupo>
+
+          <MenuGrupo
+            titulo="Rotas"
+            icone={Route}
+            aberto={gruposMenuAbertos.rotas}
+            onToggle={() => alternarGrupoMenu("rotas")}
           >
-            <MapPin size={20} />
-            Próximos
-          </button>
+            <button
+              type="button"
+              className={telaAtual === "rotas" ? "ativo" : ""}
+              onClick={() => {
+                abrirListaRotas();
+                setMenuMobileAberto(false);
+              }}
+            >
+              <Route size={20} />
+              Rotas
+            </button>
 
-          <button
-            type="button"
-            className={telaAtual === "rotas" ? "ativo" : ""}
-            onClick={() => {
-              abrirListaRotas();
-              setMenuMobileAberto(false);
-            }}
-          >
-            <Route size={20} />
-            Rotas
-          </button>
+            <button
+              type="button"
+              className={telaAtual === "clientesEmPauta" ? "ativo" : ""}
+              onClick={() => {
+                setTelaAtual("clientesEmPauta");
+                setMenuMobileAberto(false);
+              }}
+            >
+              <Flag size={20} />
+              Clientes em Pauta
+            </button>
 
-          {perfil?.tipo_perfil === "admin" && (
             <button
               type="button"
               className={telaAtual === "pesquisaRotas" ? "ativo" : ""}
@@ -4699,74 +5215,123 @@ function App() {
               <Search size={20} />
               Pesquisar rotas
             </button>
-          )}
+          </MenuGrupo>
 
-          <button
-            type="button"
-            className={telaAtual === "dashboard" ? "ativo" : ""}
-            onClick={() => {
-              setTelaAtual("dashboard");
-              carregarRotas();
-              setMenuMobileAberto(false);
-            }}
+          <MenuGrupo
+            titulo="Gestão e Análise"
+            icone={BarChart3}
+            aberto={gruposMenuAbertos.gestaoAnalise}
+            onToggle={() => alternarGrupoMenu("gestaoAnalise")}
           >
-            <BarChart3 size={20} />
-            Dashboard
-          </button>
-
-          {permiteMenuAmostrasGrupoAtual && (
             <button
               type="button"
-              className={telaAtual === "amostras" ? "ativo" : ""}
+              className={telaAtual === "dashboard" ? "ativo" : ""}
               onClick={() => {
-                abrirAmostrasComFiltros();
+                setTelaAtual("dashboard");
+                carregarRotas();
+                carregarMetricasPauta();
                 setMenuMobileAberto(false);
               }}
             >
-              <ClipboardList size={20} />
-              Amostras
+              <BarChart3 size={20} />
+              Dashboard
             </button>
-          )}
 
-          <button
-            type="button"
-            className={telaAtual === "alterarSenha" ? "ativo" : ""}
-            onClick={() => {
-              setTelaAtual("alterarSenha");
-              setMenuMobileAberto(false);
-            }}
+            {perfil?.tipo_perfil === "admin" && (
+              <button
+                type="button"
+                className={telaAtual === "painelBI" ? "ativo" : ""}
+                onClick={() => {
+                  setTelaAtual("painelBI");
+                  setMenuMobileAberto(false);
+                }}
+              >
+                <LineChart size={20} />
+                Painel BI
+              </button>
+            )}
+
+            {(perfil?.tipo_perfil === "admin" ||
+              perfil?.piloto_comissoes === true) && (
+              <button
+                type="button"
+                className={telaAtual === "comissoes" ? "ativo" : ""}
+                onClick={() => {
+                  setTelaAtual("comissoes");
+                  setMenuMobileAberto(false);
+                }}
+              >
+                <DollarSign size={20} />
+                Comissões
+              </button>
+            )}
+
+            {permiteMenuAmostrasGrupoAtual && (
+              <button
+                type="button"
+                className={telaAtual === "amostras" ? "ativo" : ""}
+                onClick={() => {
+                  abrirAmostrasComFiltros();
+                  setMenuMobileAberto(false);
+                }}
+              >
+                <ClipboardList size={20} />
+                Amostras
+              </button>
+            )}
+          </MenuGrupo>
+
+          <MenuGrupo
+            titulo="Conta"
+            icone={CircleUserRound}
+            aberto={gruposMenuAbertos.conta}
+            onToggle={() => alternarGrupoMenu("conta")}
           >
-            <Settings size={20} />
-            Alterar senha
-          </button>
+            <button
+              type="button"
+              className={telaAtual === "alterarSenha" ? "ativo" : ""}
+              onClick={() => {
+                setTelaAtual("alterarSenha");
+                setMenuMobileAberto(false);
+              }}
+            >
+              <KeyRound size={20} />
+              Alterar senha
+            </button>
+          </MenuGrupo>
 
           {perfil?.tipo_perfil === "admin" && (
-            <button
-              type="button"
-              className={telaAtual === "promocaoVestePhenix" ? "ativo" : ""}
-              onClick={() => {
-                setTelaAtual("promocaoVestePhenix");
-                setMenuMobileAberto(false);
-              }}
+            <MenuGrupo
+              titulo="Administração"
+              icone={Settings}
+              aberto={gruposMenuAbertos.administracao}
+              onToggle={() => alternarGrupoMenu("administracao")}
             >
-              <Trophy size={20} />
-              Promoção 30 anos
-            </button>
-          )}
+              <button
+                type="button"
+                className={telaAtual === "promocaoVestePhenix" ? "ativo" : ""}
+                onClick={() => {
+                  setTelaAtual("promocaoVestePhenix");
+                  setMenuMobileAberto(false);
+                }}
+              >
+                <Trophy size={20} />
+                Promoção 30 anos
+              </button>
 
-          {perfil?.tipo_perfil === "admin" && (
-            <button
-              type="button"
-              className={telaAtual === "admin" ? "ativo" : ""}
-              onClick={() => {
-                setTelaAtual("admin");
-                carregarUsuariosPerfis();
-                setMenuMobileAberto(false);
-              }}
-            >
-              <Settings size={20} />
-              Administração
-            </button>
+              <button
+                type="button"
+                className={telaAtual === "admin" ? "ativo" : ""}
+                onClick={() => {
+                  setTelaAtual("admin");
+                  carregarUsuariosPerfis();
+                  setMenuMobileAberto(false);
+                }}
+              >
+                <Settings size={20} />
+                Administração
+              </button>
+            </MenuGrupo>
           )}
         </nav>
       </aside>
@@ -4806,6 +5371,8 @@ function App() {
               : null
           }
           perfil={usuarioMeuDiaSelecionado}
+          onCadastrarClienteEmPauta={() => setTelaAtual("clientes")}
+          onVerClientesEmPauta={() => setTelaAtual("clientesEmPauta")}
         />
       )}
 
@@ -5939,6 +6506,18 @@ function App() {
                           >
                             Histórico
                           </button>
+
+                          <button
+                            type="button"
+                            className={
+                              pautaPorCliente.has(item.id)
+                                ? "botao-acao botao-acao-pauta-ativa"
+                                : "botao-acao"
+                            }
+                            onClick={() => abrirModalPauta(item)}
+                          >
+                            {pautaPorCliente.has(item.id) ? "Em Pauta" : "Pauta"}
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -6280,6 +6859,53 @@ function App() {
               </div>
             </div>
 
+            <div className="dashboard-grupo">
+              <h3>
+                <Flag size={22} />
+                Clientes em Pauta
+              </h3>
+
+              {metricasPauta ? (
+                <div className="dashboard-indicadores">
+                  <div className="dashboard-indicador">
+                    <Flag size={30} />
+                    <span>Cadastrados (total)</span>
+                    <strong>{metricasPauta.totalCadastrados}</strong>
+                  </div>
+
+                  <div className="dashboard-indicador">
+                    <AlertTriangle size={30} />
+                    <span>Aguardando</span>
+                    <strong>{metricasPauta.aguardando}</strong>
+                  </div>
+
+                  <div className="dashboard-indicador">
+                    <CheckCircle size={30} />
+                    <span>Atendidos</span>
+                    <strong>{metricasPauta.atendidos}</strong>
+                  </div>
+
+                  <div className="dashboard-indicador">
+                    <UserCheck size={30} />
+                    <span>Descartados</span>
+                    <strong>{metricasPauta.descartados}</strong>
+                  </div>
+
+                  <div className="dashboard-indicador dashboard-indicador-destaque">
+                    <BarChart3 size={30} />
+                    <span>Tempo médio até resolver</span>
+                    <strong>
+                      {metricasPauta.tempoMedioDias === null
+                        ? "-"
+                        : `${metricasPauta.tempoMedioDias} dia(s)`}
+                    </strong>
+                  </div>
+                </div>
+              ) : (
+                <p>Carregando indicadores de pauta...</p>
+              )}
+            </div>
+
             <div className="dashboard-duas-colunas">
               <div className="dashboard-grupo">
                 <h3>
@@ -6361,7 +6987,7 @@ function App() {
           </section>
         )}
 
-        {telaAtual === "pesquisaRotas" && perfil?.tipo_perfil === "admin" && (
+        {telaAtual === "pesquisaRotas" && (
           <RotasPesquisa
             linhas={linhasPesquisaRotas}
             usuariosPerfis={usuariosPerfis}
@@ -6383,6 +7009,19 @@ function App() {
               usuariosPerfis={usuariosPerfis}
             />
           )}
+
+        {perfil?.tipo_perfil === "admin" && telaAtual === "painelBI" && (
+          <PainelBI perfil={perfil} usuariosPerfis={usuariosPerfis} />
+        )}
+
+        {telaAtual === "clientesEmPauta" && (
+          <PautaClientes
+            onEditar={abrirModalPautaParaEdicao}
+            onRemover={removerClienteDaPautaManual}
+            onNovoCadastro={() => setTelaAtual("clientes")}
+            sincronizarQuando={pautaPorCliente}
+          />
+        )}
 
         {telaAtual === "historicoCliente" && clienteHistorico && (
           <HistoricoCliente
@@ -6419,6 +7058,11 @@ function App() {
             setBuscaClienteRota={setBuscaClienteRota}
             clientes={clientes}
             adicionarClienteNaRota={adicionarClienteNaRota}
+            sugestoesPautaRota={sugestoesPautaRota}
+            painelTodaPautaAberto={painelTodaPautaAberto}
+            todaPautaAtiva={todaPautaAtiva}
+            carregandoTodaPauta={carregandoTodaPauta}
+            onAlternarPainelTodaPauta={alternarPainelTodaPauta}
             abrirMaps={abrirMaps}
             abrirWhatsApp={abrirWhatsApp}
             removerClienteDaRota={removerClienteDaRota}
@@ -6612,6 +7256,98 @@ function App() {
                 type="button"
                 onClick={fecharModalVisita}
                 disabled={gravandoVisita}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalPauta && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 99999,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              width: "90%",
+              maxWidth: "500px",
+              padding: "25px",
+              borderRadius: "18px",
+              boxShadow: "0 10px 35px rgba(0,0,0,0.25)",
+            }}
+          >
+            <h2>
+              {pautaEditandoId ? "Editar Cliente em Pauta" : "Adicionar a Clientes em Pauta"}
+            </h2>
+
+            <p>
+              <strong>Cliente:</strong> {clientePauta?.cliente}
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                margin: "12px 0",
+              }}
+            >
+              {NIVEIS_CRITICIDADE.map((nivel) => (
+                <button
+                  key={nivel}
+                  type="button"
+                  className="botao-nivel-criticidade"
+                  onClick={() => setCriticidadePauta(nivel)}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    border:
+                      criticidadePauta === nivel
+                        ? "2px solid #1f75d6"
+                        : "1px solid #ccc",
+                    background: criticidadePauta === nivel ? "#eaf2fd" : "#fff",
+                    color: "#123653",
+                    fontWeight: criticidadePauta === nivel ? 700 : 400,
+                  }}
+                >
+                  {ROTULO_CRITICIDADE[nivel]}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              placeholder="Observação (opcional)..."
+              value={observacaoPauta}
+              onChange={(e) => setObservacaoPauta(e.target.value)}
+            />
+
+            <div className="acoes-modal">
+              <button
+                type="button"
+                onClick={salvarClienteEmPauta}
+                disabled={gravandoPauta}
+              >
+                {pautaEditandoId ? "Salvar" : "Confirmar"}
+              </button>
+
+              <button
+                type="button"
+                onClick={fecharModalPauta}
+                disabled={gravandoPauta}
               >
                 Cancelar
               </button>

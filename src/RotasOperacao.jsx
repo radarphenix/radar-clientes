@@ -1,9 +1,12 @@
+import SugestoesPautaRota from "./SugestoesPautaRota.jsx";
+
 function RotasOperacao({
   rotaSelecionada,
   buscaClienteRota,
   clientes,
   clientesDaRota,
   adicionarClienteNaRota,
+  sugestoesPautaRota,
   modoReordenar,
   abaRota,
   clienteAtual,
@@ -23,6 +26,11 @@ function RotasOperacao({
 }) {
   return (
     <>
+      <SugestoesPautaRota
+        sugestoes={sugestoesPautaRota}
+        onAdicionar={adicionarClienteNaRota}
+      />
+
       {buscaClienteRota.trim() !== "" && (
         <div className="grid-clientes">
           {clientes

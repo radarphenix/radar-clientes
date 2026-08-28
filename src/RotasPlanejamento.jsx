@@ -6,6 +6,8 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
+import SugestoesPautaRota from "./SugestoesPautaRota.jsx";
+import PainelTodaPauta from "./PainelTodaPauta.jsx";
 
 function RotasPlanejamento({
   rotaSelecionada,
@@ -15,6 +17,11 @@ function RotasPlanejamento({
   setBuscaClienteRota,
   buscarCliente,
   adicionarClienteNaRota,
+  sugestoesPautaRota,
+  painelTodaPautaAberto,
+  todaPautaAtiva,
+  carregandoTodaPauta,
+  onAlternarPainelTodaPauta,
   removerClienteDaRota,
   alterarSequenciaClienteRota,
   alterarDataPrevistaClienteRota,
@@ -32,6 +39,12 @@ function RotasPlanejamento({
   permiteAvisoWhatsAppRotaGrupoAtual,
   finalizarRota,
 }) {
+  const temSugestaoAutomatica =
+    !!sugestoesPautaRota &&
+    !sugestoesPautaRota.carregando &&
+    ((sugestoesPautaRota.mesmaUf?.length || 0) > 0 ||
+      (sugestoesPautaRota.raio?.length || 0) > 0);
+
   return (
     <div className="painel-planejamento-rota planejamento-mobile">
       <h2>Planejamento da Rota</h2>
@@ -40,6 +53,18 @@ function RotasPlanejamento({
         Use esta área para adicionar clientes, organizar sequência e preparar a
         rota antes da execução.
       </p>
+
+      <SugestoesPautaRota
+        sugestoes={sugestoesPautaRota}
+        onAdicionar={adicionarClienteNaRota}
+      />
+
+      <PainelTodaPauta
+        aberto={painelTodaPautaAberto && !temSugestaoAutomatica}
+        itens={todaPautaAtiva}
+        carregando={carregandoTodaPauta}
+        onAdicionar={adicionarClienteNaRota}
+      />
 
       <div className="planejamento-busca">
         <input
@@ -93,6 +118,19 @@ function RotasPlanejamento({
               <MapPin size={18} />
               Ordenar por distância
             </button>
+
+            {!temSugestaoAutomatica && (
+              <button
+                type="button"
+                className={`btn-rota-acao${painelTodaPautaAberto ? " ativo" : ""}`}
+                onClick={onAlternarPainelTodaPauta}
+              >
+                <Flag size={18} />
+                {painelTodaPautaAberto
+                  ? "Ocultar clientes em pauta"
+                  : "Clientes em Pauta"}
+              </button>
+            )}
 
             {rotaSelecionada.status === "ABERTA" && (
               <button
