@@ -620,7 +620,14 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                       {Number(item.vendas_liquidas) !== Number(item.vendas_brutas) && (
                         <div><dt>Base válida após devoluções posteriores</dt><dd>{moeda(item.vendas_liquidas)}</dd></div>
                       )}
-                      <div><dt>{item.modalidade === "V" ? "Faixa válida atualmente" : "Modalidade"}</dt><dd>{item.modalidade === "V" ? `${moeda(item.meta_atingida)} · ${percentual(item.percentual_comissao)}` : `Fixa · ${percentual(item.percentual_comissao)}`}</dd></div>
+                      <div>
+                        <dt>{item.modalidade === "V" ? "Faixa válida atualmente" : "Modalidade"}</dt>
+                        <dd>{item.modalidade === "V"
+                          ? `${moeda(item.meta_atingida)} · ${percentual(item.percentual_comissao)}`
+                          : item.modalidade === "F"
+                            ? `Fixa · ${percentual(item.percentual_comissao)}`
+                            : "-"}</dd>
+                      </div>
                       <div><dt>Comissão percentual</dt><dd>{moeda(comissaoPercentual)}</dd></div>
                       <div><dt>Fixo previsto</dt><dd>{moeda(fixoPrevisto)}</dd></div>
                       <div className="linha-total"><dt>Total comissão + fixo</dt><dd>{moeda(comissaoGerada)}</dd></div>
