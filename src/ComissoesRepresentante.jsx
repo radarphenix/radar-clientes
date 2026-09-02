@@ -629,8 +629,8 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                             : "-"}</dd>
                       </div>
                       <div><dt>Comissão percentual</dt><dd>{moeda(comissaoPercentual)}</dd></div>
-                      <div><dt>Fixo previsto</dt><dd>{moeda(fixoPrevisto)}</dd></div>
-                      <div className="linha-total"><dt>Total comissão + fixo</dt><dd>{moeda(comissaoGerada)}</dd></div>
+                      {fixoPrevisto !== 0 && <div><dt>Fixo previsto</dt><dd>{moeda(fixoPrevisto)}</dd></div>}
+                      <div className="linha-total"><dt>{fixoPrevisto !== 0 ? "Total comissão + fixo" : "Total comissão"}</dt><dd>{moeda(comissaoGerada)}</dd></div>
                       {item.percentual_manual != null && <div className="linha-detalhe"><dt>Ajuste manual vigente ({percentual(item.percentual_sistema)} → {percentual(item.percentual_manual)})</dt><dd>{moeda(ajustePercentualManual)}</dd></div>}
                       {item.percentual_manual != null && item.motivo_percentual_manual && <div className="linha-detalhe"><dt>Motivo do último ajuste manual</dt><dd>{item.motivo_percentual_manual}</dd></div>}
                     </dl>
