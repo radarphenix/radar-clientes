@@ -1,0 +1,38 @@
+name: Deploy Supabase Radar
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/cadastrar-produto-feira/**'
+      - '.github/workflows/supabase-radar.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Aplicar banco e função da feira
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_RADAR }}
+      SUPABASE_PROJECT_REF: ujrvncptcymootpyalpd
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Vincular o projeto Radar
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Aplicar migrations pendentes
+        run: supabase db push --linked
+
+      - name: Publicar Edge Function do cadastro da feira
+        run: supabase functions deploy cadastrar-produto-feira --project-ref "$SUPABASE_PROJECT_REF" --use-api

@@ -27,3 +27,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/agenda-geral-ics/deno.json"
 entrypoint = "./functions/agenda-geral-ics/index.ts"
+
+[functions.cadastrar-produto-feira]
+enabled = true
+verify_jwt = false
+import_map = './functions/cadastrar-produto-feira/deno.json'
+entrypoint = './functions/cadastrar-produto-feira/index.ts'
