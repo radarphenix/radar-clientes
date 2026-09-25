@@ -1,8 +1,6 @@
 import React from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from './supabaseClient'
 import './cadastro-produtos-feira.css'
-
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL || 'https://invalid.supabase.co', import.meta.env.VITE_SUPABASE_ANON_KEY || 'invalid')
 const vazio = { empresa:'', contato:'', telefone:'', email:'', responsavel:'', maquina:'', papel:'', produto:'', modelo:'', posicao:'', comprimento:'', largura:'', cfm:'', gramatura:'', espessura:'', teflonada:false, durabilidade:'', velocidade_maquina:'', informacoes_adicionais:'' }
 const produtos = { Tissue:['Tela Formadora','Feltro','Tela DNT','Tela Acabadora'], Marrom:['Tela Tecida','Formadora','Feltro','Feltro com emenda','Camisa','Engrossador','Secadora Espiral'] }
 const modelos = (papel, produto) => produto === 'Camisa' ? ['Malha 4','Malha 16','Malha 18','Malha 21'] : (produto === 'Formadora' || produto === 'Tela Formadora') && papel === 'Tissue' ? ['Dupla e meia','Tripla'] : produto === 'Formadora' && papel === 'Marrom' ? ['Tripla','Dupla','Dupla e meia','Mono'] : []
