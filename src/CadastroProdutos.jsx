@@ -49,7 +49,9 @@ export default function CadastroProdutos({ voltarMenu }) {
     if(primeiro){ setErro('Corrija os campos destacados.'); setSemMedidas(null); focar(primeiro); return }
     if(!confirmado && (!f.comprimento || !f.largura)){ setErro(''); setSemMedidas({nova}); return }
     setSemMedidas(null); setSalvando(true); setErro('')
-    const {data,error}=await supabase.functions.invoke('cadastrar-produto-feira',{body:f})
+    // Medidas e condições só existem na tela com produto escolhido; sem produto, não envia valores ocultos.
+    const body=f.produto?f:{...f,comprimento:'',largura:'',espessura:'',cfm:'',gramatura:'',teflonada:false,durabilidade:'',velocidade_maquina:'',informacoes_adicionais:''}
+    const {data,error}=await supabase.functions.invoke('cadastrar-produto-feira',{body})
     setSalvando(false)
     if(error){ let msg='Não foi possível gravar agora. Confira a conexão e tente novamente.'; try{ const corpo=await error.context?.json?.(); if(corpo?.mensagem)msg=corpo.mensagem }catch{/* sem JSON */} setErro(data?.mensagem||msg); return }
     if(nova){ setF(a=>({...vazio,empresa:a.empresa,contato:a.contato,telefone:a.telefone,email:a.email,responsavel:a.responsavel})); setErros({}); setSalvos(n=>n+1); setAviso(f.maquina.trim()?`Máquina "${f.maquina.trim()}" salva. Os dados do contato foram mantidos para a próxima.`:'Cadastro salvo. Os dados do contato foram mantidos para a próxima.'); window.scrollTo(0,0) } else voltarMenu()
@@ -89,34 +91,35 @@ export default function CadastroProdutos({ voltarMenu }) {
         <section className="bloco">
           <h3><b>2</b>Máquina e produto</h3>
           <div className="grid">{campo('maquina','Máquina',{className:'largo',placeholder:'Ex.: MP 3 — Linha de tissue'})}</div>
-          <div className="campo"><span>Tipo de papel</span>{opcoes('Tipo de papel',f.papel,Object.keys(produtos),alterarPapel)}</div>
+          <div className="campo" id="tipo-papel"><span>Tipo de papel</span>{opcoes('Tipo de papel',f.papel,Object.keys(produtos),alterarPapel)}</div>
           {f.papel&&<div className="campo"><span>Produto</span>{opcoes('Produto',f.produto,produtos[f.papel],alterarProduto)}</div>}
           {(opModelo.length>0||precisaPosicao(f.produto))&&<div className="grid">
             {opModelo.length>0&&<div className="campo largo"><span>Modelo</span>{opcoes('Modelo',f.modelo,opModelo,v=>set('modelo',f.modelo===v?'':v))}</div>}
             {precisaPosicao(f.produto)&&campo('posicao','Posição',{placeholder:'Ex.: 1ª prensa, pick-up'})}
           </div>}
-          <div className="grid medidas">
+          {!f.produto&&<p className="dica-bloco">Escolha o tipo de papel e o produto para informar medidas e condições de operação.</p>}
+          {f.produto&&<div className="grid medidas">
             {campo('comprimento','Comprimento',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('comprimento',decimal3(e.target.value))})}
             {campo('largura','Largura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('largura',decimal3(e.target.value))})}
             {campo('espessura','Espessura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('espessura',decimal3(e.target.value))})}
             {campo('cfm','CFM',{inputMode:'numeric',onChange:e=>set('cfm',inteiro(e.target.value))})}
             {campo('gramatura','Gramatura',{inputMode:'numeric',onChange:e=>set('gramatura',inteiro(e.target.value))})}
             {f.produto==='Secadora Espiral'&&<label className="check-simples"><input type="checkbox" checked={f.teflonada} onChange={e=>set('teflonada',e.target.checked)}/> Teflonada</label>}
-          </div>
+          </div>}
         </section>
 
-        <section className="bloco">
+        {f.produto&&<section className="bloco">
           <h3><b>3</b>Condições de operação</h3>
           <div className="grid">
             {campo('durabilidade','Durabilidade do produto')}
             {campo('velocidade_maquina','Velocidade da máquina')}
           </div>
           <label className="campo"><span>Informações adicionais</span><textarea value={f.informacoes_adicionais} maxLength="5000" onChange={e=>set('informacoes_adicionais',e.target.value)} rows="4" placeholder="Observações do cliente, problemas atuais, prazos…"/><small>{f.informacoes_adicionais.length}/5000</small></label>
-        </section>
+        </section>}
 
         {semMedidas&&<div className="aviso-medidas" role="alertdialog" aria-live="assertive">
-          <p><strong>Atenção:</strong> {faltaMedida.length===2?'comprimento e largura não foram informados':`${faltaMedida[0]} não foi informad${faltaMedida[0]==='largura'?'a':'o'}`}. Deseja salvar mesmo assim?</p>
-          <div><button type="button" className="botao-principal" disabled={salvando} onClick={()=>salvar(semMedidas.nova,true)}>{salvando?'Salvando…':'Salvar mesmo assim'}</button><button type="button" className="botao-secundario" onClick={()=>{setSemMedidas(null);focar(f.comprimento?'largura':'comprimento')}}>Informar medidas</button></div>
+          <p><strong>Atenção:</strong> {!f.produto?'produto, comprimento e largura não foram informados':faltaMedida.length===2?'comprimento e largura não foram informados':`${faltaMedida[0]} não foi informad${faltaMedida[0]==='largura'?'a':'o'}`}. Deseja salvar mesmo assim?</p>
+          <div><button type="button" className="botao-principal" disabled={salvando} onClick={()=>salvar(semMedidas.nova,true)}>{salvando?'Salvando…':'Salvar mesmo assim'}</button><button type="button" className="botao-secundario" onClick={()=>{setSemMedidas(null);if(f.produto)focar(f.comprimento?'largura':'comprimento');else document.getElementById('tipo-papel')?.scrollIntoView({behavior:'smooth',block:'center'})}}>{f.produto?'Informar medidas':'Escolher produto'}</button></div>
         </div>}
         {erro&&<p className="erro" role="alert">{erro}</p>}
         <div className="acoes-cadastro">

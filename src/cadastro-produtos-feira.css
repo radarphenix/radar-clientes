@@ -100,3 +100,10 @@
 .aviso-medidas button:disabled{opacity:.55}
 .aviso-medidas .botao-principal{background:linear-gradient(90deg,#397f9e,#8ed7e8);color:#041b35}
 .aviso-medidas .botao-secundario{background:#fff;color:#0b4e7e}
+.dica-bloco{margin:0;padding:12px 14px;border-radius:10px;background:#f3f7fa;border:1px dashed #c3d4df;color:#597086;font-size:13px}
+/* Neutraliza o button:hover global do app nas ações do cadastro */
+.cadastro-produtos .botao-principal:hover:not(:disabled){background:linear-gradient(90deg,#2f7090,#7fcfe2);color:#041b35;filter:none}
+.cadastro-produtos .botao-secundario:hover:not(:disabled){background:#f0f7fb;color:#0b4e7e}
+.cadastro-produtos .botao-link:hover{background:none;color:#0e5886}
+.cadastro-produtos .opcoes button:hover{background:#f0f7fb;color:#0b4e7e}
+.cadastro-produtos .opcoes button.ativo:hover{background:#0e5886;color:#fff}
