@@ -33,7 +33,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-64x64.png'],
+      includeAssets: ['pwa-64x64.png', 'manifest-feira-veste-phenix.webmanifest', 'favicon-veste-phenix.png', 'veste-phenix-*.png'],
       workbox: {
         // /feira/veste-phenix vem da página própria pré-cacheada (feira/veste-phenix.html),
         // nunca do index.html do Radar.
