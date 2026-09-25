@@ -10,13 +10,16 @@ const precisaPosicao = produto => ['Tela Tecida','Secadora Espiral','Feltro','Fe
 const telMask = value => { const d = String(value).replace(/\D/g,'').slice(0,11); if(d.length<=2)return d?`(${d}`:''; if(d.length<=6)return `(${d.slice(0,2)}) ${d.slice(2)}`; return `(${d.slice(0,2)}) ${d.slice(2,d.length===11?7:6)}-${d.slice(d.length===11?7:6)}` }
 const decimal3 = value => { const d = String(value).replace(/\D/g,'').slice(0,12); if(!d)return ''; const n = d.padStart(4,'0'); return `${n.slice(0,-3).replace(/^0+(?=\d)/,'')},${n.slice(-3)}` }
 const inteiro = value => String(value).replace(/\D/g,'').slice(0,9)
+const contatoCampos = ['empresa','contato','telefone','email','responsavel']
+const medidaCampos = ['comprimento','largura','cfm','gramatura','espessura']
 
 export default function CadastroProdutos({ voltarMenu }) {
   const [f, setF] = React.useState(vazio), [erro, setErro] = React.useState(''), [salvando, setSalvando] = React.useState(false)
+  const [tentou, setTentou] = React.useState(false), [salvos, setSalvos] = React.useState(0), [aviso, setAviso] = React.useState('')
   const set = (k,v) => { setF(a => ({...a,[k]:v})); setErro('') }
   const limparProduto = extras => setF(a => ({...a,...extras,produto:'',modelo:'',posicao:'',comprimento:'',largura:'',cfm:'',gramatura:'',espessura:'',teflonada:false}))
-  const alterarPapel = v => limparProduto({papel:v})
-  const alterarProduto = v => setF(a => ({...a,produto:v,modelo:'',posicao:'',comprimento:'',largura:'',cfm:'',gramatura:'',espessura:'',teflonada:false}))
+  const alterarPapel = v => { limparProduto({papel:v}); setErro('') }
+  const alterarProduto = v => { setF(a => ({...a,produto:v,modelo:'',posicao:'',comprimento:'',largura:'',cfm:'',gramatura:'',espessura:'',teflonada:false})); setErro('') }
   const opModelo = modelos(f.papel,f.produto)
   const detalhes = Boolean(f.papel && f.produto && (!opModelo.length || f.modelo) && (!precisaPosicao(f.produto) || f.posicao.trim()))
   const validar = () => {
@@ -27,14 +30,92 @@ export default function CadastroProdutos({ voltarMenu }) {
     if(!f.durabilidade.trim()||!f.velocidade_maquina.trim())return 'Preencha durabilidade e velocidade da máquina.'
     return ''
   }
+  const etapas = [
+    { titulo:'Contato', ok: contatoCampos.every(k => f[k].trim()) },
+    { titulo:'Máquina e produto', ok: Boolean(f.maquina.trim()) && detalhes && medidaCampos.every(k => f[k]) },
+    { titulo:'Condições de operação', ok: Boolean(f.durabilidade.trim() && f.velocidade_maquina.trim()) },
+  ]
   async function salvar(nova) {
-    const aviso=validar(); if(aviso){setErro(aviso);return}
+    setTentou(true); setAviso('')
+    const pendente=validar(); if(pendente){setErro(pendente);setTimeout(()=>document.querySelector('.cadastro-produtos .invalido')?.scrollIntoView({behavior:'smooth',block:'center'}));return}
     setSalvando(true); setErro('')
     const {error}=await supabase.functions.invoke('cadastrar-produto-feira',{body:f})
     setSalvando(false)
     if(error){setErro('Não foi possível gravar agora. Confira a conexão e tente novamente.');return}
-    if(nova){setF(a=>({...vazio,empresa:a.empresa,contato:a.contato,telefone:a.telefone,email:a.email,responsavel:a.responsavel}));window.scrollTo(0,0)}else voltarMenu()
+    if(nova){setF(a=>({...vazio,empresa:a.empresa,contato:a.contato,telefone:a.telefone,email:a.email,responsavel:a.responsavel}));setTentou(false);setSalvos(n=>n+1);setAviso(`Máquina "${f.maquina.trim()}" salva. Os dados do contato foram mantidos para a próxima.`);window.scrollTo(0,0)}else voltarMenu()
   }
-  const campo=(k,label,props={})=>{const{onChange,...rest}=props;return <label>{label}<input value={f[k]} onChange={onChange||((e)=>set(k,e.target.value))} {...rest}/></label>}
-  return <><header><img className="marca-30-cabecalho" src="/phenix-30-anos-transparente.png" alt="Phenix 30 anos"/><span>CADASTRO DE PRODUTOS</span></header><main className="cadastro-area"><form className="cadastro-card" onSubmit={e=>{e.preventDefault();salvar(false)}} noValidate><div className="cadastro-titulo"><div><p className="eyebrow">ATENDIMENTO DE FEIRA</p><h1>Cadastro de Produtos</h1><p>Registre as necessidades da máquina com dados completos.</p></div><p className="data-cadastro">Cadastro em<br/><strong>{new Intl.DateTimeFormat('pt-BR').format(new Date())}</strong></p></div><fieldset><legend>Contato e responsável</legend><div className="grid">{campo('empresa','Empresa')}{campo('contato','Contato')}{campo('telefone','Telefone',{inputMode:'tel',onChange:e=>set('telefone',telMask(e.target.value))})}{campo('email','E-mail',{type:'email'})}{campo('responsavel','Quem fez o cadastro')}</div></fieldset><fieldset><legend>Máquina e produto</legend><div className="grid">{campo('maquina','Máquina (campo livre)')}<label>Tipo de papel<select value={f.papel} onChange={e=>alterarPapel(e.target.value)}><option value="">Selecione</option>{Object.keys(produtos).map(x=><option key={x}>{x}</option>)}</select></label>{f.papel&&<label>Produto<select value={f.produto} onChange={e=>alterarProduto(e.target.value)}><option value="">Selecione</option>{produtos[f.papel].map(x=><option key={x}>{x}</option>)}</select></label>}{opModelo.length>0&&<label>Modelo<select value={f.modelo} onChange={e=>set('modelo',e.target.value)}><option value="">Selecione</option>{opModelo.map(x=><option key={x}>{x}</option>)}</select></label>}{precisaPosicao(f.produto)&&campo('posicao','Posição (campo livre)')}</div>{detalhes&&<div className="grid detalhes">{campo('comprimento','Comprimento',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('comprimento',decimal3(e.target.value))})}{campo('largura','Largura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('largura',decimal3(e.target.value))})}{campo('cfm','CFM',{inputMode:'numeric',onChange:e=>set('cfm',inteiro(e.target.value))})}{campo('gramatura','Gramatura',{inputMode:'numeric',onChange:e=>set('gramatura',inteiro(e.target.value))})}{campo('espessura','Espessura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('espessura',decimal3(e.target.value))})}{f.produto==='Secadora Espiral'&&<label className="check-simples"><input type="checkbox" checked={f.teflonada} onChange={e=>set('teflonada',e.target.checked)}/> Teflonada</label>}</div>}</fieldset>{detalhes&&<fieldset><legend>Condições de operação</legend><div className="grid">{campo('durabilidade','Durabilidade do produto')}{campo('velocidade_maquina','Velocidade da máquina')}</div><label>Informações adicionais<textarea value={f.informacoes_adicionais} maxLength="5000" onChange={e=>set('informacoes_adicionais',e.target.value)} rows="7"/><small>{f.informacoes_adicionais.length}/5000 caracteres</small></label></fieldset>}{erro&&<p className="erro">{erro}</p>}<div className="acoes-cadastro"><button type="submit" disabled={salvando}>{salvando?'Salvando…':'Salvar e voltar ao menu'}</button><button type="button" disabled={salvando} onClick={()=>salvar(true)}>Salvar e cadastrar nova máquina</button><button type="button" className="botao-neutro" onClick={()=>{setF(vazio);setErro('');window.scrollTo(0,0)}}>Reiniciar</button><button type="button" className="botao-neutro" onClick={voltarMenu}>Cancelar</button></div></form></main></>
+  const falta = k => tentou && !String(f[k]).trim()
+  const campo=(k,label,props={})=>{const{onChange,dica,className='',...rest}=props;return <label className={`campo ${className}`}><span>{label}{dica&&<em>{dica}</em>}</span><input className={falta(k)?'invalido':''} aria-invalid={falta(k)} value={f[k]} onChange={onChange||((e)=>set(k,e.target.value))} {...rest}/></label>}
+  const opcoes=(nome,valor,lista,escolher,invalido)=><div className={`opcoes ${invalido?'invalido':''}`} role="radiogroup" aria-label={nome}>{lista.map(x=><button type="button" key={x} role="radio" aria-checked={valor===x} className={valor===x?'ativo':''} onClick={()=>escolher(x)}>{x}</button>)}</div>
+  const hoje = new Intl.DateTimeFormat('pt-BR').format(new Date())
+
+  return <div className="cadastro-produtos">
+    <header><img className="marca-30-cabecalho" src="/phenix-30-anos-transparente.png" alt="Phenix 30 anos"/><span>CADASTRO DE PRODUTOS</span></header>
+    <main className="cadastro-layout">
+      <aside className="cadastro-hero">
+        <p className="eyebrow">ATENDIMENTO DE FEIRA</p>
+        <h1>Registre a necessidade de cada máquina.</h1>
+        <p className="hero-texto">Preencha contato, máquina e condições de operação. Depois de salvar, é possível cadastrar outra máquina para o mesmo cliente sem redigitar o contato.</p>
+        <ol className="etapas">{etapas.map((e,i)=><li key={e.titulo} className={e.ok?'ok':''}><b>{e.ok?'✓':i+1}</b>{e.titulo}</li>)}</ol>
+        <div className="hero-rodape"><img src="/phenix-30-anos-branco-transparente.png" alt="Phenix - Tecendo Facilidades"/><p>Cadastro em <strong>{hoje}</strong>{salvos>0&&<> · {salvos} {salvos===1?'máquina salva':'máquinas salvas'} nesta sessão</>}</p></div>
+      </aside>
+
+      <form className="cadastro-card" onSubmit={e=>{e.preventDefault();salvar(false)}} noValidate>
+        <div className="cadastro-titulo"><h2>Cadastro de Produtos</h2><p>Todos os campos são obrigatórios, exceto informações adicionais.</p></div>
+        {aviso&&<p className="aviso-ok" role="status">{aviso}</p>}
+
+        <section className="bloco">
+          <h3><b>1</b>Contato e responsável</h3>
+          <div className="grid">
+            {campo('empresa','Empresa',{className:'largo'})}
+            {campo('contato','Contato')}
+            {campo('telefone','Telefone',{inputMode:'tel',placeholder:'(00) 00000-0000',onChange:e=>set('telefone',telMask(e.target.value))})}
+            {campo('email','E-mail',{type:'email',placeholder:'nome@empresa.com.br'})}
+            {campo('responsavel','Quem fez o cadastro')}
+          </div>
+        </section>
+
+        <section className="bloco">
+          <h3><b>2</b>Máquina e produto</h3>
+          <div className="grid">{campo('maquina','Máquina',{className:'largo',placeholder:'Ex.: MP 3 — Linha de tissue'})}</div>
+          <div className="campo"><span>Tipo de papel</span>{opcoes('Tipo de papel',f.papel,Object.keys(produtos),alterarPapel,tentou&&!f.papel)}</div>
+          {f.papel&&<div className="campo"><span>Produto</span>{opcoes('Produto',f.produto,produtos[f.papel],alterarProduto,tentou&&!f.produto)}</div>}
+          {(opModelo.length>0||precisaPosicao(f.produto))&&<div className="grid">
+            {opModelo.length>0&&<div className="campo largo"><span>Modelo</span>{opcoes('Modelo',f.modelo,opModelo,v=>set('modelo',v),tentou&&!f.modelo)}</div>}
+            {precisaPosicao(f.produto)&&campo('posicao','Posição',{placeholder:'Ex.: 1ª prensa, pick-up'})}
+          </div>}
+          {detalhes?<div className="grid medidas">
+            {campo('comprimento','Comprimento',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('comprimento',decimal3(e.target.value))})}
+            {campo('largura','Largura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('largura',decimal3(e.target.value))})}
+            {campo('espessura','Espessura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('espessura',decimal3(e.target.value))})}
+            {campo('cfm','CFM',{inputMode:'numeric',onChange:e=>set('cfm',inteiro(e.target.value))})}
+            {campo('gramatura','Gramatura',{inputMode:'numeric',onChange:e=>set('gramatura',inteiro(e.target.value))})}
+            {f.produto==='Secadora Espiral'&&<label className="check-simples"><input type="checkbox" checked={f.teflonada} onChange={e=>set('teflonada',e.target.checked)}/> Teflonada</label>}
+          </div>:<p className="dica-bloco">{!f.papel?'Escolha o tipo de papel para ver os produtos.':!f.produto?'Escolha o produto.':'Complete modelo e posição para liberar as medidas.'}</p>}
+        </section>
+
+        <section className={`bloco ${detalhes?'':'bloqueado'}`} aria-disabled={!detalhes}>
+          <h3><b>3</b>Condições de operação</h3>
+          {detalhes?<>
+            <div className="grid">
+              {campo('durabilidade','Durabilidade do produto')}
+              {campo('velocidade_maquina','Velocidade da máquina')}
+            </div>
+            <label className="campo"><span>Informações adicionais <em>opcional</em></span><textarea value={f.informacoes_adicionais} maxLength="5000" onChange={e=>set('informacoes_adicionais',e.target.value)} rows="4" placeholder="Observações do cliente, problemas atuais, prazos…"/><small>{f.informacoes_adicionais.length}/5000</small></label>
+          </>:<p className="dica-bloco">Disponível depois de escolher o produto.</p>}
+        </section>
+
+        {erro&&<p className="erro" role="alert">{erro}</p>}
+        <div className="acoes-cadastro">
+          <button type="button" className="botao-principal" disabled={salvando} onClick={()=>salvar(true)}>{salvando?'Salvando…':'Salvar e cadastrar outra máquina'}</button>
+          <button type="submit" className="botao-secundario" disabled={salvando}>Salvar e voltar ao menu</button>
+          <div className="acoes-leves">
+            <button type="button" className="botao-link" onClick={()=>{setF(vazio);setErro('');setTentou(false);setAviso('');window.scrollTo(0,0)}}>Limpar formulário</button>
+            <button type="button" className="botao-link" onClick={voltarMenu}>Cancelar</button>
+          </div>
+        </div>
+      </form>
+    </main>
+    <footer>Phenix • Tecendo Facilidades</footer>
+  </div>
 }
