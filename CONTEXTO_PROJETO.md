@@ -150,6 +150,30 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
   - `MANUAL_USUARIO.md`: nova secao 18 "Instalacao como aplicativo
     (PWA)" com o passo a passo de instalar no Android/iOS.
 
+- [Concluido em 2026-09-25] Radar e Veste Phenix instalaveis como apps
+  separados no mesmo site (detalhes completos em `FEIRA_VESTE_PHENIX.md`,
+  secao 2):
+  - o manifesto do Radar passou a ter `id: '/'`, `start_url: '/radar/'` e
+    `scope: '/radar/'` (antes `scope: '/'` abrangia `/feira/` e o celular
+    mostrava "Abrir no app" em vez de instalar o Veste Phenix); a raiz `/`
+    redireciona para `/radar/` em `src/main.jsx` preservando query e hash
+    (tokens do Supabase Auth); o `id` preserva as instalacoes antigas;
+  - a feira ganhou HTML proprio (`feira/veste-phenix.html`, segunda entrada
+    do build, servida pelo Cloudflare em `/feira/veste-phenix`) com o
+    manifesto do Veste Phenix no HTML; trocar o manifesto via script nao
+    funciona (o navegador le no carregamento: no computador reinstalava o
+    Radar, no Android travava em "Instalando");
+  - service worker: `navigateFallbackDenylist: [/^\/feira\//]`, manifesto e
+    icones `veste-phenix-*.png` pre-cacheados; `/promo/veste-phenix` nao
+    oferece instalacao;
+  - validado via CDP no site oficial (dois apps distintos, ambos
+    instalaveis, inclusive sem JavaScript, com service worker ativo e
+    offline) e pelo usuario: instalou os dois no Chrome do computador e no
+    Android. No Android, "Instalando..." travado era a Play Store configurada
+    para baixar so no Wi-Fi; o Firefox desktop nao instala dois apps do
+    mesmo site;
+  - REGRA: nunca voltar o `scope` do Radar para `/`.
+
 ## Planejamento de Rotas
 
 - [Correcao em 2026-07-28] Reordenacao segura de clientes pendentes:
@@ -1274,6 +1298,35 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
     `.codex-backups/20260724_021500_loading_clientes_proximos`.
 
 ## Promocao Veste Phenix - 30 anos
+
+- [Concluido em 2026-09-25] App da feira, cadastro de produtos e relatorio
+  admin (referencia completa em `FEIRA_VESTE_PHENIX.md`):
+  - `/feira/veste-phenix` (sem login) abre o menu da feira: Promocao ou
+    Cadastro de Produtos (`src/FeiraVestePhenix.jsx`, `src/MenuFeira.jsx`,
+    `src/CadastroProdutos.jsx`);
+  - cadastro redesenhado no padrao visual da promocao; obrigatorios apenas
+    empresa, contato, telefone (fixo ou celular) e quem fez o cadastro;
+    e-mail validado so se digitado; posicao opcional; medidas e condicoes
+    so aparecem apos escolher papel e produto; aviso (nao bloqueante) quando
+    faltam comprimento/largura; barra de salvar fixa no rodape;
+  - CORRECAO: a tela criava cliente Supabase proprio com
+    `import.meta.env.VITE_SUPABASE_*`, inexistente no build do Cloudflare;
+    em producao gravava em `invalid.supabase.co` e nenhum cadastro era salvo.
+    Agora usa `src/supabaseClient.js`;
+  - banco: tabela `cadastro_produtos_feira_phenix`, migrations
+    `20260924120000`, `20260924123000`, `20260925090000` (campos opcionais)
+    e `20260925120000` (leitura so para admin via RLS); gravacao pela Edge
+    Function `cadastrar-produto-feira`, que revalida no servidor;
+  - relatorio: item de menu "Promocao 30 anos" -> aba "Cadastros de produtos"
+    (`src/RelatorioProdutosFeira.jsx`) com indicadores, busca, filtros,
+    detalhes por linha e exportacao Excel; RLS testada no banco oficial
+    (anon bloqueado, usuario comum 0 linhas, admin todas);
+  - deploy do banco pelo workflow "Deploy Supabase Radar": falhava porque a
+    migration `20260831083000` estava aplicada no banco mas nao versionada;
+    corrigido commitando o arquivo. Toda migration aplicada precisa estar em
+    `supabase/migrations/`;
+  - comandos `supabase` locais usam a chave de `.env.supabase.local` (ver
+    `ACESSO_SUPABASE_CLI.md`).
 
 - [Correcao em 2026-08-05] Apuracao pela Loteria Federal - bug e evolucoes
   (aplicadas no Supabase remoto via `supabase db push --linked`):

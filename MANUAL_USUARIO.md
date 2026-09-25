@@ -758,8 +758,11 @@ login, hospedada no mesmo dominio; o Supabase do projeto e usado apenas para
 gravar os cadastros (via Edge Function dedicada) e nao aplica as regras de
 acesso por perfil do restante do sistema.
 
-A tela segue a ordem: apuracao e manutencao de testes no topo, resumo e
-tabela de inscricoes na sequencia.
+A tela tem duas abas no topo: **Promocao** (descrita nesta secao) e
+**Cadastros de produtos** (relatorio da feira, ver 15.6).
+
+A aba Promocao segue a ordem: apuracao e manutencao de testes no topo,
+resumo e tabela de inscricoes na sequencia.
 
 Areas e botoes:
 
@@ -811,6 +814,31 @@ Areas e botoes:
 
 - Funcao: baixa planilha com todas as inscricoes (numero da sorte, dados do
   participante, status e datas de auditoria).
+
+### 15.6 Cadastros de produtos da feira (somente admin)
+
+Aba **Cadastros de produtos** dentro do item "Promocao 30 anos" do menu.
+Mostra as necessidades de maquinas registradas pelos representantes no app
+da feira (ver secao 24). So administradores ativos enxergam esses dados;
+para os demais perfis a lista vem vazia, por regra do proprio banco de dados.
+
+Areas e botoes:
+
+1. Indicadores: total de cadastros, quantidade de empresas diferentes e
+   quantos cadastros estao sem comprimento ou largura (fica amarelo quando
+   ha algum).
+2. Busca: procura por empresa, contato, maquina, representante, e-mail ou
+   telefone.
+3. Filtros: tipo de papel (Tissue/Marrom) e produto (a lista de produtos se
+   ajusta ao papel escolhido).
+4. Tabela: data, empresa com contato e telefone, maquina, produto (com
+   papel, modelo e posicao), comprimento x largura ("nao informado" quando
+   falta) e quem cadastrou. Clicar numa linha abre os detalhes: e-mail,
+   todas as medidas, durabilidade, velocidade da maquina e informacoes
+   adicionais.
+5. Atualizar: recarrega a lista (cadastros feitos na feira aparecem na hora).
+6. Exportar Excel: baixa planilha com todos os campos dos cadastros
+   **filtrados** na tela.
 
 ## 16. Regras de negocio consolidadas
 
@@ -973,6 +1001,33 @@ Regras:
   internet, mas as informacoes de clientes, rotas etc. continuam
   precisando de conexao (vem do banco de dados na hora).
 
+Dois aplicativos no mesmo site (desde 2026-09-25):
+
+| Aplicativo | Endereco para instalar | Icone |
+| --- | --- | --- |
+| Radar Clientes | `radarphenix.pages.dev/radar/` | azul claro com a marca Phenix |
+| Veste Phenix (feira) | `radarphenix.pages.dev/feira/veste-phenix` | azul-escuro com "VESTE" |
+
+- Os dois podem ser instalados no mesmo aparelho, cada um com seu icone.
+  Entrar por `radarphenix.pages.dev` leva automaticamente ao Radar.
+- Na janela de instalacao aparece so o nome do site
+  (`radarphenix.pages.dev`), nao o endereco completo; o que importa e o
+  nome e o icone do app mostrados na janela.
+- Computador: instalar pelo Chrome ou pelo Edge (icone de instalar na barra
+  de endereco). O Firefox nao instala dois apps do mesmo site.
+- Problemas comuns:
+  - Android parado em "Instalando...": a instalacao passa pela Play Store,
+    que pode estar configurada para baixar so no Wi-Fi. Ligue o Wi-Fi ou,
+    na Play Store, Configuracoes -> Preferencias de rede -> Preferencia de
+    download de apps -> Qualquer rede.
+  - Aparece "Abrir no app" em vez de "Instalar": ficou uma instalacao
+    antiga. Remova os apps, apague os dados do site no navegador
+    (Configuracoes do site -> radarphenix.pages.dev -> Limpar e redefinir),
+    feche o navegador e instale de novo, primeiro o Veste Phenix e depois o
+    Radar.
+  - Alternativa que sempre funciona no celular: menu do Chrome ->
+    Adicionar a tela inicial -> Criar atalho.
+
 ## 19. Governanca de documentacao
 
 1. Este manual deve ser atualizado sempre que houver alteracao funcional aprovada no sistema.
@@ -1080,3 +1135,48 @@ Passar o mouse (ou navegar com Tab e as setas do teclado, nos gráficos de linha
 ### Impressão
 
 Botão **Imprimir painel** no topo gera uma versão para impressão/PDF só com os indicadores e gráficos, sem o menu nem os filtros.
+
+## 24. App da feira Veste Phenix (atendimento sem login)
+
+Endereco: `radarphenix.pages.dev/feira/veste-phenix` (pode ser instalado como
+aplicativo, ver secao 18). Nao pede login: e usado pelos representantes no
+estande da feira.
+
+### Menu
+
+- **Veste Phenix**: abre o formulario de inscricao da promocao (o mesmo da
+  pagina publica). O botao "Voltar ao menu" fica no canto inferior.
+- **Cadastro de Produtos**: registra a necessidade de produto de cada
+  maquina do cliente.
+- **Instalar Veste Phenix**: aparece quando o navegador permite instalar o
+  app direto pelo menu.
+
+### Cadastro de Produtos
+
+1. Contato e responsavel: **Empresa**, **Contato**, **Telefone** e **Quem fez
+   o cadastro** sao os unicos campos obrigatorios (marcados com *). O
+   telefone aceita fixo ou celular com DDD; o e-mail e opcional, mas se for
+   digitado precisa estar correto.
+2. Maquina e produto: nome da maquina (opcional), depois toque no tipo de
+   papel (Tissue ou Marrom) e no produto. Conforme o produto aparecem
+   modelo e posicao (opcionais). Tocar de novo numa opcao marcada desmarca.
+   As medidas (comprimento, largura, espessura, CFM, gramatura e, para
+   Secadora Espiral, Teflonada) so aparecem depois de escolher papel e
+   produto.
+3. Condicoes de operacao: durabilidade, velocidade da maquina e
+   informacoes adicionais (opcionais), tambem liberadas apos escolher o
+   produto.
+4. Salvar (botoes sempre visiveis no rodape da tela):
+   - **Salvar e cadastrar outra maquina**: grava, limpa os dados da maquina e
+     mantem os do contato, para registrar varias maquinas do mesmo cliente.
+     Aparece a confirmacao em verde.
+   - **Salvar e voltar ao menu**.
+   - **Limpar formulario** e **Cancelar** (links abaixo dos botoes).
+5. Se faltar comprimento e/ou largura (ou o produto), o sistema avisa e
+   pergunta: **Salvar mesmo assim** ou **Informar medidas**. O cadastro nao
+   e bloqueado.
+6. Campos obrigatorios vazios ou telefone/e-mail invalidos ficam em
+   vermelho, com a explicacao embaixo, e a tela rola ate o primeiro.
+
+Os cadastros podem ser consultados pelos administradores no Radar (secao
+15.6).
