@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "./supabaseClient";
+import RelatorioProdutosFeira from "./RelatorioProdutosFeira.jsx";
 
 export default function PromocaoVestePhenix() {
+  const [aba, setAba] = useState("promocao");
   const [inscricoes, setInscricoes] = useState([]);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -168,6 +170,17 @@ export default function PromocaoVestePhenix() {
         </div>
       </div>
 
+      <div className="veste-abas" role="tablist">
+        <button type="button" role="tab" aria-selected={aba === "promocao"} className={aba === "promocao" ? "ativa" : ""} onClick={() => setAba("promocao")}>
+          Promoção
+        </button>
+        <button type="button" role="tab" aria-selected={aba === "produtos"} className={aba === "produtos" ? "ativa" : ""} onClick={() => setAba("produtos")}>
+          Cadastros de produtos
+        </button>
+      </div>
+
+      {aba === "produtos" ? <RelatorioProdutosFeira /> : <>
+
       <div className="admin-bloco">
         <h3>Apuração pela Loteria Federal</h3>
         <p>
@@ -316,6 +329,7 @@ export default function PromocaoVestePhenix() {
           </div>
         )}
       </div>
+      </>}
     </section>
   );
 }

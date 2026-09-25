@@ -75,3 +75,34 @@
     width: 100%;
   }
 }
+
+/* Abas do painel Veste Phenix */
+.veste-abas{display:flex;gap:4px;margin:4px 0 18px;border-bottom:2px solid #dce6ed}
+.veste-abas button{background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 18px;color:#5b6f7c;font-weight:700;cursor:pointer;border-radius:0}
+.veste-abas button:hover{background:#f2f7fa;color:#0b5687}
+.veste-abas button.ativa{color:#0b5687;border-bottom-color:#0b5687}
+
+/* Relatório de cadastros de produtos da feira */
+.relatorio-produtos-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.relatorio-produtos-topo h3{margin:0 0 4px}
+.relatorio-produtos-topo p{margin:0;color:#6d7f8b}
+.relatorio-produtos-acoes{display:flex;gap:10px}
+.relatorio-produtos-indicadores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.relatorio-produtos-indicadores div{min-width:0;padding:14px 16px;border:1px solid #dce6ed;border-radius:10px;background:#f7fafc;display:grid;gap:2px}
+.relatorio-produtos-indicadores strong{font-size:26px;color:#0b5687;line-height:1.1}
+.relatorio-produtos-indicadores span{color:#6d7f8b;font-size:13px;overflow-wrap:anywhere}
+.relatorio-produtos-indicadores .alerta{background:#fff8e6;border-color:#ecd08a}
+.relatorio-produtos-indicadores .alerta strong{color:#8a5a00}
+.relatorio-produtos-filtros{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px}
+.relatorio-produtos-filtros input,.relatorio-produtos-filtros select{padding:10px;border:1px solid #b9cad6;border-radius:7px;font:inherit;min-width:0}
+.relatorio-produtos tbody tr:not(.relatorio-produtos-detalhe){cursor:pointer}
+.relatorio-produtos tbody tr:not(.relatorio-produtos-detalhe):hover,.relatorio-produtos tbody tr.aberto{background:#f2f7fa}
+.relatorio-produtos-seta{color:#8aa0b1;font-size:11px;width:24px}
+.relatorio-produtos-selo{display:inline-block;padding:2px 8px;border-radius:999px;background:#fff3d7;color:#8a5a00;font-size:12px;font-weight:600}
+.relatorio-produtos-detalhe td{white-space:normal!important;background:#fbfdfe}
+.relatorio-produtos-detalhe dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px 20px;margin:4px 0}
+.relatorio-produtos-detalhe dl div.largo{grid-column:1/-1}
+.relatorio-produtos-detalhe dt{font-size:12px;color:#6d7f8b;font-weight:600}
+.relatorio-produtos-detalhe dd{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.relatorio-produtos-vazio{margin-top:20px;padding:24px;text-align:center;color:#6d7f8b;border:1px dashed #c3d4df;border-radius:10px}
+@media(max-width:760px){.relatorio-produtos-indicadores{grid-template-columns:1fr 1fr 1fr}.relatorio-produtos-indicadores strong{font-size:20px}.relatorio-produtos-filtros{grid-template-columns:1fr}.relatorio-produtos-acoes{width:100%}.relatorio-produtos-acoes button{flex:1}}
