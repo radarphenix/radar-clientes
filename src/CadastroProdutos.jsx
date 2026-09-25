@@ -7,47 +7,58 @@ const vazio = { empresa:'', contato:'', telefone:'', email:'', responsavel:'', m
 const produtos = { Tissue:['Tela Formadora','Feltro','Tela DNT','Tela Acabadora'], Marrom:['Tela Tecida','Formadora','Feltro','Feltro com emenda','Camisa','Engrossador','Secadora Espiral'] }
 const modelos = (papel, produto) => produto === 'Camisa' ? ['Malha 4','Malha 16','Malha 18','Malha 21'] : (produto === 'Formadora' || produto === 'Tela Formadora') && papel === 'Tissue' ? ['Dupla e meia','Tripla'] : produto === 'Formadora' && papel === 'Marrom' ? ['Tripla','Dupla','Dupla e meia','Mono'] : []
 const precisaPosicao = produto => ['Tela Tecida','Secadora Espiral','Feltro','Feltro com emenda'].includes(produto)
-const telMask = value => { const d = String(value).replace(/\D/g,'').slice(0,11); if(d.length<=2)return d?`(${d}`:''; if(d.length<=6)return `(${d.slice(0,2)}) ${d.slice(2)}`; return `(${d.slice(0,2)}) ${d.slice(2,d.length===11?7:6)}-${d.slice(d.length===11?7:6)}` }
-const decimal3 = value => { const d = String(value).replace(/\D/g,'').slice(0,12); if(!d)return ''; const n = d.padStart(4,'0'); return `${n.slice(0,-3).replace(/^0+(?=\d)/,'')},${n.slice(-3)}` }
-const inteiro = value => String(value).replace(/\D/g,'').slice(0,9)
-const contatoCampos = ['empresa','contato','telefone','email','responsavel']
-const medidaCampos = ['comprimento','largura','cfm','gramatura','espessura']
+const dig = value => String(value).replace(/\D/g,'')
+const telMask = value => { const d = dig(value).slice(0,11); if(d.length<=2)return d?`(${d}`:''; if(d.length<=6)return `(${d.slice(0,2)}) ${d.slice(2)}`; return `(${d.slice(0,2)}) ${d.slice(2,d.length===11?7:6)}-${d.slice(d.length===11?7:6)}` }
+const decimal3 = value => { const d = dig(value).slice(0,12); if(!d)return ''; const n = d.padStart(4,'0'); return `${n.slice(0,-3).replace(/^0+(?=\d)/,'')},${n.slice(-3)}` }
+const inteiro = value => dig(value).slice(0,9)
+// Fixo: DDD + 8 dígitos. Celular: DDD + 9 dígitos começando com 9.
+const telefoneOk = value => { const d = dig(value); return /^[1-9][1-9]/.test(d) && (d.length===10 || (d.length===11 && d[2]==='9')) }
+const emailOk = value => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())
+const obrigatorios = ['empresa','contato','telefone','responsavel']
+
+const problemas = f => {
+  const e = {}
+  if(f.empresa.trim().length<2)e.empresa='Informe a empresa.'
+  if(f.contato.trim().length<2)e.contato='Informe o nome do contato.'
+  if(!dig(f.telefone))e.telefone='Informe o telefone.'
+  else if(!telefoneOk(f.telefone))e.telefone='Telefone inválido. Use DDD + fixo (8 dígitos) ou celular (9 dígitos).'
+  if(f.email.trim()&&!emailOk(f.email))e.email='E-mail inválido. Confira o @ e o domínio (ex.: nome@empresa.com.br).'
+  if(f.responsavel.trim().length<2)e.responsavel='Informe quem fez o cadastro.'
+  return e
+}
 
 export default function CadastroProdutos({ voltarMenu }) {
   const [f, setF] = React.useState(vazio), [erro, setErro] = React.useState(''), [salvando, setSalvando] = React.useState(false)
-  const [tentou, setTentou] = React.useState(false), [salvos, setSalvos] = React.useState(0), [aviso, setAviso] = React.useState('')
-  const set = (k,v) => { setF(a => ({...a,[k]:v})); setErro('') }
-  const limparProduto = extras => setF(a => ({...a,...extras,produto:'',modelo:'',posicao:'',comprimento:'',largura:'',cfm:'',gramatura:'',espessura:'',teflonada:false}))
-  const alterarPapel = v => { limparProduto({papel:v}); setErro('') }
-  const alterarProduto = v => { setF(a => ({...a,produto:v,modelo:'',posicao:'',comprimento:'',largura:'',cfm:'',gramatura:'',espessura:'',teflonada:false})); setErro('') }
+  const [erros, setErros] = React.useState({}), [salvos, setSalvos] = React.useState(0), [aviso, setAviso] = React.useState(''), [semMedidas, setSemMedidas] = React.useState(null)
+  const refs = React.useRef({})
+  const set = (k,v) => { setF(a => ({...a,[k]:v})); setErro(''); setSemMedidas(null); setErros(x => { if(!x[k])return x; const n={...x}; delete n[k]; return n }) }
+  const alterarPapel = v => { setF(a => ({...a,papel:a.papel===v?'':v,produto:'',modelo:'',posicao:'',teflonada:false})); setErro('') }
+  const alterarProduto = v => { setF(a => ({...a,produto:a.produto===v?'':v,modelo:'',posicao:a.produto===v||!precisaPosicao(v)?'':a.posicao,teflonada:false})); setErro('') }
   const opModelo = modelos(f.papel,f.produto)
-  const detalhes = Boolean(f.papel && f.produto && (!opModelo.length || f.modelo) && (!precisaPosicao(f.produto) || f.posicao.trim()))
-  const validar = () => {
-    if(!f.empresa.trim()||!f.contato.trim()||!f.telefone.trim()||!f.email.trim()||!f.responsavel.trim())return 'Preencha os dados do contato e do responsável.'
-    if(!f.maquina.trim())return 'Informe a máquina.'
-    if(!detalhes)return 'Complete as opções de papel, produto, modelo ou posição quando solicitados.'
-    if(!f.comprimento||!f.largura||!f.cfm||!f.gramatura||!f.espessura)return 'Preencha comprimento, largura, CFM, gramatura e espessura.'
-    if(!f.durabilidade.trim()||!f.velocidade_maquina.trim())return 'Preencha durabilidade e velocidade da máquina.'
-    return ''
-  }
   const etapas = [
-    { titulo:'Contato', ok: contatoCampos.every(k => f[k].trim()) },
-    { titulo:'Máquina e produto', ok: Boolean(f.maquina.trim()) && detalhes && medidaCampos.every(k => f[k]) },
-    { titulo:'Condições de operação', ok: Boolean(f.durabilidade.trim() && f.velocidade_maquina.trim()) },
+    { titulo:'Contato', ok: !Object.keys(problemas(f)).length },
+    { titulo:'Máquina e produto', ok: Boolean(f.maquina.trim() && f.produto && f.comprimento && f.largura) },
+    { titulo:'Condições de operação', ok: Boolean(f.durabilidade.trim() || f.velocidade_maquina.trim()) },
   ]
-  async function salvar(nova) {
-    setTentou(true); setAviso('')
-    const pendente=validar(); if(pendente){setErro(pendente);setTimeout(()=>document.querySelector('.cadastro-produtos .invalido')?.scrollIntoView({behavior:'smooth',block:'center'}));return}
-    setSalvando(true); setErro('')
-    const {error}=await supabase.functions.invoke('cadastrar-produto-feira',{body:f})
+  const focar = k => setTimeout(() => { refs.current[k]?.focus(); refs.current[k]?.scrollIntoView({behavior:'smooth',block:'center'}) })
+
+  async function salvar(nova, confirmado=false) {
+    setAviso('')
+    const e = problemas(f); setErros(e)
+    const primeiro = [...obrigatorios,'email'].find(k => e[k])
+    if(primeiro){ setErro('Corrija os campos destacados.'); setSemMedidas(null); focar(primeiro); return }
+    if(!confirmado && (!f.comprimento || !f.largura)){ setErro(''); setSemMedidas({nova}); return }
+    setSemMedidas(null); setSalvando(true); setErro('')
+    const {data,error}=await supabase.functions.invoke('cadastrar-produto-feira',{body:f})
     setSalvando(false)
-    if(error){setErro('Não foi possível gravar agora. Confira a conexão e tente novamente.');return}
-    if(nova){setF(a=>({...vazio,empresa:a.empresa,contato:a.contato,telefone:a.telefone,email:a.email,responsavel:a.responsavel}));setTentou(false);setSalvos(n=>n+1);setAviso(`Máquina "${f.maquina.trim()}" salva. Os dados do contato foram mantidos para a próxima.`);window.scrollTo(0,0)}else voltarMenu()
+    if(error){ let msg='Não foi possível gravar agora. Confira a conexão e tente novamente.'; try{ const corpo=await error.context?.json?.(); if(corpo?.mensagem)msg=corpo.mensagem }catch{/* sem JSON */} setErro(data?.mensagem||msg); return }
+    if(nova){ setF(a=>({...vazio,empresa:a.empresa,contato:a.contato,telefone:a.telefone,email:a.email,responsavel:a.responsavel})); setErros({}); setSalvos(n=>n+1); setAviso(f.maquina.trim()?`Máquina "${f.maquina.trim()}" salva. Os dados do contato foram mantidos para a próxima.`:'Cadastro salvo. Os dados do contato foram mantidos para a próxima.'); window.scrollTo(0,0) } else voltarMenu()
   }
-  const falta = k => tentou && !String(f[k]).trim()
-  const campo=(k,label,props={})=>{const{onChange,dica,className='',...rest}=props;return <label className={`campo ${className}`}><span>{label}{dica&&<em>{dica}</em>}</span><input className={falta(k)?'invalido':''} aria-invalid={falta(k)} value={f[k]} onChange={onChange||((e)=>set(k,e.target.value))} {...rest}/></label>}
-  const opcoes=(nome,valor,lista,escolher,invalido)=><div className={`opcoes ${invalido?'invalido':''}`} role="radiogroup" aria-label={nome}>{lista.map(x=><button type="button" key={x} role="radio" aria-checked={valor===x} className={valor===x?'ativo':''} onClick={()=>escolher(x)}>{x}</button>)}</div>
+
+  const campo=(k,label,props={})=>{const{onChange,dica,className='',obrigatorio,...rest}=props;return <label className={`campo ${className}`}><span>{label}{obrigatorio&&<i className="obrig" aria-hidden="true">*</i>}{dica&&<em>{dica}</em>}</span><input ref={el=>{if(el)refs.current[k]=el}} className={erros[k]?'invalido':''} aria-invalid={!!erros[k]} value={f[k]} onChange={onChange||((e)=>set(k,e.target.value))} onBlur={k==='email'||k==='telefone'?()=>{ const p=problemas(f)[k]; if(p&&f[k].trim())setErros(x=>({...x,[k]:p})) }:undefined} {...rest}/>{erros[k]&&<small className="campo-erro">{erros[k]}</small>}</label>}
+  const opcoes=(nome,valor,lista,escolher)=><div className="opcoes" role="radiogroup" aria-label={nome}>{lista.map(x=><button type="button" key={x} role="radio" aria-checked={valor===x} className={valor===x?'ativo':''} onClick={()=>escolher(x)}>{x}</button>)}</div>
   const hoje = new Intl.DateTimeFormat('pt-BR').format(new Date())
+  const faltaMedida = [!f.comprimento&&'comprimento',!f.largura&&'largura'].filter(Boolean)
 
   return <div className="cadastro-produtos">
     <header><img className="marca-30-cabecalho" src="/phenix-30-anos-transparente.png" alt="Phenix 30 anos"/><span>CADASTRO DE PRODUTOS</span></header>
@@ -61,56 +72,58 @@ export default function CadastroProdutos({ voltarMenu }) {
       </aside>
 
       <form className="cadastro-card" onSubmit={e=>{e.preventDefault();salvar(false)}} noValidate>
-        <div className="cadastro-titulo"><h2>Cadastro de Produtos</h2><p>Todos os campos são obrigatórios, exceto informações adicionais.</p></div>
+        <div className="cadastro-titulo"><h2>Cadastro de Produtos</h2><p>Campos com <i className="obrig">*</i> são obrigatórios. Os demais podem ficar em branco.</p></div>
         {aviso&&<p className="aviso-ok" role="status">{aviso}</p>}
 
         <section className="bloco">
           <h3><b>1</b>Contato e responsável</h3>
           <div className="grid">
-            {campo('empresa','Empresa',{className:'largo'})}
-            {campo('contato','Contato')}
-            {campo('telefone','Telefone',{inputMode:'tel',placeholder:'(00) 00000-0000',onChange:e=>set('telefone',telMask(e.target.value))})}
-            {campo('email','E-mail',{type:'email',placeholder:'nome@empresa.com.br'})}
-            {campo('responsavel','Quem fez o cadastro')}
+            {campo('empresa','Empresa',{className:'largo',obrigatorio:true})}
+            {campo('contato','Contato',{obrigatorio:true})}
+            {campo('telefone','Telefone',{obrigatorio:true,dica:'fixo ou celular',inputMode:'tel',placeholder:'(00) 0000-0000',onChange:e=>set('telefone',telMask(e.target.value))})}
+            {campo('email','E-mail',{type:'email',inputMode:'email',placeholder:'nome@empresa.com.br'})}
+            {campo('responsavel','Quem fez o cadastro',{obrigatorio:true})}
           </div>
         </section>
 
         <section className="bloco">
           <h3><b>2</b>Máquina e produto</h3>
           <div className="grid">{campo('maquina','Máquina',{className:'largo',placeholder:'Ex.: MP 3 — Linha de tissue'})}</div>
-          <div className="campo"><span>Tipo de papel</span>{opcoes('Tipo de papel',f.papel,Object.keys(produtos),alterarPapel,tentou&&!f.papel)}</div>
-          {f.papel&&<div className="campo"><span>Produto</span>{opcoes('Produto',f.produto,produtos[f.papel],alterarProduto,tentou&&!f.produto)}</div>}
+          <div className="campo"><span>Tipo de papel</span>{opcoes('Tipo de papel',f.papel,Object.keys(produtos),alterarPapel)}</div>
+          {f.papel&&<div className="campo"><span>Produto</span>{opcoes('Produto',f.produto,produtos[f.papel],alterarProduto)}</div>}
           {(opModelo.length>0||precisaPosicao(f.produto))&&<div className="grid">
-            {opModelo.length>0&&<div className="campo largo"><span>Modelo</span>{opcoes('Modelo',f.modelo,opModelo,v=>set('modelo',v),tentou&&!f.modelo)}</div>}
+            {opModelo.length>0&&<div className="campo largo"><span>Modelo</span>{opcoes('Modelo',f.modelo,opModelo,v=>set('modelo',f.modelo===v?'':v))}</div>}
             {precisaPosicao(f.produto)&&campo('posicao','Posição',{placeholder:'Ex.: 1ª prensa, pick-up'})}
           </div>}
-          {detalhes?<div className="grid medidas">
+          <div className="grid medidas">
             {campo('comprimento','Comprimento',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('comprimento',decimal3(e.target.value))})}
             {campo('largura','Largura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('largura',decimal3(e.target.value))})}
             {campo('espessura','Espessura',{inputMode:'decimal',placeholder:'0,000',onChange:e=>set('espessura',decimal3(e.target.value))})}
             {campo('cfm','CFM',{inputMode:'numeric',onChange:e=>set('cfm',inteiro(e.target.value))})}
             {campo('gramatura','Gramatura',{inputMode:'numeric',onChange:e=>set('gramatura',inteiro(e.target.value))})}
             {f.produto==='Secadora Espiral'&&<label className="check-simples"><input type="checkbox" checked={f.teflonada} onChange={e=>set('teflonada',e.target.checked)}/> Teflonada</label>}
-          </div>:<p className="dica-bloco">{!f.papel?'Escolha o tipo de papel para ver os produtos.':!f.produto?'Escolha o produto.':'Complete modelo e posição para liberar as medidas.'}</p>}
+          </div>
         </section>
 
-        <section className={`bloco ${detalhes?'':'bloqueado'}`} aria-disabled={!detalhes}>
+        <section className="bloco">
           <h3><b>3</b>Condições de operação</h3>
-          {detalhes?<>
-            <div className="grid">
-              {campo('durabilidade','Durabilidade do produto')}
-              {campo('velocidade_maquina','Velocidade da máquina')}
-            </div>
-            <label className="campo"><span>Informações adicionais <em>opcional</em></span><textarea value={f.informacoes_adicionais} maxLength="5000" onChange={e=>set('informacoes_adicionais',e.target.value)} rows="4" placeholder="Observações do cliente, problemas atuais, prazos…"/><small>{f.informacoes_adicionais.length}/5000</small></label>
-          </>:<p className="dica-bloco">Disponível depois de escolher o produto.</p>}
+          <div className="grid">
+            {campo('durabilidade','Durabilidade do produto')}
+            {campo('velocidade_maquina','Velocidade da máquina')}
+          </div>
+          <label className="campo"><span>Informações adicionais</span><textarea value={f.informacoes_adicionais} maxLength="5000" onChange={e=>set('informacoes_adicionais',e.target.value)} rows="4" placeholder="Observações do cliente, problemas atuais, prazos…"/><small>{f.informacoes_adicionais.length}/5000</small></label>
         </section>
 
+        {semMedidas&&<div className="aviso-medidas" role="alertdialog" aria-live="assertive">
+          <p><strong>Atenção:</strong> {faltaMedida.length===2?'comprimento e largura não foram informados':`${faltaMedida[0]} não foi informad${faltaMedida[0]==='largura'?'a':'o'}`}. Deseja salvar mesmo assim?</p>
+          <div><button type="button" className="botao-principal" disabled={salvando} onClick={()=>salvar(semMedidas.nova,true)}>{salvando?'Salvando…':'Salvar mesmo assim'}</button><button type="button" className="botao-secundario" onClick={()=>{setSemMedidas(null);focar(f.comprimento?'largura':'comprimento')}}>Informar medidas</button></div>
+        </div>}
         {erro&&<p className="erro" role="alert">{erro}</p>}
         <div className="acoes-cadastro">
           <button type="button" className="botao-principal" disabled={salvando} onClick={()=>salvar(true)}>{salvando?'Salvando…':'Salvar e cadastrar outra máquina'}</button>
           <button type="submit" className="botao-secundario" disabled={salvando}>Salvar e voltar ao menu</button>
           <div className="acoes-leves">
-            <button type="button" className="botao-link" onClick={()=>{setF(vazio);setErro('');setTentou(false);setAviso('');window.scrollTo(0,0)}}>Limpar formulário</button>
+            <button type="button" className="botao-link" onClick={()=>{setF(vazio);setErro('');setErros({});setAviso('');setSemMedidas(null);window.scrollTo(0,0)}}>Limpar formulário</button>
             <button type="button" className="botao-link" onClick={voltarMenu}>Cancelar</button>
           </div>
         </div>
