@@ -36,8 +36,9 @@ export default defineConfig({
       includeAssets: ['pwa-64x64.png', 'manifest-feira-veste-phenix.webmanifest', 'favicon-veste-phenix.png', 'veste-phenix-*.png'],
       workbox: {
         // /feira/veste-phenix vem da página própria pré-cacheada (feira/veste-phenix.html),
-        // nunca do index.html do Radar.
-        navigateFallbackDenylist: [/^\/feira\//],
+        // nunca do index.html do Radar. PDFs (ex.: /regulamento.pdf aberto em nova aba)
+        // também são navegação e precisam ir ao servidor, senão abrem a tela do Radar.
+        navigateFallbackDenylist: [/^\/feira\//, /\.pdf(\?.*)?$/i],
       },
       manifest: {
         name: 'Radar de Clientes Phenix',
