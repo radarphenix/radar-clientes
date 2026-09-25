@@ -58,7 +58,8 @@
 .cadastro-card .erro{margin:18px 0 0;padding:12px 14px;border-radius:10px;background:#fff4f4;border:1px solid #e6a3a6;color:#a51f25;font-weight:700;font-size:14px}
 
 /* Ações */
-.acoes-cadastro{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid #e3ecf2}
+/* Barra de ações fixa no rodapé da tela enquanto o formulário rola */
+.acoes-cadastro{position:sticky;bottom:0;z-index:5;display:grid;grid-template-columns:1.3fr 1fr;gap:10px 12px;margin:24px -34px -30px;padding:14px 34px 10px;background:#fffffff2;backdrop-filter:blur(6px);border-top:1px solid #e3ecf2;border-radius:0 0 22px 22px;box-shadow:0 -10px 24px #001a3112}
 .acoes-cadastro>button{border:0;border-radius:10px;padding:15px;font:800 15px Montserrat,Arial,sans-serif;cursor:pointer}
 .acoes-cadastro>button:disabled{opacity:.55;cursor:default}
 .botao-principal{background:linear-gradient(90deg,#397f9e,#8ed7e8);color:#041b35}
@@ -85,7 +86,8 @@
   .cadastro-card .grid,.cadastro-card .medidas{grid-template-columns:1fr 1fr}
   .cadastro-card .grid>.campo:not(.medidas .campo){grid-column:1/-1}
   .cadastro-card .medidas{padding:12px}
-  .acoes-cadastro{grid-template-columns:1fr}
+  .acoes-cadastro{grid-template-columns:1fr 1fr;gap:8px;margin:20px -16px -20px;padding:10px 12px 6px;border-radius:0 0 18px 18px}
+  .acoes-cadastro>button{padding:12px 8px;font-size:13px;line-height:1.25}
   .acoes-leves{gap:18px}
 }
 
