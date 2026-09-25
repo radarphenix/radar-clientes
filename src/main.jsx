@@ -38,11 +38,9 @@ if (ehPromocao) {
   document.querySelector('link[rel="manifest"]')?.remove()
 }
 
-if (ehFeiraVestePhenix) {
-  identidadeVestePhenix('Veste Phenix — Feira')
-  const manifest = document.querySelector('link[rel="manifest"]')
-  if (manifest) manifest.href = '/manifest-feira-veste-phenix.webmanifest'
-}
+// A feira tem página própria (feira/veste-phenix.html) com manifesto, ícones e título
+// do Veste Phenix já no HTML — trocar o manifesto via script não funciona para instalar.
+if (ehFeiraVestePhenix) identidadeVestePhenix('Veste Phenix — Feira')
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
