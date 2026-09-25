@@ -14,8 +14,12 @@ export default defineConfig({
         short_name: 'Radar Clientes',
         description: 'Rotas, clientes próximos e oportunidades comerciais Phenix.',
         lang: 'pt-BR',
-        start_url: '/',
-        scope: '/',
+        // O Radar fica em /radar/ para que o app instalado não abranja /feira/
+        // (o Veste Phenix é outro app instalável no mesmo site). O id '/' mantém
+        // a identidade das instalações antigas, que eram feitas com start_url '/'.
+        id: '/',
+        start_url: '/radar/',
+        scope: '/radar/',
         display: 'standalone',
         background_color: '#edf4fb',
         theme_color: '#0057d8',
