@@ -75,6 +75,13 @@ export default function CadastroProdutos({ voltarMenu }) {
     { titulo:'Máquina e produtos', ok: Boolean(f.maquina.trim() && itens.length && !itens.some(semMedida)) },
     { titulo:'Condições de operação', ok: Boolean(f.velocidade_maquina.trim() || itens.some(i => i.durabilidade.trim())) },
   ]
+  // Limpar fica na tela; Cancelar limpa e volta ao menu. Os dois descartam também o rascunho do aparelho.
+  const limparTudo = acao => {
+    if(itensBrutos.length && !window.confirm(`${acao} descarta os produtos ainda não salvos. Continuar?`)) return false
+    setF(vazio); setItens([]); setAberto(null); setErro(''); setErros({}); setAviso(''); setSemMedidas(null)
+    gravarRascunho({ f:vazio, itens:[] })
+    return true
+  }
   const focar = k => setTimeout(() => { refs.current[k]?.focus(); refs.current[k]?.scrollIntoView({behavior:'smooth',block:'center'}) })
 
   async function salvar(nova, confirmado=false) {
@@ -196,8 +203,8 @@ export default function CadastroProdutos({ voltarMenu }) {
           <button type="button" className="botao-principal" disabled={salvando} onClick={()=>salvar(true)}>{salvando?'Salvando…':'Salvar e cadastrar outra máquina'}</button>
           <button type="submit" className="botao-secundario" disabled={salvando}>Salvar e voltar ao menu</button>
           <div className="acoes-leves">
-            <button type="button" className="botao-link" onClick={()=>{if(itensBrutos.length&&!window.confirm('Limpar o formulário descarta os produtos ainda não salvos. Continuar?'))return;setF(vazio);setItens([]);setAberto(null);setErro('');setErros({});setAviso('');setSemMedidas(null);window.scrollTo(0,0)}}>Limpar formulário</button>
-            <button type="button" className="botao-link" onClick={voltarMenu}>Cancelar</button>
+            <button type="button" className="botao-link" onClick={()=>{if(limparTudo('Limpar o formulário'))window.scrollTo(0,0)}}>Limpar formulário</button>
+            <button type="button" className="botao-link" onClick={()=>{if(limparTudo('Cancelar'))voltarMenu()}}>Cancelar</button>
           </div>
         </div>
       </form>
