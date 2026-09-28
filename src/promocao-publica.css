@@ -36,6 +36,7 @@
 .promo-publica .checks label{display:flex;align-items:flex-start;font-weight:500;color:#082b50;line-height:1.4}
 .promo-publica .checks input{width:18px;flex-shrink:0;margin:1px 8px 0 0}
 .promo-publica .checks a{margin:0 4px;color:#0e5886}
+.promo-publica .turnstile-promocao{min-height:65px;margin:0 0 16px;display:flex;justify-content:center}
 
 .promo-publica button{width:100%;border:0;border-radius:10px;background:linear-gradient(90deg,#397f9e,#8ed7e8);color:#041b35;padding:15px;font:800 15px Montserrat;cursor:pointer}
 .promo-publica button:disabled{opacity:.55}
