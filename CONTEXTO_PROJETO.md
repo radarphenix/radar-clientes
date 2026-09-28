@@ -20,6 +20,8 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
 
 ## Snapshot Atual
 
+- [2026-09-28] Formulário público Veste Phenix sem captcha (Turnstile retirado): a Edge Function `inscrever-veste-phenix` limita 60 envios/min por IP e 5/h por CPF (migration `20260928120000`); CNPJ opcional (migration `20260928150000`). Detalhes em `veste-phenix-30-anos/PENDENCIAS_ANTES_PUBLICACAO.md`.
+
 - Data: 2026-08-14
 - Branch atual: `main`
 - Situacao de sincronizacao: lote de commits (reordenacao de rotas, Meu Dia
@@ -1820,3 +1822,15 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
   - Bateria de testes rodada nessa rotina (Playwright, viewport desktop 1400px e mobile 390px): ordem final do grupo Rotas confirmada `["Rotas", "Clientes em Pauta", "Pesquisar rotas"]` e Comercial confirmado sem mais o item (`["Meu Dia", "Clientes", "Próximos"]`); clique no novo local abre a tela normalmente (com destaque visual "ativo" correto); clique em "Pesquisar rotas" logo depois continua funcionando (garantindo que a reordenação dos botões vizinhos no JSX não quebrou nenhum handler); mesmo comportamento confirmado em mobile (menu fecha sozinho após o clique, como os demais itens); testado também com contas descartáveis de técnico e representante - ambos veem o item na mesma posição nova e conseguem abrir a tela sem erro de console (o item nunca teve gate de perfil, então isso já era esperado, só confirmado). `npm run lint`/`npm run build` limpos.
   - Achado no processo, não é bug e não foi alterado: um F5 puro (reload de página) sempre volta pra tela "Meu Dia", mesmo em telas listadas em `TELAS_PERSISTIDAS` - `carregarTelaSalva()` (linha ~233) sempre retorna `"home"` no mount, ignorando o valor gravado em `localStorage` (`radarClientes:telaAtual`); o mecanismo de `TELAS_PERSISTIDAS`/`window.history` existe só pra navegação por back/forward do navegador dentro da mesma sessão de página, não pra sobreviver a um reload. Isso é um comportamento do app inteiro, não específico de "Clientes em Pauta" nem introduzido por esta mudança - registrado aqui só porque apareceu durante o teste da rotina, não como algo a corrigir agora.
   - Duas contas de teste descartáveis (técnico e representante) criadas e apagadas ao final via REST com a service role key; nenhum dado real tocado.
+
+- [Concluído em 2026-09-02] Transparência da redução manual de base vinda do MWComissoes.
+  - O MWComissoes pode reduzir a base de uma parcela para compensar adiantamento legado sem alterar a meta mensal. A view do MWComissoesSync envia a justificativa em `motivo_ajuste`, a comissão original em `valor_comissao_antes` e a diferença negativa em `valor_ajuste_manual`, mantendo `tipo_lancamento="COMISSAO"`.
+  - Conferido que `ComissoesRepresentante.jsx` já era compatível: o motivo é renderizado em qualquer tipo de lançamento e o detalhamento "Antes / ajuste" aparece em linhas `COMISSAO`. Não foi necessário alterar o JSX.
+  - Homologação integrada no Oracle local: redução ativa retornou motivo, comissão anterior 450 e ajuste -100; após reversão, motivo nulo e valores de ajuste zerados. Fixtures removidos ao final.
+  - `npm run lint` e `npm run build` concluíram com sucesso; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+  - Produção ainda exige, nesta ordem: script 020 do MWComissoes, view atualizada do MWComissoesSync e nova rodada do Sync. A conferência visual com dado real deve ocorrer depois dessa implantação.
+
+- [Concluído em 2026-09-02] Histórico anual deixou de classificar ausência de histórico como comissão fixa.
+  - Causa: o consolidado "Toda a equipe" cria os 12 meses mesmo quando não há resumo e esses itens não possuem `modalidade`; o JSX anterior interpretava qualquer valor diferente de `"V"` como `"Fixa"`.
+  - Correção: "Por metas" continua exclusivo de `modalidade="V"`, "Fixa" agora aparece somente quando `modalidade="F"` vier explicitamente da origem e ausência de modalidade é exibida como `-`.
+  - Ajuste complementar após conferência no Radar oficial: o cartão também mostrava incondicionalmente "Fixo previsto R$ 0,00" e "Total comissão + fixo". Quando `valor_fixo=0`, a linha de fixo agora é ocultada e o total passa a se chamar apenas "Total comissão"; a menção a fixo permanece somente nos meses em que existe valor fixo real.

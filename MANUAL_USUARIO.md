@@ -6,6 +6,10 @@ Este manual descreve, por tela, as funcoes de cada botao e as regras de negocio 
 
 Status de publicacao: documento interno local (nao publicado online).
 
+## Limite de cadastros da promoção
+
+O formulário público Veste Phenix aceita até 60 envios por minuto a partir da mesma conexão (todos os aparelhos na mesma rede, inclusive o Wi-Fi da feira, contam juntos) e até 5 tentativas por hora para o mesmo CPF. Se aparecer a mensagem de muitos cadastros, aguarde um minuto e envie de novo. Após cada inscrição, o botão "Fazer nova inscrição" limpa o formulário para a próxima pessoa.
+
 ## 2. Perfis de acesso
 
 1. admin
@@ -1050,6 +1054,14 @@ Outros representantes não veem o menu nem a aba, mesmo que tenham código de re
 ### Lista "a receber/pago"
 
 O filtro de mês nessa lista é pelo **vencimento** do título (igual à tela "Lançamentos financeiros" do MWComissoes) - mostra o que vence naquele mês, não o que foi vendido naquele mês. A coluna "Mês origem" mostra separadamente em que mês a nota foi emitida.
+
+Quando a base de uma parcela tiver sido reduzida manualmente no MW
+Comissões para compensar um adiantamento antigo, a nota continua aparecendo
+como uma comissão normal. Abaixo do cliente aparece o **Motivo** informado
+pelo financeiro e, abaixo do valor da comissão, aparecem o valor **Antes**
+da redução e o **ajuste** negativo aplicado. Essa redução afeta somente a
+parcela indicada; não reduz as vendas usadas para determinar a faixa/meta
+mensal do representante.
 
 ### Histórico anual
 
