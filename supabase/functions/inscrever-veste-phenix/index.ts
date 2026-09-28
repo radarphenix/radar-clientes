@@ -42,8 +42,9 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   if(!modoTeste&&Deno.env.get('PROMO_INSCRICOES_ATIVAS')!=='true')return json({ok:false,mensagem:'As inscrições ainda não estão abertas.'},403);if(!modoTeste&&(agora<inicio||agora>fim))return json({ok:false,mensagem:'Inscrição fora do período oficial da promoção.'},403);
   const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
   const ip=req.headers.get('cf-connecting-ip')||req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'';
-  // Até 10 envios por minuto por conexão (vários tablets do stand na mesma rede somam juntos).
-  if(ip&&!await dentroDoLimite(db,`ip:${ip}`,10,60))return json({ok:false,mensagem:'Muitos cadastros a partir desta conexão em pouco tempo. Aguarde um minuto e tente novamente.'},429);
+  // Até 60 envios por minuto por conexão: o Wi-Fi da feira e o 4G (CGNAT) juntam muita gente num IP só;
+  // o limite só freia disparo automático. Fraude real é barrada pelo limite por CPF e pelos documentos na entrega do prêmio.
+  if(ip&&!await dentroDoLimite(db,`ip:${ip}`,60,60))return json({ok:false,mensagem:'Muitos cadastros a partir desta conexão em pouco tempo. Aguarde um minuto e tente novamente.'},429);
   if(!limite(b.nome_completo,160)||!limite(b.email,254)||!limite(b.telefone,30)||!limite(b.empresa,160)||!limite(b.cargo,120)||!limite(b.cidade,120))return json({ok:false,mensagem:'Preencha os campos obrigatórios com tamanho válido.'},400);
   if(!b.maior_18||!b.aceite_regulamento||!b.aceite_privacidade)return json({ok:false,mensagem:'Aceites obrigatórios não confirmados.'},400);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email||'')))return json({ok:false,mensagem:'E-mail inválido.'},400);
   if(!cpfValido(cpf))return json({ok:false,mensagem:'CPF inválido.'},400);if(cnpj&&!cnpjValido(cnpj))return json({ok:false,mensagem:'CNPJ inválido.'},400);
