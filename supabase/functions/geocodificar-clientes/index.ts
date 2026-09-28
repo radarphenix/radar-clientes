@@ -86,6 +86,8 @@ serve(async () => {
         ];
 
         let encontrado = null;
+        // Guarda o motivo real quando o Nominatim recusa (antes toda recusa virava "não localizado").
+        let recusa = "";
 
         for (const endereco of tentativas) {
           if (!endereco || endereco.trim().length < 5) continue;
@@ -101,11 +103,13 @@ serve(async () => {
           const response = await fetch(url, {
             headers: {
               "Accept": "application/json",
-              "User-Agent": "RadarClientesPhenix/1.0",
+              // Política do Nominatim: identificar o app com um contato.
+              "User-Agent": "RadarClientesPhenix/1.0 (phenix@phenixonline.com.br)",
             },
           });
 
           if (!response.ok) {
+            recusa = `Nominatim recusou (HTTP ${response.status})`;
             await aguardar(1200);
             continue;
           }
@@ -143,7 +147,7 @@ serve(async () => {
           await supabase
             .from("clientes_geolocalizacao")
             .update({
-              erro_geocodificacao: "Endereço não localizado",
+              erro_geocodificacao: recusa || "Endereço não localizado",
               geolocalizacao_pendente: true,
               updated_at: new Date().toISOString(),
             })
