@@ -107,3 +107,21 @@
 .cadastro-produtos .botao-link:hover{background:none;color:#0e5886}
 .cadastro-produtos .opcoes button:hover{background:#f0f7fb;color:#0b4e7e}
 .cadastro-produtos .opcoes button.ativo:hover{background:#0e5886;color:#fff}
+
+/* Vários produtos por máquina: um cartão por produto; só um aberto por vez, os outros viram resumo. */
+.opcoes button:disabled{opacity:.45;cursor:not-allowed}
+.opcoes .contador{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:8px;padding:0 6px;border-radius:999px;background:#fff;color:#0e5886;font:800 12px Montserrat,Arial,sans-serif;font-style:normal}
+.lista-itens{display:grid;gap:10px}
+.item-produto{border:1px solid #d3e1ea;border-radius:14px;background:#fff;scroll-margin-top:16px}
+.item-produto.aberto{border-color:#0e5886;box-shadow:0 0 0 3px #0e588614}
+.item-topo{display:flex;align-items:center;gap:6px 14px;padding:10px 14px;flex-wrap:wrap}
+.item-titulo,.item-titulo:hover,.item-titulo:focus,.item-titulo:active{background:none!important;box-shadow:none;color:#082b50}
+.item-titulo{flex:1;min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;border:0;background:none;padding:4px 0;text-align:left;cursor:pointer;font:inherit;color:#082b50}
+.item-titulo b{font-size:15px;font-weight:800;color:#0e5886}
+.item-titulo span{font-size:13px;color:#597086}
+.item-alerta{font-style:normal;font-size:12px;font-weight:700;color:#8a5a00;background:#fff3d7;border-radius:999px;padding:2px 9px}
+.item-remover{color:#a51f25!important}
+.item-corpo{display:grid;gap:12px;padding:4px 14px 16px;border-top:1px solid #e3ecf2}
+.item-corpo>.grid:first-child{margin-top:12px}
+.resumo-salvar{margin:18px 0 0;font-size:13px;color:#29425a;background:#f1f6fa;border-radius:10px;padding:10px 14px}
+@media(max-width:560px){.item-topo{padding:8px 12px}.item-corpo{padding:4px 12px 14px}}

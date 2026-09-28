@@ -20,7 +20,10 @@ export default function RelatorioProdutosFeira() {
     const { data, error } = await supabase
       .from("cadastro_produtos_feira_phenix")
       .select("*")
-      .order("criado_em", { ascending: false });
+      .order("criado_em", { ascending: false })
+      // Produtos salvos juntos (mesma máquina) têm o mesmo criado_em: ficam agrupados, em ordem (Feltro 1, 2, 3).
+      .order("produto", { ascending: true })
+      .order("item", { ascending: true });
     setCadastros(data || []);
     setErro(error ? "Não foi possível carregar os cadastros de produtos." : "");
     setCarregando(false);
@@ -51,6 +54,7 @@ export default function RelatorioProdutosFeira() {
 
   const empresas = new Set(filtrados.map((c) => c.empresa.trim().toLowerCase())).size;
   const incompletos = filtrados.filter(semMedidas).length;
+  const maquinas = new Set(filtrados.map((c) => c.grupo_id || c.id)).size;
 
   function exportar() {
     const linhas = filtrados.map((c) => ({
@@ -63,6 +67,7 @@ export default function RelatorioProdutosFeira() {
       Máquina: c.maquina || "",
       "Tipo de papel": c.tipo_papel || "",
       Produto: c.produto || "",
+      "Nº": c.item || "",
       Modelo: c.modelo || "",
       Posição: c.posicao || "",
       Comprimento: c.comprimento || "",
@@ -99,6 +104,7 @@ export default function RelatorioProdutosFeira() {
 
       <div className="relatorio-produtos-indicadores">
         <div><strong>{filtrados.length}</strong><span>cadastros</span></div>
+        <div><strong>{maquinas}</strong><span>máquinas</span></div>
         <div><strong>{empresas}</strong><span>empresas</span></div>
         <div className={incompletos ? "alerta" : ""}><strong>{incompletos}</strong><span>sem comprimento/largura</span></div>
       </div>
@@ -153,7 +159,7 @@ export default function RelatorioProdutosFeira() {
                     </td>
                     <td>{vazio(c.maquina)}</td>
                     <td>
-                      {c.produto ? <>{c.produto}<small>{[c.tipo_papel, c.modelo, c.posicao].filter(Boolean).join(" • ")}</small></> : "—"}
+                      {c.produto ? <>{c.produto}{c.item ? ` ${c.item}` : ""}<small>{[c.tipo_papel, c.modelo, c.posicao].filter(Boolean).join(" • ")}</small></> : "—"}
                     </td>
                     <td>{semMedidas(c) ? <span className="relatorio-produtos-selo">não informado</span> : `${c.comprimento} × ${c.largura}`}</td>
                     <td>{c.responsavel}</td>
