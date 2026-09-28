@@ -1174,7 +1174,9 @@ estande da feira.
    modelo e posicao (opcionais). Tocar de novo numa opcao marcada desmarca.
    As medidas (comprimento, largura, espessura, CFM, gramatura e, para
    Secadora Espiral, Teflonada) so aparecem depois de escolher papel e
-   produto.
+   produto. Cada toque num produto inclui mais uma unidade dele: Tela
+   Formadora/Formadora ate 5, Secadora Espiral ate 14 e os demais ate 3. Para
+   um produto fora da lista, use **Outros** (posicao, medidas e durabilidade).
 3. Condicoes de operacao: durabilidade, velocidade da maquina e
    informacoes adicionais (opcionais), tambem liberadas apos escolher o
    produto.

@@ -89,6 +89,10 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
   clicar de novo desmarca. Medidas (comprimento, largura, espessura com 3 casas; CFM e
   gramatura inteiros; "Teflonada" só para Secadora Espiral) e condições de operação só
   aparecem depois de escolher papel e produto. Sem produto, esses campos não são enviados.
+- **Outros e limites por máquina** (2026-09-29): Tissue e Marrom têm o produto "Outros", com
+  posição, medidas, CFM, gramatura e durabilidade. Formadora (Tela Formadora/Formadora) vai
+  até 5 unidades por máquina, Secadora Espiral até 14, os demais até 3. Regra em `LIMITES`,
+  igual no front e na Edge Function; o banco só limita `item` entre 1 e 14.
 - **Aviso de medidas**: ao salvar sem comprimento e/ou largura (ou sem produto), aparece
   confirmação "Salvar mesmo assim / Informar medidas" (não bloqueia).
 - **Salvar**: barra de ações fixa no rodapé. "Salvar e cadastrar outra máquina" mantém os

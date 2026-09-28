@@ -3,10 +3,12 @@ import { enviarCadastro, enfileirar, novoEnvioId } from './filaCadastroProdutos'
 import './cadastro-produtos-feira.css'
 const vazio = { empresa:'', contato:'', telefone:'', email:'', responsavel:'', maquina:'', papel:'', velocidade_maquina:'', informacoes_adicionais:'' }
 const itemVazio = { modelo:'', posicao:'', comprimento:'', largura:'', espessura:'', cfm:'', gramatura:'', teflonada:false, durabilidade:'' }
-const produtos = { Tissue:['Tela Formadora','Feltro','Tela DNT','Tela Acabadora'], Marrom:['Tela Tecida','Formadora','Feltro','Feltro com emenda','Camisa','Engrossador','Secadora Espiral'] }
+const produtos = { Tissue:['Tela Formadora','Feltro','Tela DNT','Tela Acabadora','Outros'], Marrom:['Tela Tecida','Formadora','Feltro','Feltro com emenda','Camisa','Engrossador','Secadora Espiral','Outros'] }
 const modelos = (papel, produto) => produto === 'Camisa' ? ['Malha 4','Malha 16','Malha 18','Malha 21'] : (produto === 'Formadora' || produto === 'Tela Formadora') && papel === 'Tissue' ? ['Dupla e meia','Tripla'] : produto === 'Formadora' && papel === 'Marrom' ? ['Tripla','Dupla','Dupla e meia','Mono'] : []
-const precisaPosicao = produto => ['Tela Tecida','Secadora Espiral','Feltro','Feltro com emenda'].includes(produto)
-const MAX_POR_PRODUTO = 3
+const precisaPosicao = produto => ['Tela Tecida','Secadora Espiral','Feltro','Feltro com emenda','Outros'].includes(produto)
+// Unidades por máquina: formadora até 5, secadora espiral até 14, os demais até 3 (o servidor usa a mesma regra).
+const LIMITES = { 'Tela Formadora':5, 'Formadora':5, 'Secadora Espiral':14 }
+const maxDe = produto => LIMITES[produto] || 3
 let sequencia = 0
 const novoUid = () => crypto.randomUUID?.() || `item-${Date.now().toString(36)}-${(sequencia++).toString(36)}`
 // Só os campos que o servidor espera de cada produto.
@@ -60,7 +62,7 @@ export default function CadastroProdutos({ voltarMenu }) {
     if(itensBrutos.length && !window.confirm(`Trocar o tipo de papel remove ${itensBrutos.length===1?'o produto já informado':`os ${itensBrutos.length} produtos já informados`} desta máquina. Continuar?`)) return
     setF(a => ({...a,papel:novo})); setItens([]); setAberto(null); setErro(''); setSemMedidas(null)
   }
-  // Clicar num produto começa um novo cartão dele (não substitui o anterior), até 3 por produto.
+  // Clicar num produto começa um novo cartão dele (não substitui o anterior), até o limite do produto.
   const adicionarProduto = produto => {
     const uid = novoUid()
     setItens(l => [...l, { uid, produto, ...itemVazio }]); setAberto(uid); setErro(''); setSemMedidas(null); focarItem(uid)
@@ -156,7 +158,7 @@ export default function CadastroProdutos({ voltarMenu }) {
       <aside className="cadastro-hero">
         <p className="eyebrow">ATENDIMENTO DE FEIRA</p>
         <h1>Registre a necessidade de cada máquina.</h1>
-        <p className="hero-texto">Preencha o contato e a máquina e adicione quantos produtos ela usar — até 3 de cada. Tudo é gravado junto ao salvar. Depois, dá para cadastrar outra máquina do mesmo cliente sem redigitar o contato.</p>
+        <p className="hero-texto">Preencha o contato e a máquina e adicione quantos produtos ela usar. Tudo é gravado junto ao salvar. Depois, dá para cadastrar outra máquina do mesmo cliente sem redigitar o contato.</p>
         <ol className="etapas">{etapas.map((e,i)=><li key={e.titulo} className={e.ok?'ok':''}><b>{e.ok?'✓':i+1}</b>{e.titulo}</li>)}</ol>
         <div className="hero-rodape"><img src="/phenix-30-anos-branco-transparente.png" alt="Phenix - Tecendo Facilidades"/><p>Cadastro em <strong>{hoje}</strong>{salvos>0&&<> · {salvos} {salvos===1?'máquina salva':'máquinas salvas'} nesta sessão</>}</p></div>
       </aside>
@@ -180,8 +182,8 @@ export default function CadastroProdutos({ voltarMenu }) {
           <h3><b>2</b>Máquina e produtos</h3>
           <div className="grid">{campo('maquina','Máquina',{className:'largo',placeholder:'Ex.: MP 3 — Linha de tissue'})}</div>
           <div className="campo" id="tipo-papel"><span>Tipo de papel</span>{opcoes('Tipo de papel',f.papel,Object.keys(produtos),alterarPapel)}</div>
-          {f.papel&&<div className="campo"><span>Adicionar produto <em>toque para incluir; até {MAX_POR_PRODUTO} de cada</em></span>
-            <div className="opcoes">{produtos[f.papel].map(p=>{const n=contagem(p);return <button type="button" key={p} className={n?'ativo':''} disabled={n>=MAX_POR_PRODUTO} title={n>=MAX_POR_PRODUTO?`Máximo de ${MAX_POR_PRODUTO} por máquina`:undefined} onClick={()=>adicionarProduto(p)}>+ {p}{n>0&&<i className="contador">{n}</i>}</button>})}</div>
+          {f.papel&&<div className="campo"><span>Adicionar produto <em>toque de novo para incluir outra unidade</em></span>
+            <div className="opcoes">{produtos[f.papel].map(p=>{const n=contagem(p),max=maxDe(p);return <button type="button" key={p} className={n?'ativo':''} disabled={n>=max} title={n>=max?`Máximo de ${max} por máquina`:undefined} onClick={()=>adicionarProduto(p)}>+ {p}{n>0&&<i className="contador">{n}</i>}</button>})}</div>
           </div>}
           {!f.papel&&<p className="dica-bloco">Escolha o tipo de papel para adicionar os produtos desta máquina.</p>}
           {itens.length>0&&<div className="lista-itens">{itens.map(cartao)}</div>}

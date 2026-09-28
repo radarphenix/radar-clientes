@@ -2,9 +2,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const cors = { 'Access-Control-Allow-Origin':'*', 'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type' }
 const json = (body:unknown,status=200) => new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}})
-const produtos = { Tissue:['Tela Formadora','Feltro','Tela DNT','Tela Acabadora'], Marrom:['Tela Tecida','Formadora','Feltro','Feltro com emenda','Camisa','Engrossador','Secadora Espiral'] } as const
+const produtos = { Tissue:['Tela Formadora','Feltro','Tela DNT','Tela Acabadora','Outros'], Marrom:['Tela Tecida','Formadora','Feltro','Feltro com emenda','Camisa','Engrossador','Secadora Espiral','Outros'] } as const
 const modelos = (papel:string,produto:string) => produto==='Camisa' ? ['Malha 4','Malha 16','Malha 18','Malha 21'] : (produto==='Formadora'||produto==='Tela Formadora')&&papel==='Tissue' ? ['Dupla e meia','Tripla'] : produto==='Formadora'&&papel==='Marrom' ? ['Tripla','Dupla','Dupla e meia','Mono'] : []
-const precisaPosicao = (produto:string) => ['Tela Tecida','Secadora Espiral','Feltro','Feltro com emenda'].includes(produto)
+const precisaPosicao = (produto:string) => ['Tela Tecida','Secadora Espiral','Feltro','Feltro com emenda','Outros'].includes(produto)
 const texto = (v:unknown,max=5000) => String(v??'').trim().slice(0,max)
 const opcional = (v:unknown,max=5000) => texto(v,max) || null
 const decimal3 = (v:string|null) => v===null || /^\d{1,9},\d{3}$/.test(v)
@@ -12,7 +12,10 @@ const inteiro = (v:string|null) => v===null || /^\d{1,9}$/.test(v)
 // Fixo (10 dígitos) ou celular (11 dígitos, começando com 9 após o DDD).
 const telefoneOk = (v:string) => { const d=v.replace(/\D/g,''); return /^[1-9][1-9]/.test(d) && (d.length===10 || (d.length===11 && d[2]==='9')) }
 const emailOk = (v:string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)
-const MAX_POR_PRODUTO = 3, MAX_ITENS = 40
+// Unidades por máquina: formadora até 5, secadora espiral até 14, os demais até 3.
+const LIMITES:Record<string,number> = { 'Tela Formadora':5, 'Formadora':5, 'Secadora Espiral':14 }
+const maxDe = (produto:string) => LIMITES[produto] ?? 3
+const MAX_ITENS = 40
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 type Item = Record<string,unknown>
 
@@ -50,7 +53,8 @@ Deno.serve(async req => {
       let item:number|null=null
       if(linha.produto){
         item=(contagem.get(linha.produto as string)??0)+1; contagem.set(linha.produto as string,item)
-        if(item>MAX_POR_PRODUTO)return json({ok:false,mensagem:`No máximo ${MAX_POR_PRODUTO} unidades de ${linha.produto} por máquina.`},400)
+        const max=maxDe(linha.produto as string)
+        if(item>max)return json({ok:false,mensagem:`No máximo ${max} unidades de ${linha.produto} por máquina.`},400)
       }
       linhas.push({...comum,...linha,grupo_id,item})
     }
