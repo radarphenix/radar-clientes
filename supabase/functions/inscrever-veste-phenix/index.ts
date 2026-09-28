@@ -9,15 +9,7 @@ const cnpjValido=(c:string)=>{if(!/^\d{14}$/.test(c)||/^(\d)\1+$/.test(c))return
 const cpfValido=(c:string)=>{if(!/^\d{11}$/.test(c)||/^(\d)\1+$/.test(c))return false;const dig=(n:number)=>{let s=0;for(let i=0;i<n;i++)s+=Number(c[i])*(n+1-i);const r=(s*10)%11;return r===10?0:r};return dig(9)===Number(c[9])&&dig(10)===Number(c[10])};
 const limite=(v:unknown,max:number)=>typeof v==='string'&&v.trim().length>0&&v.length<=max;
 const hash=async(v:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)))).map(x=>x.toString(16).padStart(2,'0')).join('');
-// Sem a secret só o modo teste passa; em produção a ausência bloqueia (falha fechada).
-async function validarTurnstile(token:unknown,ip:string){
- const secret=Deno.env.get('TURNSTILE_SECRET_KEY');
- if(!secret)return Deno.env.get('PROMO_MODO_TESTE')==='true';
- if(typeof token!=='string'||!token||token.length>2048)return false;
- const body=new URLSearchParams({secret,response:token});if(ip)body.set('remoteip',ip);
- try{const r=await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',body});return r.ok&&Boolean((await r.json()).success)}catch{return false}
-}
-// Rate limit por chave SHA-256 (sem PII em claro). Se o RPC falhar, não bloqueia: o Turnstile continua valendo.
+// Rate limit por chave SHA-256 (sem PII em claro). Se o RPC falhar, não bloqueia a inscrição.
 async function dentroDoLimite(db:{rpc:(fn:string,args:Record<string,unknown>)=>PromiseLike<{data:unknown;error:unknown}>},chave:string,max:number,janelaSegundos:number){
  const{data,error}=await db.rpc('registrar_tentativa_veste_phenix',{p_chave:await hash(chave),p_limite:max,p_janela_segundos:janelaSegundos});
  if(error){console.error('rate limit',error);return true}
@@ -50,12 +42,8 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   if(!modoTeste&&Deno.env.get('PROMO_INSCRICOES_ATIVAS')!=='true')return json({ok:false,mensagem:'As inscrições ainda não estão abertas.'},403);if(!modoTeste&&(agora<inicio||agora>fim))return json({ok:false,mensagem:'Inscrição fora do período oficial da promoção.'},403);
   const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
   const ip=req.headers.get('cf-connecting-ip')||req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'';
-  // Totem do stand: código secreto no aparelho dispensa captcha e limite por IP (o limite por CPF continua).
-  const totem=Deno.env.get('PROMO_TOTEM_TOKEN')||'';const totemEnviado=typeof b.totem_token==='string'?b.totem_token:'';
-  const ehTotem=!!totem&&!!totemEnviado&&await hash(totemEnviado)===await hash(totem);
-  if(totemEnviado&&!ehTotem)return json({ok:false,mensagem:'Este tablet não está mais autorizado como totem. Avise a equipe da Phenix.'},403);
-  if(!ehTotem&&ip&&!await dentroDoLimite(db,`ip:${ip}`,60,600))return json({ok:false,mensagem:'Muitas tentativas a partir desta conexão. Aguarde alguns minutos e tente novamente.'},429);
-  if(!ehTotem&&!await validarTurnstile(b.turnstile_token,ip))return json({ok:false,mensagem:'Não foi possível validar a verificação de segurança. Atualize a página e tente novamente.'},403);
+  // Até 10 envios por minuto por conexão (vários tablets do stand na mesma rede somam juntos).
+  if(ip&&!await dentroDoLimite(db,`ip:${ip}`,10,60))return json({ok:false,mensagem:'Muitos cadastros a partir desta conexão em pouco tempo. Aguarde um minuto e tente novamente.'},429);
   if(!limite(b.nome_completo,160)||!limite(b.email,254)||!limite(b.telefone,30)||!limite(b.empresa,160)||!limite(b.cargo,120)||!limite(b.cidade,120))return json({ok:false,mensagem:'Preencha os campos obrigatórios com tamanho válido.'},400);
   if(!b.maior_18||!b.aceite_regulamento||!b.aceite_privacidade)return json({ok:false,mensagem:'Aceites obrigatórios não confirmados.'},400);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email||'')))return json({ok:false,mensagem:'E-mail inválido.'},400);
   if(!cpfValido(cpf))return json({ok:false,mensagem:'CPF inválido.'},400);if(cnpj&&!cnpjValido(cnpj))return json({ok:false,mensagem:'CNPJ inválido.'},400);
