@@ -21,15 +21,64 @@ async function enviarConfirmacao(db:ReturnType<typeof createClient>,data:{id:str
  if(!remetente||(!resendKey&&(!smtpUsuario||!smtpSenha))){await db.from('promocao_veste_phenix_30_anos').update({email_status:'aguardando_configuracao'}).eq('id',data.id);return}
  try{await db.from('promocao_veste_phenix_30_anos').update({email_status:'enviando',email_tentativas:1,email_ultimo_erro:null}).eq('id',data.id);
   const numeros=data.numeros_sorte.map(n=>String(n).padStart(5,'0')).sort();
-  const celula=(n:string)=>`<td style="background:#f4f8fb;border-radius:10px;padding:10px 14px;font-size:22px;font-weight:800;color:#d78a19;text-align:center;white-space:nowrap">${n}</td>`;
-  const espacoCol=`<td style="width:8px;line-height:1px;font-size:1px">&nbsp;</td>`;
-  const espacoLinha=`<tr><td colspan="9" style="height:8px;line-height:1px;font-size:1px">&nbsp;</td></tr>`;
-  const linha=(grupo:string[])=>`<tr>${grupo.map((n,i)=>(i?espacoCol:'')+celula(n)).join('')}</tr>`;
-  const grade=`<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:16px auto">${linha(numeros.slice(0,5))}${espacoLinha}${linha(numeros.slice(5,10))}</table>`;
+  const SITE='https://radarphenix.pages.dev';
+  const primeiroNome=data.nome_completo.trim().split(/\s+/)[0]||data.nome_completo;
   const assunto=modoTeste?`[TESTE] Seus números da sorte Phenix 30 anos`:`Seus números da sorte Phenix 30 anos`;
-  const avisoTeste=modoTeste?`<div style="margin:0 0 24px;padding:14px 18px;border-radius:10px;background:#fff3d7;color:#754508;font-weight:700;text-align:center">AMBIENTE DE TESTE — esta é uma inscrição de homologação e será removida antes da abertura oficial da promoção.</div>`:'';
-  const html=`<div style="font-family:Arial;background:#062d55;padding:36px;color:#fff"><div style="max-width:620px;margin:auto;background:#fff;color:#123653;border-radius:18px;overflow:hidden"><div style="padding:30px;background:linear-gradient(120deg,#0b5687,#062846);color:#fff"><b style="color:#f4b13b;letter-spacing:3px">VESTE PHENIX • 30 ANOS</b><h1>Olá, ${esc(data.nome_completo)}!</h1></div><div style="padding:34px;text-align:center">${avisoTeste}<p>Sua inscrição foi confirmada. Seus 10 números da sorte são:</p><div>${grade}</div><p>Guarde este e-mail. A apuração seguirá o regulamento oficial com base na Loteria Federal.</p></div></div></div>`;
-  if(smtpUsuario&&smtpSenha){const transporte=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:smtpUsuario,pass:smtpSenha},connectionTimeout:15000,socketTimeout:20000});await transporte.sendMail({from:{name:nomeRemetente,address:remetente},to:data.email,subject:assunto,html})}else{const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:remetente,to:[data.email],subject:assunto,html})});if(!er.ok)throw new Error(`Serviço de e-mail respondeu ${er.status}`)}
+  // HTML de e-mail: só tabelas e estilos inline (Outlook/Gmail); a media query só refina no celular.
+  const chip=(n:string)=>`<td class="num" width="20%" align="center" style="padding:4px"><div style="background:#062d55;border-radius:10px;padding:12px 0;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:26px;font-weight:bold;color:#f4b13b;letter-spacing:1px">${n}</div></td>`;
+  const grade=`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${numeros.slice(0,5).map(chip).join('')}</tr><tr>${numeros.slice(5,10).map(chip).join('')}</tr></table>`;
+  const avisoTeste=modoTeste?`<tr><td class="px" style="padding:0 32px 12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#fff3d7;border-radius:10px;padding:12px 16px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:19px;color:#754508;font-weight:bold;text-align:center">AMBIENTE DE TESTE — inscrição de homologação, será removida antes da abertura oficial.</td></tr></table></td></tr>`:'';
+  const p=(t:string,extra='')=>`<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;color:#29425a;${extra}">${t}</p>`;
+  const caixa=(borda:string,fundo:string,titulo:string,corpo:string)=>`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:${fundo};border-left:4px solid ${borda};border-radius:8px;padding:18px 20px"><div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#0b3558;margin:0 0 8px">${titulo}</div>${corpo}</td></tr></table>`;
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${esc(assunto)}</title>
+<style>@media (max-width:520px){.card{width:100%!important}.px{padding-left:18px!important;padding-right:18px!important}.num div{font-size:17px!important;line-height:22px!important;padding:10px 0!important;letter-spacing:0!important}h1{font-size:22px!important}.selo{letter-spacing:1px!important;font-size:11px!important}}</style></head>
+<body style="margin:0;padding:0;background:#062d55">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#062d55">Inscrição confirmada! Seus 10 números da sorte: ${numeros.join(', ')}.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#062d55" style="background:#062d55"><tr><td align="center" style="padding:28px 12px">
+<table role="presentation" class="card" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden">
+<tr><td align="center" bgcolor="#0b4a76" style="background:#0b4a76;padding:30px 24px 24px">
+<img src="${SITE}/email-phenix-30-anos.png" width="200" alt="Phenix 30 anos - Tecendo Facilidades" style="display:block;width:200px;max-width:70%;height:auto;border:0;margin:0 auto 14px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:bold">
+<div class="selo" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:16px;letter-spacing:3px;font-weight:bold;color:#f4b13b">PROMOÇÃO VESTE PHENIX • 30 ANOS</div>
+</td></tr>
+<tr><td bgcolor="#f4b13b" style="height:6px;line-height:6px;font-size:1px;background:#f4b13b">&nbsp;</td></tr>
+<tr><td style="height:26px;line-height:26px;font-size:1px">&nbsp;</td></tr>
+${avisoTeste}
+<tr><td class="px" style="padding:0 32px">
+<h1 style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:26px;line-height:32px;color:#0b3558">Olá, ${esc(primeiroNome)}!</h1>
+${p('Sua inscrição na promoção <b>Veste Phenix 30 anos</b> está confirmada. Obrigado por comemorar esses 30 anos com a gente!')}
+<div style="margin:22px 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:2px;font-weight:bold;color:#0e5886;text-align:center">SEUS 10 NÚMEROS DA SORTE</div>
+</td></tr>
+<tr><td class="px" style="padding:0 28px">${grade}</td></tr>
+<tr><td class="px" style="padding:14px 32px 0">${p('Guarde este e-mail: ele é o seu comprovante de participação.','text-align:center;font-size:13px;color:#5b6f82;margin:0')}</td></tr>
+<tr><td class="px" style="padding:26px 32px 0">${caixa('#0e5886','#f1f6fa','Como funciona a apuração',p('Em <b>10/10/2026</b> será usado o número de 5 algarismos do <b>1º prêmio da Loteria Federal</b>. Ganha quem tiver o número da sorte igual ou mais próximo dele.','font-size:14px;line-height:21px;margin:0 0 8px')+p('O resultado sai em até 5 dias úteis após a apuração, e a Phenix entra em contato com o contemplado.','font-size:14px;line-height:21px;margin:0'))}</td></tr>
+<tr><td class="px" style="padding:16px 32px 0">${caixa('#f4b13b','#fdf6e7','O prêmio',p('Experiência técnica comemorativa Phenix 30 anos no Rio Grande do Sul, incluindo <b>passeio de balão</b>, conforme o regulamento.','font-size:14px;line-height:21px;margin:0'))}</td></tr>
+<tr><td align="center" style="padding:28px 32px 32px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#0e5886" style="border-radius:10px;background:#0e5886">
+<a href="${SITE}/regulamento.pdf?v=20260928" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px">Ler o regulamento</a>
+</td></tr></table>
+</td></tr>
+<tr><td bgcolor="#eef3f7" style="background:#eef3f7;padding:20px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#5b6f82;text-align:center">
+Dúvidas? Escreva para <a href="mailto:phenix@phenixonline.com.br" style="color:#0e5886">phenix@phenixonline.com.br</a><br>
+<a href="${SITE}/politica-privacidade.pdf?v=20260925" target="_blank" style="color:#0e5886">Política de privacidade</a><br><br>
+Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arroio do Sal/RS<br>
+Você recebeu este e-mail porque se inscreveu na promoção Veste Phenix 30 anos.
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+  const text=[
+   modoTeste?'[AMBIENTE DE TESTE - inscrição de homologação, será removida antes da abertura oficial.]\n':'',
+   `Olá, ${primeiroNome}!`,'',
+   'Sua inscrição na promoção Veste Phenix 30 anos está confirmada.','',
+   'SEUS 10 NÚMEROS DA SORTE:',numeros.slice(0,5).join('   '),numeros.slice(5).join('   '),'',
+   'Guarde este e-mail: ele é o seu comprovante de participação.','',
+   'Como funciona a apuração: em 10/10/2026 será usado o número de 5 algarismos do 1º prêmio da Loteria Federal. Ganha quem tiver o número da sorte igual ou mais próximo dele. O resultado sai em até 5 dias úteis após a apuração.','',
+   `Regulamento: ${SITE}/regulamento.pdf?v=20260928`,
+   `Política de privacidade: ${SITE}/politica-privacidade.pdf?v=20260925`,
+   'Dúvidas: phenix@phenixonline.com.br','',
+   'Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arroio do Sal/RS'
+  ].join('\n');
+  if(smtpUsuario&&smtpSenha){const transporte=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:smtpUsuario,pass:smtpSenha},connectionTimeout:15000,socketTimeout:20000});await transporte.sendMail({from:{name:nomeRemetente,address:remetente},to:data.email,subject:assunto,html,text})}else{const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:remetente,to:[data.email],subject:assunto,html,text})});if(!er.ok)throw new Error(`Serviço de e-mail respondeu ${er.status}`)}
   await db.from('promocao_veste_phenix_30_anos').update({email_status:'enviado',email_confirmacao_enviado_em:new Date().toISOString(),email_ultimo_erro:null}).eq('id',data.id)
  }catch(e){console.error('Falha no e-mail',e);await db.from('promocao_veste_phenix_30_anos').update({email_status:'falhou',email_ultimo_erro:String(e).slice(0,500)}).eq('id',data.id)}
 }
