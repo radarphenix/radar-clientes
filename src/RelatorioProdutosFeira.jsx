@@ -46,7 +46,7 @@ export default function RelatorioProdutosFeira() {
         (!papel || c.tipo_papel === papel) &&
         (!produto || c.produto === produto) &&
         (!termo ||
-          [c.empresa, c.contato, c.maquina, c.responsavel, c.email, c.telefone]
+          [c.empresa, c.contato, c.maquina, c.responsavel, c.email, c.telefone, c.nome_produto_outros]
             .filter(Boolean)
             .some((v) => v.toLowerCase().includes(termo))),
     );
@@ -68,6 +68,7 @@ export default function RelatorioProdutosFeira() {
       "Tipo de papel": c.tipo_papel || "",
       Produto: c.produto || "",
       "Nº": c.item || "",
+      "Nome do produto (Outros)": c.nome_produto_outros || "",
       Modelo: c.modelo || "",
       Posição: c.posicao || "",
       Comprimento: c.comprimento || "",
@@ -159,7 +160,7 @@ export default function RelatorioProdutosFeira() {
                     </td>
                     <td>{vazio(c.maquina)}</td>
                     <td>
-                      {c.produto ? <>{c.produto}{c.item ? ` ${c.item}` : ""}<small>{[c.tipo_papel, c.modelo, c.posicao].filter(Boolean).join(" • ")}</small></> : "—"}
+                      {c.produto ? <>{c.produto}{c.item ? ` ${c.item}` : ""}<small>{[c.tipo_papel, c.nome_produto_outros, c.modelo, c.posicao].filter(Boolean).join(" • ")}</small></> : "—"}
                     </td>
                     <td>{semMedidas(c) ? <span className="relatorio-produtos-selo">não informado</span> : `${c.comprimento} × ${c.largura}`}</td>
                     <td>{c.responsavel}</td>

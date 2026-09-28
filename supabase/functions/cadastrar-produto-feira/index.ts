@@ -22,7 +22,7 @@ type Item = Record<string,unknown>
 // Valida um produto da máquina; devolve a mensagem de erro ou os campos da linha.
 function produtoDaLinha(papel:string|null,i:Item):string|Record<string,unknown>{
   const produto=opcional(i.produto,80), modelo=opcional(i.modelo,80), posicao=opcional(i.posicao,160)
-  const linha={produto,modelo,posicao:produto&&precisaPosicao(produto)?posicao:null,comprimento:opcional(i.comprimento,30),largura:opcional(i.largura,30),cfm:opcional(i.cfm,80),gramatura:opcional(i.gramatura,80),espessura:opcional(i.espessura,80),teflonada:produto==='Secadora Espiral'&&i.teflonada===true,durabilidade:opcional(i.durabilidade,160)}
+  const linha={produto,nome_produto_outros:produto==='Outros'?opcional(i.nome_produto_outros,160):null,modelo,posicao:produto&&precisaPosicao(produto)?posicao:null,comprimento:opcional(i.comprimento,30),largura:opcional(i.largura,30),cfm:opcional(i.cfm,80),gramatura:opcional(i.gramatura,80),espessura:opcional(i.espessura,80),teflonada:produto==='Secadora Espiral'&&i.teflonada===true,durabilidade:opcional(i.durabilidade,160)}
   if(!decimal3(linha.comprimento)||!decimal3(linha.largura)||!decimal3(linha.espessura)||!inteiro(linha.cfm)||!inteiro(linha.gramatura))return 'Use três casas decimais para comprimento, largura e espessura; CFM e gramatura devem ser inteiros.'
   if(produto&&(!papel||!(produtos[papel as keyof typeof produtos] as readonly string[]).includes(produto)))return 'Combinação de papel e produto inválida.'
   if(modelo&&(!produto||!modelos(papel!,produto).includes(modelo)))return 'Modelo inválido para o produto informado.'

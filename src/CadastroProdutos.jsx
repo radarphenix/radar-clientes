@@ -2,7 +2,7 @@ import React from 'react'
 import { enviarCadastro, enfileirar, novoEnvioId } from './filaCadastroProdutos'
 import './cadastro-produtos-feira.css'
 const vazio = { empresa:'', contato:'', telefone:'', email:'', responsavel:'', maquina:'', papel:'', velocidade_maquina:'', informacoes_adicionais:'' }
-const itemVazio = { modelo:'', posicao:'', comprimento:'', largura:'', espessura:'', cfm:'', gramatura:'', teflonada:false, durabilidade:'' }
+const itemVazio = { nome_produto_outros:'', modelo:'', posicao:'', comprimento:'', largura:'', espessura:'', cfm:'', gramatura:'', teflonada:false, durabilidade:'' }
 const produtos = { Tissue:['Tela Formadora','Feltro','Tela DNT','Tela Acabadora','Outros'], Marrom:['Tela Tecida','Formadora','Feltro','Feltro com emenda','Camisa','Engrossador','Secadora Espiral','Outros'] }
 const modelos = (papel, produto) => produto === 'Camisa' ? ['Malha 4','Malha 16','Malha 18','Malha 21'] : (produto === 'Formadora' || produto === 'Tela Formadora') && papel === 'Tissue' ? ['Dupla e meia','Tripla'] : produto === 'Formadora' && papel === 'Marrom' ? ['Tripla','Dupla','Dupla e meia','Mono'] : []
 const precisaPosicao = produto => ['Tela Tecida','Secadora Espiral','Feltro','Feltro com emenda','Outros'].includes(produto)
@@ -25,7 +25,7 @@ const semMedida = i => !i.comprimento || !i.largura
 // Número do produto dentro da máquina (Feltro 1, Feltro 2…), pela ordem na lista — o servidor numera igual.
 const numerar = itens => { const c = {}; return itens.map(i => ({ ...i, n: (c[i.produto] = (c[i.produto] || 0) + 1) })) }
 const nomeItem = i => `${i.produto} ${i.n}`
-const resumoItem = i => [i.modelo, i.posicao, i.comprimento && i.largura ? `${i.comprimento} × ${i.largura}` : ''].filter(Boolean).join(' · ')
+const resumoItem = i => [i.produto==='Outros'&&i.nome_produto_outros, i.modelo, i.posicao, i.comprimento && i.largura ? `${i.comprimento} × ${i.largura}` : ''].filter(Boolean).join(' · ')
 
 // Rascunho no aparelho: se o tablet recarregar no meio do cadastro, nada se perde até salvar.
 const CHAVE_RASCUNHO = 'cadastroProdutosFeira:rascunho'
@@ -135,6 +135,7 @@ export default function CadastroProdutos({ voltarMenu }) {
         <button type="button" className="botao-link item-remover" onClick={()=>removerItem(i)}>Remover</button>
       </div>
       {estaAberto&&<div className="item-corpo">
+        {i.produto==='Outros'&&<div className="grid"><label className="campo largo"><span>Nome do produto</span><input value={i.nome_produto_outros} maxLength="160" placeholder="Ex.: Rolo de sucção, lona, raspa…" onChange={e=>setItem(i.uid,'nome_produto_outros',e.target.value)}/></label></div>}
         {(opModelo.length>0||precisaPosicao(i.produto))&&<div className="grid">
           {opModelo.length>0&&<div className="campo largo"><span>Modelo</span>{opcoes('Modelo',i.modelo,opModelo,v=>setItem(i.uid,'modelo',i.modelo===v?'':v))}</div>}
           {precisaPosicao(i.produto)&&campoItem(i,'posicao','Posição',{placeholder:'Ex.: 1ª prensa, pick-up'})}
