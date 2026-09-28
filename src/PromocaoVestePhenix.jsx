@@ -155,6 +155,21 @@ export default function PromocaoVestePhenix() {
     await carregar();
   }
 
+  // Prévia do e-mail de contemplado (marcada como TESTE) para conferir o texto antes do envio real.
+  async function enviarPrevia() {
+    const para = prompt("Enviar a prévia do e-mail do contemplado para qual endereço?");
+    if (!para) return;
+    setComunicando("previa");
+    setResultadoComunicado("");
+    const { data: r, error } = await supabase.functions.invoke("inscrever-veste-phenix", {
+      body: { acao: "previa_contemplado", para },
+    });
+    let msg = r?.mensagem;
+    if (error && !msg) { try { msg = (await error.context?.json?.())?.mensagem; } catch { /* sem JSON */ } }
+    setResultadoComunicado(error || !r?.ok ? msg || "Não foi possível enviar a prévia." : `Prévia enviada para ${para}.`);
+    setComunicando("");
+  }
+
   async function reverterApuracao() {
     if (!apuracaoVigente?.id) return;
     if (
@@ -280,7 +295,11 @@ export default function PromocaoVestePhenix() {
           <button type="button" onClick={apurar}>
             Realizar apuração
           </button>
+          <button type="button" className="promocao-botao-secundario" onClick={enviarPrevia} disabled={Boolean(comunicando)}>
+            {comunicando === "previa" ? "Enviando…" : "Prévia do e-mail do contemplado"}
+          </button>
         </div>
+        {resultadoComunicado && !apuracaoVigente && <p className="promocao-resultado-limpeza">{resultadoComunicado}</p>}
         {apuracaoVigente && contemplado && (
           <div className="promocao-vencedor">
             <b>Contemplado: {contemplado.nome_completo}</b>

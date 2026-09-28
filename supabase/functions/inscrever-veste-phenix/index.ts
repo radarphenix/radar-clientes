@@ -99,11 +99,25 @@ async function enviarEmail(m:{para:string;assunto:string;html:string;text:string
 // deno-lint-ignore no-explicit-any -- tipagem genérica do supabase-js via esm.sh não infere as tabelas
 async function exigirAdmin(req:Request,db:any):Promise<string|Response>{
  const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');
+ const servico=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+ if(servico&&token===servico)return 'service_role';
  const{data:u,error:erroUsuario}=await db.auth.getUser(token);
  if(erroUsuario||!u?.user)return json({ok:false,mensagem:'Faça login como administrador.'},401);
  const{data:perfil}=await db.from('perfis').select('tipo_perfil,ativo').eq('user_id',u.user.id).maybeSingle();
  if(perfil?.tipo_perfil!=='admin'||perfil?.ativo!==true)return json({ok:false,mensagem:'Somente administrador pode fazer isso.'},403);
  return u.user.id;
+}
+
+// Prévia do e-mail de contemplado (marcada como TESTE, dados de exemplo) para conferir o texto antes do envio real.
+async function previaContemplado(req:Request,b:{para?:unknown}){
+ const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+ const admin=await exigirAdmin(req,db);if(admin instanceof Response)return admin;
+ const para=String(b.para||'').trim().toLowerCase();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para))return json({ok:false,mensagem:'Informe um e-mail válido para a prévia.'},400);
+ const m=emailContemplado({nome:'Participante Exemplo',email:para,telefone:'',numeroSorte:48213,numeroLoteria:48219,dataExtracao:'2026-10-10',teste:true});
+ try{await enviarEmail({para,assunto:m.assunto,html:m.html,text:m.text,replyTo:CONTATO_PHENIX})}
+ catch(e){return json({ok:false,mensagem:`Não foi possível enviar a prévia: ${e instanceof Error?e.message:String(e)}`},502)}
+ return json({ok:true,para});
 }
 
 // Comunicado ao contemplado da apuração vigente, por e-mail ou WhatsApp (WAHA). Disparo manual pelo painel.
@@ -151,7 +165,7 @@ async function reenviarEmails(req:Request){
 }
 
 Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});if(req.method!=='POST')return json({ok:false,mensagem:'Método não permitido.'},405);
- try{const b=await req.json();if(b?.acao==='reenviar_emails')return await reenviarEmails(req);if(b?.acao==='comunicar_contemplado')return await comunicarContemplado(req,b);const cpf=String(b.cpf||'').replace(/\D/g,'');const cnpj=String(b.cnpj||'').replace(/\D/g,'');const agora=Date.now();const inicio=Date.parse('2026-10-06T00:00:00-03:00'),fim=Date.parse('2026-10-08T23:59:59-03:00');
+ try{const b=await req.json();if(b?.acao==='reenviar_emails')return await reenviarEmails(req);if(b?.acao==='comunicar_contemplado')return await comunicarContemplado(req,b);if(b?.acao==='previa_contemplado')return await previaContemplado(req,b);const cpf=String(b.cpf||'').replace(/\D/g,'');const cnpj=String(b.cnpj||'').replace(/\D/g,'');const agora=Date.now();const inicio=Date.parse('2026-10-06T00:00:00-03:00'),fim=Date.parse('2026-10-08T23:59:59-03:00');
   // O modo teste só vale antes da abertura: em 06/10 00:00 as inscrições passam a ser oficiais sozinhas,
   // e o cron limpar-testes-veste-phenix apaga as de teste no mesmo horário.
   const modoTeste=Deno.env.get('PROMO_MODO_TESTE')==='true'&&agora<inicio;
