@@ -3,6 +3,11 @@ import * as XLSX from "xlsx";
 import { supabase } from "./supabaseClient";
 import RelatorioProdutosFeira from "./RelatorioProdutosFeira.jsx";
 
+const formatarTelefone = (t) => {
+  const d = String(t || "").replace(/\D/g, "");
+  return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : t;
+};
+
 export default function PromocaoVestePhenix() {
   const [aba, setAba] = useState("promocao");
   const [inscricoes, setInscricoes] = useState([]);
@@ -16,6 +21,9 @@ export default function PromocaoVestePhenix() {
   const [revertendo, setRevertendo] = useState(false);
   const [revertendoTodos, setRevertendoTodos] = useState(false);
   const [reenviando, setReenviando] = useState(false);
+  const [apuracaoVigente, setApuracaoVigente] = useState(null);
+  const [comunicando, setComunicando] = useState("");
+  const [resultadoComunicado, setResultadoComunicado] = useState("");
   const [resultadoReenvio, setResultadoReenvio] = useState("");
 
   async function carregar() {
@@ -26,6 +34,13 @@ export default function PromocaoVestePhenix() {
       .order("criado_em");
     setInscricoes(d || []);
     setErro(error ? "Não foi possível carregar as inscrições." : "");
+    const { data: ap } = await supabase
+      .from("promocao_veste_phenix_30_anos_apuracoes")
+      .select("*")
+      .is("revertida_em", null)
+      .order("executado_em", { ascending: false })
+      .limit(1);
+    setApuracaoVigente(ap?.[0] || null);
     setCarregando(false);
   }
 
@@ -119,8 +134,29 @@ export default function PromocaoVestePhenix() {
     await carregar();
   }
 
+  // Comunicado ao contemplado: disparo manual, por e-mail ou WhatsApp (WAHA), pela Edge Function.
+  async function comunicar(canal) {
+    if (!apuracaoVigente || !contemplado) return;
+    const jaEnviado = canal === "email" ? apuracaoVigente.comunicado_email_em : apuracaoVigente.comunicado_whatsapp_em;
+    const destino = canal === "email" ? contemplado.email : formatarTelefone(contemplado.telefone);
+    const pergunta = jaEnviado
+      ? `O ${canal === "email" ? "e-mail" : "WhatsApp"} já foi enviado em ${new Date(jaEnviado).toLocaleString("pt-BR")}. Enviar de novo para ${destino}?`
+      : `Enviar o comunicado de contemplado por ${canal === "email" ? "e-mail" : "WhatsApp"} para ${destino}?`;
+    if (!confirm(pergunta)) return;
+    setComunicando(canal);
+    setResultadoComunicado("");
+    const { data: r, error } = await supabase.functions.invoke("inscrever-veste-phenix", {
+      body: { acao: "comunicar_contemplado", apuracao_id: apuracaoVigente.id, canal },
+    });
+    let msg = r?.mensagem;
+    if (error && !msg) { try { msg = (await error.context?.json?.())?.mensagem; } catch { /* sem JSON */ } }
+    setResultadoComunicado(error || !r?.ok ? msg || "Não foi possível enviar agora." : `${canal === "email" ? "E-mail" : "WhatsApp"} enviado ao contemplado.`);
+    setComunicando("");
+    await carregar();
+  }
+
   async function reverterApuracao() {
-    if (!resultado?.apuracao_id) return;
+    if (!apuracaoVigente?.id) return;
     if (
       !confirm(
         "Isso desfaz esta apuração de teste: o contemplado volta para válida e a apuração fica marcada como revertida no histórico (nunca é apagada). Deseja continuar?",
@@ -132,7 +168,7 @@ export default function PromocaoVestePhenix() {
     setErro("");
     const { error } = await supabase.rpc(
       "reverter_apuracao_teste_veste_phenix",
-      { p_apuracao_id: resultado.apuracao_id },
+      { p_apuracao_id: apuracaoVigente.id },
     );
     if (error) {
       setErro(error.message);
@@ -191,6 +227,9 @@ export default function PromocaoVestePhenix() {
     setLimpando(false);
   }
 
+  const contemplado = apuracaoVigente ? inscricoes.find((i) => i.id === apuracaoVigente.vencedor_inscricao_id) : null;
+  const quandoEnviado = (v) => (v ? `enviado em ${new Date(v).toLocaleString("pt-BR")}` : "não enviado");
+
   const numerosOrdenados = inscricoes
     .flatMap((i) => i.numeros_sorte.map((numero) => ({ ...i, numero })))
     .sort((a, b) => a.numero - b.numero);
@@ -242,20 +281,46 @@ export default function PromocaoVestePhenix() {
             Realizar apuração
           </button>
         </div>
-        {resultado && (
+        {apuracaoVigente && contemplado && (
           <div className="promocao-vencedor">
-            <b>Contemplado: {resultado.nome_completo}</b>
+            <b>Contemplado: {contemplado.nome_completo}</b>
             <span>
-              Número {String(resultado.numero_sorte).padStart(5, "0")} •
-              diferença {resultado.diferenca}
+              Número {String(apuracaoVigente.vencedor_numero_sorte).padStart(5, "0")} • Loteria Federal{" "}
+              {String(apuracaoVigente.numero_loteria).padStart(5, "0")} de{" "}
+              {new Date(`${apuracaoVigente.data_extracao}T12:00:00`).toLocaleDateString("pt-BR")} • diferença{" "}
+              {apuracaoVigente.diferenca_absoluta}
             </span>
-            {resultado.total_empatados > 1 && (
+            {resultado?.apuracao_id === apuracaoVigente.id && resultado.total_empatados > 1 && (
               <span>
-                Desempate por data de inscrição — {resultado.total_empatados}{" "}
-                inscrições empataram na diferença {resultado.diferenca}; venceu
-                a mais antiga, inscrita em{" "}
+                Desempate por data de inscrição — {resultado.total_empatados} inscrições empataram na diferença{" "}
+                {resultado.diferenca}; venceu a mais antiga, inscrita em{" "}
                 {new Date(resultado.criado_em).toLocaleString("pt-BR")}.
               </span>
+            )}
+            <span>
+              {contemplado.empresa} • CPF {contemplado.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}
+            </span>
+            <span>
+              {contemplado.email} • WhatsApp {formatarTelefone(contemplado.telefone)}
+            </span>
+            {contemplado.origem === "formulario_teste" && (
+              <span className="promocao-contemplado-teste">Inscrição de teste — o comunicado sai marcado como TESTE.</span>
+            )}
+            <div className="promocao-comunicado">
+              <button type="button" onClick={() => comunicar("email")} disabled={Boolean(comunicando)}>
+                {comunicando === "email" ? "Enviando…" : apuracaoVigente.comunicado_email_em ? "Reenviar e-mail" : "Enviar e-mail ao contemplado"}
+              </button>
+              <button type="button" onClick={() => comunicar("whatsapp")} disabled={Boolean(comunicando)}>
+                {comunicando === "whatsapp" ? "Enviando…" : apuracaoVigente.comunicado_whatsapp_em ? "Reenviar WhatsApp" : "Enviar WhatsApp ao contemplado"}
+              </button>
+            </div>
+            <small>
+              E-mail: {quandoEnviado(apuracaoVigente.comunicado_email_em)} • WhatsApp:{" "}
+              {quandoEnviado(apuracaoVigente.comunicado_whatsapp_em)}
+            </small>
+            {resultadoComunicado && <span>{resultadoComunicado}</span>}
+            {apuracaoVigente.comunicado_ultimo_erro && !resultadoComunicado && (
+              <span className="mensagem-erro">Último erro: {apuracaoVigente.comunicado_ultimo_erro}</span>
             )}
             <button
               type="button"

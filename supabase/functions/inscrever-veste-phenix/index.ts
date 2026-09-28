@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import nodemailer from 'npm:nodemailer@7.0.11';
+import { emailContemplado, whatsappContemplado, enviarWhatsApp, CONTATO_PHENIX } from './contemplado.ts';
 
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type'};
@@ -81,9 +82,54 @@ Você recebeu este e-mail porque se inscreveu na promoção Veste Phenix 30 anos
    'Dúvidas: phenix@phenixonline.com.br','',
    'Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arroio do Sal/RS'
   ].join('\n');
-  if(smtpUsuario&&smtpSenha){const transporte=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:smtpUsuario,pass:smtpSenha},connectionTimeout:15000,socketTimeout:20000});await transporte.sendMail({from:{name:nomeRemetente,address:remetente},to:data.email,subject:assunto,html,text})}else{const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:remetente,to:[data.email],subject:assunto,html,text})});if(!er.ok)throw new Error(`Serviço de e-mail respondeu ${er.status}`)}
+  await enviarEmail({para:data.email,assunto,html,text});
   await db.from('promocao_veste_phenix_30_anos').update({email_status:'enviado',email_confirmacao_enviado_em:new Date().toISOString(),email_ultimo_erro:null}).eq('id',data.id);return true
  }catch(e){console.error('Falha no e-mail',e);await db.from('promocao_veste_phenix_30_anos').update({email_status:'falhou',email_ultimo_erro:String(e).slice(0,500)}).eq('id',data.id);return false}
+}
+
+// Envio de e-mail (Gmail SMTP ou Resend). replyTo: para onde vão as respostas do destinatário.
+async function enviarEmail(m:{para:string;assunto:string;html:string;text:string;replyTo?:string}){
+ const resendKey=Deno.env.get('RESEND_API_KEY');const smtpUsuario=Deno.env.get('PROMO_SMTP_USUARIO');const smtpSenha=Deno.env.get('PROMO_SMTP_SENHA');const remetente=Deno.env.get('PROMO_FROM_EMAIL')||smtpUsuario;const nomeRemetente=Deno.env.get('PROMO_FROM_NAME')||'Promoção Veste Phenix 30 anos';
+ if(!remetente||(!resendKey&&(!smtpUsuario||!smtpSenha)))throw new Error('Envio de e-mail não configurado no servidor.');
+ if(smtpUsuario&&smtpSenha){const transporte=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:smtpUsuario,pass:smtpSenha},connectionTimeout:15000,socketTimeout:20000});await transporte.sendMail({from:{name:nomeRemetente,address:remetente},to:m.para,subject:m.assunto,html:m.html,text:m.text,...(m.replyTo?{replyTo:m.replyTo}:{})})}
+ else{const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:remetente,to:[m.para],subject:m.assunto,html:m.html,text:m.text,...(m.replyTo?{reply_to:m.replyTo}:{})})});if(!er.ok)throw new Error(`Serviço de e-mail respondeu ${er.status}`)}
+}
+
+// Ações do painel admin: exigem usuário logado com perfil admin ativo.
+// deno-lint-ignore no-explicit-any -- tipagem genérica do supabase-js via esm.sh não infere as tabelas
+async function exigirAdmin(req:Request,db:any):Promise<string|Response>{
+ const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');
+ const{data:u,error:erroUsuario}=await db.auth.getUser(token);
+ if(erroUsuario||!u?.user)return json({ok:false,mensagem:'Faça login como administrador.'},401);
+ const{data:perfil}=await db.from('perfis').select('tipo_perfil,ativo').eq('user_id',u.user.id).maybeSingle();
+ if(perfil?.tipo_perfil!=='admin'||perfil?.ativo!==true)return json({ok:false,mensagem:'Somente administrador pode fazer isso.'},403);
+ return u.user.id;
+}
+
+// Comunicado ao contemplado da apuração vigente, por e-mail ou WhatsApp (WAHA). Disparo manual pelo painel.
+async function comunicarContemplado(req:Request,b:{apuracao_id?:unknown;canal?:unknown}){
+ const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+ const admin=await exigirAdmin(req,db);if(admin instanceof Response)return admin;
+ const canal=b.canal==='whatsapp'?'whatsapp':b.canal==='email'?'email':null;
+ if(!canal||typeof b.apuracao_id!=='string')return json({ok:false,mensagem:'Informe a apuração e o canal (email ou whatsapp).'},400);
+ const{data:ap,error:erroAp}=await db.from('promocao_veste_phenix_30_anos_apuracoes').select('id,numero_loteria,data_extracao,vencedor_inscricao_id,vencedor_numero_sorte,revertida_em').eq('id',b.apuracao_id).maybeSingle();
+ if(erroAp)throw erroAp;
+ if(!ap||ap.revertida_em)return json({ok:false,mensagem:'Apuração não encontrada ou revertida.'},404);
+ const{data:insc,error:erroInsc}=await db.from('promocao_veste_phenix_30_anos').select('nome_completo,email,telefone,origem').eq('id',ap.vencedor_inscricao_id).maybeSingle();
+ if(erroInsc)throw erroInsc;
+ if(!insc)return json({ok:false,mensagem:'Inscrição do contemplado não encontrada.'},404);
+ const c={nome:insc.nome_completo,email:insc.email,telefone:insc.telefone,numeroSorte:Number(ap.vencedor_numero_sorte),numeroLoteria:Number(ap.numero_loteria),dataExtracao:String(ap.data_extracao),teste:insc.origem==='formulario_teste'};
+ try{
+  if(canal==='email'){const m=emailContemplado(c);await enviarEmail({para:c.email,assunto:m.assunto,html:m.html,text:m.text,replyTo:CONTATO_PHENIX})}
+  else await enviarWhatsApp(c.telefone,whatsappContemplado(c));
+ }catch(e){
+  const msg=e instanceof Error?e.message:String(e);console.error('comunicado contemplado',canal,msg);
+  await db.from('promocao_veste_phenix_30_anos_apuracoes').update({comunicado_ultimo_erro:`${canal}: ${msg}`.slice(0,500)}).eq('id',ap.id);
+  return json({ok:false,mensagem:`Não foi possível enviar pelo ${canal==='email'?'e-mail':'WhatsApp'}: ${msg}`},502);
+ }
+ const agora=new Date().toISOString();
+ await db.from('promocao_veste_phenix_30_anos_apuracoes').update(canal==='email'?{comunicado_email_em:agora,comunicado_email_por:admin,comunicado_ultimo_erro:null}:{comunicado_whatsapp_em:agora,comunicado_whatsapp_por:admin,comunicado_ultimo_erro:null}).eq('id',ap.id);
+ return json({ok:true,canal,enviado_em:agora});
 }
 
 // Ação do painel admin: reenvia as confirmações que falharam (ex.: cota diária do Gmail esgotada).
@@ -91,11 +137,7 @@ Você recebeu este e-mail porque se inscreveu na promoção Veste Phenix 30 anos
 const LOTE_REENVIO=20;
 async function reenviarEmails(req:Request){
  const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
- const token=(req.headers.get('Authorization')||'').replace(/^Bearers+/i,'');
- const{data:u,error:erroUsuario}=await db.auth.getUser(token);
- if(erroUsuario||!u?.user)return json({ok:false,mensagem:'Faça login como administrador.'},401);
- const{data:perfil}=await db.from('perfis').select('tipo_perfil,ativo').eq('user_id',u.user.id).maybeSingle();
- if(perfil?.tipo_perfil!=='admin'||perfil?.ativo!==true)return json({ok:false,mensagem:'Somente administrador pode reenviar e-mails.'},403);
+ const admin=await exigirAdmin(req,db);if(admin instanceof Response)return admin;
  const{data:linhas,error}=await db.from('promocao_veste_phenix_30_anos_com_numeros').select('id,nome_completo,email,numeros_sorte,origem,email_tentativas').in('email_status',['falhou','aguardando_configuracao']).order('criado_em').limit(LOTE_REENVIO);
  if(error)throw error;
  let enviados=0,falharam=0;
@@ -109,7 +151,7 @@ async function reenviarEmails(req:Request){
 }
 
 Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});if(req.method!=='POST')return json({ok:false,mensagem:'Método não permitido.'},405);
- try{const b=await req.json();if(b?.acao==='reenviar_emails')return await reenviarEmails(req);const cpf=String(b.cpf||'').replace(/\D/g,'');const cnpj=String(b.cnpj||'').replace(/\D/g,'');const agora=Date.now();const inicio=Date.parse('2026-10-06T00:00:00-03:00'),fim=Date.parse('2026-10-08T23:59:59-03:00');
+ try{const b=await req.json();if(b?.acao==='reenviar_emails')return await reenviarEmails(req);if(b?.acao==='comunicar_contemplado')return await comunicarContemplado(req,b);const cpf=String(b.cpf||'').replace(/\D/g,'');const cnpj=String(b.cnpj||'').replace(/\D/g,'');const agora=Date.now();const inicio=Date.parse('2026-10-06T00:00:00-03:00'),fim=Date.parse('2026-10-08T23:59:59-03:00');
   // O modo teste só vale antes da abertura: em 06/10 00:00 as inscrições passam a ser oficiais sozinhas,
   // e o cron limpar-testes-veste-phenix apaga as de teste no mesmo horário.
   const modoTeste=Deno.env.get('PROMO_MODO_TESTE')==='true'&&agora<inicio;

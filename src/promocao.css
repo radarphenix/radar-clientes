@@ -106,3 +106,12 @@
 .relatorio-produtos-detalhe dd{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .relatorio-produtos-vazio{margin-top:20px;padding:24px;text-align:center;color:#6d7f8b;border:1px dashed #c3d4df;border-radius:10px}
 @media(max-width:760px){.relatorio-produtos-indicadores{grid-template-columns:1fr 1fr 1fr}.relatorio-produtos-indicadores strong{font-size:20px}.relatorio-produtos-filtros{grid-template-columns:1fr}.relatorio-produtos-acoes{width:100%}.relatorio-produtos-acoes button{flex:1}}
+
+/* Totais em linha flexível (inscrições, válidas, e-mails com falha + botões). */
+.promocao-resumo{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.promocao-resumo strong{margin-left:6px}
+/* Comunicado ao contemplado. */
+.promocao-comunicado{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.promocao-comunicado button{flex:1 1 220px}
+.promocao-contemplado-teste{font-weight:700}
+.promocao-vencedor small{color:#754508;opacity:.85}
