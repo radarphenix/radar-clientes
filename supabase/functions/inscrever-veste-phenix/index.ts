@@ -7,6 +7,9 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,
 const esc=(v:string)=>v.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
 const cnpjValido=(c:string)=>{if(!/^\d{14}$/.test(c)||/^(\d)\1+$/.test(c))return false;const calc=(n:number)=>{const p=n===12?[5,4,3,2,9,8,7,6,5,4,3,2]:[6,5,4,3,2,9,8,7,6,5,4,3,2];const r=p.reduce((s,x,i)=>s+(+c[i]*x),0)%11;return r<2?0:11-r};return calc(12)===+c[12]&&calc(13)===+c[13]};
 const cpfValido=(c:string)=>{if(!/^\d{11}$/.test(c)||/^(\d)\1+$/.test(c))return false;const dig=(n:number)=>{let s=0;for(let i=0;i<n;i++)s+=Number(c[i])*(n+1-i);const r=(s*10)%11;return r===10?0:r};return dig(9)===Number(c[9])&&dig(10)===Number(c[10])};
+// Mesmas listas do FormularioPromocao.jsx.
+const UFS=new Set('AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' '));
+const SEGMENTOS=new Set(['Papel e celulose','Tissue','Papel cartão','Embalagens','Reciclagem','Tratamento de efluentes','Engrossadores','Mineração','Outro segmento industrial']);
 const limite=(v:unknown,max:number)=>typeof v==='string'&&v.trim().length>0&&v.length<=max;
 const hash=async(v:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 // Rate limit por chave SHA-256 (sem PII em claro). Se o RPC falhar, não bloqueia a inscrição.
@@ -94,10 +97,15 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   // Até 60 envios por minuto por conexão: o Wi-Fi da feira e o 4G (CGNAT) juntam muita gente num IP só;
   // o limite só freia disparo automático. Fraude real é barrada pelo limite por CPF e pelos documentos na entrega do prêmio.
   if(ip&&!await dentroDoLimite(db,`ip:${ip}`,60,60))return json({ok:false,mensagem:'Muitos cadastros a partir desta conexão em pouco tempo. Aguarde um minuto e tente novamente.'},429);
+  // Teto por hora protege a cota diária do Gmail que envia as confirmações.
+  if(ip&&!await dentroDoLimite(db,`iph:${ip}`,300,3600))return json({ok:false,mensagem:'Muitos cadastros a partir desta conexão. Aguarde alguns minutos e tente novamente.'},429);
   if(!limite(b.nome_completo,160)||!limite(b.email,254)||!limite(b.telefone,30)||!limite(b.empresa,160)||!limite(b.cargo,120)||!limite(b.cidade,120))return json({ok:false,mensagem:'Preencha os campos obrigatórios com tamanho válido.'},400);
   if(!b.maior_18||!b.aceite_regulamento||!b.aceite_privacidade)return json({ok:false,mensagem:'Aceites obrigatórios não confirmados.'},400);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email||'')))return json({ok:false,mensagem:'E-mail inválido.'},400);
   if(!cpfValido(cpf))return json({ok:false,mensagem:'CPF inválido.'},400);if(cnpj&&!cnpjValido(cnpj))return json({ok:false,mensagem:'CNPJ inválido.'},400);
+  if(!UFS.has(String(b.uf||'').toUpperCase())||!SEGMENTOS.has(String(b.segmento||'')))return json({ok:false,mensagem:'Selecione o estado e o segmento da lista.'},400);
   if(!await dentroDoLimite(db,`cpf:${cpf}`,5,3600))return json({ok:false,mensagem:'Muitas tentativas para este CPF. Aguarde uma hora e tente novamente.'},429);
+  // Evita usar o formulário para disparar e-mails a terceiros: até 3 inscrições por dia para o mesmo endereço.
+  if(!await dentroDoLimite(db,`email:${String(b.email).trim().toLowerCase()}`,3,86400))return json({ok:false,mensagem:'Este e-mail atingiu o limite de inscrições de hoje. Use outro e-mail ou tente amanhã.'},429);
   const payload={p_nome_completo:String(b.nome_completo||'').trim(),p_cpf:cpf,p_email:String(b.email||'').trim().toLowerCase(),p_telefone:String(b.telefone||'').trim(),p_empresa:String(b.empresa||'').trim(),p_cnpj:cnpj||null,p_cargo:String(b.cargo||'').trim(),p_cidade:String(b.cidade||'').trim(),p_uf:String(b.uf||'').toUpperCase(),p_segmento:String(b.segmento||''),p_relacao_phenix:String(b.relacao_phenix||''),p_aceite_marketing:!!b.aceite_marketing,p_origem:modoTeste?'formulario_teste':'formulario_web'};
   const{data:linhas,error}=await db.rpc('inscrever_veste_phenix_completo',payload);
   if(error){if(error.code==='23505')return json({ok:false,mensagem:'Este CPF já possui uma inscrição e números da sorte.'},409);console.error(error);return json({ok:false,mensagem:'Não foi possível concluir a inscrição agora.'},500)}
