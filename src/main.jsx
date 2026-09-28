@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import FormularioPromocao from './FormularioPromocao.jsx'
 import FeiraVestePhenix from './FeiraVestePhenix.jsx'
+import { iniciarVerificacaoAtualizacao } from './atualizacaoApp.js'
 
 // Página pública sem login e sem menu — só alcançável pelo link direto.
 const ROTA_PROMOCAO_VESTE_PHENIX = '/promo/veste-phenix'
@@ -41,6 +42,8 @@ if (ehPromocao) {
 // A feira tem página própria (feira/veste-phenix.html) com manifesto, ícones e título
 // do Veste Phenix já no HTML — trocar o manifesto via script não funciona para instalar.
 if (ehFeiraVestePhenix) identidadeVestePhenix('Veste Phenix — Feira')
+// Tablets da feira ficam abertos o dia todo: buscam versão nova e recarregam em momento seguro.
+if (ehPromocao || ehFeiraVestePhenix) iniciarVerificacaoAtualizacao()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

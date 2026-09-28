@@ -15,6 +15,8 @@ export default function PromocaoVestePhenix() {
   const [resultadoLimpeza, setResultadoLimpeza] = useState("");
   const [revertendo, setRevertendo] = useState(false);
   const [revertendoTodos, setRevertendoTodos] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [resultadoReenvio, setResultadoReenvio] = useState("");
 
   async function carregar() {
     setCarregando(true);
@@ -31,6 +33,37 @@ export default function PromocaoVestePhenix() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carregamento inicial da lista
     carregar();
   }, []);
+
+  const falhasEmail = inscricoes.filter((i) => ["falhou", "aguardando_configuracao"].includes(i.email_status)).length;
+
+  // Reenvia em lotes as confirmações que falharam (ex.: cota diária do Gmail esgotada durante a feira).
+  async function reenviarEmails() {
+    setReenviando(true);
+    setResultadoReenvio("");
+    let enviados = 0;
+    let restantes = falhasEmail;
+    try {
+      for (let lote = 0; lote < 10 && restantes > 0; lote++) {
+        const { data, error } = await supabase.functions.invoke("inscrever-veste-phenix", { body: { acao: "reenviar_emails" } });
+        if (error || !data?.ok) {
+          let msg = "Não foi possível reenviar agora.";
+          try { const corpo = await error?.context?.json?.(); if (corpo?.mensagem) msg = corpo.mensagem; } catch { /* sem JSON */ }
+          setResultadoReenvio(msg);
+          return;
+        }
+        enviados += data.enviados;
+        restantes = data.restantes;
+        if (!data.enviados) break;
+      }
+      setResultadoReenvio(
+        `${enviados} ${enviados === 1 ? "e-mail reenviado" : "e-mails reenviados"}.` +
+          (restantes ? ` ${restantes} ainda sem envio — provavelmente a cota diária do Gmail; tente de novo mais tarde.` : ""),
+      );
+    } finally {
+      setReenviando(false);
+      carregar();
+    }
+  }
 
   function exportar() {
     const linhas = inscricoes.map((i) => ({
@@ -51,6 +84,7 @@ export default function PromocaoVestePhenix() {
       Status: i.status,
       "Inscrição em": i.criado_em,
       "E-mail enviado em": i.email_confirmacao_enviado_em || "",
+      "Status do e-mail": i.email_status || "",
     }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(
@@ -284,10 +318,16 @@ export default function PromocaoVestePhenix() {
           <span>inscrições totais</span>
           <strong>{inscricoes.filter((i) => i.status === "valida").length}</strong>
           <span>válidas</span>
+          <strong>{falhasEmail}</strong>
+          <span>e-mails com falha</span>
           <button type="button" onClick={exportar} disabled={!inscricoes.length}>
             Exportar Excel
           </button>
+          <button type="button" className="promocao-botao-secundario" onClick={reenviarEmails} disabled={!falhasEmail || reenviando}>
+            {reenviando ? "Reenviando…" : "Reenviar e-mails com falha"}
+          </button>
         </div>
+        {resultadoReenvio && <p className="promocao-resultado-limpeza">{resultadoReenvio}</p>}
         {carregando ? (
           <p>Carregando…</p>
         ) : (

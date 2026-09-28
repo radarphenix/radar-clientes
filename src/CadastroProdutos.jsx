@@ -1,5 +1,5 @@
 import React from 'react'
-import { supabase } from './supabaseClient'
+import { enviarCadastro, enfileirar, novoEnvioId } from './filaCadastroProdutos'
 import './cadastro-produtos-feira.css'
 const vazio = { empresa:'', contato:'', telefone:'', email:'', responsavel:'', maquina:'', papel:'', velocidade_maquina:'', informacoes_adicionais:'' }
 const itemVazio = { modelo:'', posicao:'', comprimento:'', largura:'', espessura:'', cfm:'', gramatura:'', teflonada:false, durabilidade:'' }
@@ -46,6 +46,7 @@ export default function CadastroProdutos({ voltarMenu }) {
   const [f, setF] = React.useState(inicial?.f || vazio), [itensBrutos, setItens] = React.useState(inicial?.itens || []), [aberto, setAberto] = React.useState(null)
   const [erro, setErro] = React.useState(''), [salvando, setSalvando] = React.useState(false)
   const [erros, setErros] = React.useState({}), [salvos, setSalvos] = React.useState(0), [semMedidas, setSemMedidas] = React.useState(null)
+  const [avisoFila, setAvisoFila] = React.useState(false)
   const [aviso, setAviso] = React.useState(inicial?.itens?.length ? 'Cadastro em andamento recuperado neste aparelho. Confira e salve quando terminar.' : '')
   const refs = React.useRef({})
   const itens = numerar(itensBrutos)
@@ -84,16 +85,24 @@ export default function CadastroProdutos({ voltarMenu }) {
     if(!confirmado && (!itens.length || itens.some(semMedida))){ setErro(''); setSemMedidas({nova}); return }
     setSemMedidas(null); setSalvando(true); setErro('')
     // Sem produto, as condições de operação ficam ocultas: não envia valores antigos escondidos.
-    const body = { ...f, ...(itens.length ? {} : { velocidade_maquina:'', informacoes_adicionais:'' }), itens: itens.map(paraEnvio) }
-    const {data,error}=await supabase.functions.invoke('cadastrar-produto-feira',{body})
+    const body = { ...f, ...(itens.length ? {} : { velocidade_maquina:'', informacoes_adicionais:'' }), itens: itens.map(paraEnvio), envio_id: novoEnvioId() }
+    const r = await enviarCadastro(body)
     setSalvando(false)
-    if(error){ let msg='Não foi possível gravar agora. Confira a conexão e tente novamente. O cadastro continua guardado neste aparelho.'; try{ const corpo=await error.context?.json?.(); if(corpo?.mensagem)msg=corpo.mensagem }catch{/* sem JSON */} setErro(data?.mensagem||msg); return }
+    if(r.mensagem){ setErro(r.mensagem); return }
+    // Sem internet (ou servidor fora): guarda na fila do aparelho e segue o atendimento normalmente.
+    const naFila = Boolean(r.temporario)
+    if(naFila) enfileirar(body)
+    setAvisoFila(naFila)
     const contato = { empresa:f.empresa, contato:f.contato, telefone:f.telefone, email:f.email, responsavel:f.responsavel }
     setItens([]); setAberto(null)
     if(nova){
       setF({...vazio,...contato}); setErros({}); setSalvos(n=>n+1)
       const qtd = itens.length ? ` com ${itens.length} ${itens.length===1?'produto':'produtos'}` : ''
-      setAviso(f.maquina.trim()?`Máquina "${f.maquina.trim()}" salva${qtd}. Os dados do contato foram mantidos para a próxima.`:`Cadastro salvo${qtd}. Os dados do contato foram mantidos para a próxima.`); window.scrollTo(0,0)
+      const maquina = f.maquina.trim()
+      const quem = maquina ? `A máquina "${maquina}"` : 'O cadastro', g = maquina ? 'a' : 'o'
+      setAviso(naFila
+        ? `Sem internet agora. ${quem}${qtd} ficou guardad${g} neste aparelho e será enviad${g} automaticamente quando a conexão voltar. Os dados do contato foram mantidos para a próxima.`
+        : `${quem}${qtd} foi salv${g}. Os dados do contato foram mantidos para a próxima.`); window.scrollTo(0,0)
     } else { setF(vazio); gravarRascunho({ f:vazio, itens:[] }); voltarMenu() }
   }
 
@@ -147,7 +156,7 @@ export default function CadastroProdutos({ voltarMenu }) {
 
       <form className="cadastro-card" onSubmit={e=>{e.preventDefault();salvar(false)}} noValidate>
         <div className="cadastro-titulo"><h2>Cadastro de Produtos</h2><p>Campos com <i className="obrig">*</i> são obrigatórios. Os demais podem ficar em branco.</p></div>
-        {aviso&&<p className="aviso-ok" role="status">{aviso}</p>}
+        {aviso&&<p className={avisoFila?'aviso-fila':'aviso-ok'} role="status">{aviso}</p>}
 
         <section className="bloco">
           <h3><b>1</b>Contato e responsável</h3>

@@ -19,10 +19,10 @@ async function dentroDoLimite(db:{rpc:(fn:string,args:Record<string,unknown>)=>P
  return data!==false;
 }
 
-async function enviarConfirmacao(db:ReturnType<typeof createClient>,data:{id:string;numeros_sorte:number[];nome_completo:string;email:string},modoTeste:boolean){
+async function enviarConfirmacao(db:ReturnType<typeof createClient>,data:{id:string;numeros_sorte:number[];nome_completo:string;email:string;tentativa?:number},modoTeste:boolean):Promise<boolean>{
  const resendKey=Deno.env.get('RESEND_API_KEY');const smtpUsuario=Deno.env.get('PROMO_SMTP_USUARIO');const smtpSenha=Deno.env.get('PROMO_SMTP_SENHA');const remetente=Deno.env.get('PROMO_FROM_EMAIL')||smtpUsuario;const nomeRemetente=Deno.env.get('PROMO_FROM_NAME')||'Promoção Veste Phenix 30 anos';
- if(!remetente||(!resendKey&&(!smtpUsuario||!smtpSenha))){await db.from('promocao_veste_phenix_30_anos').update({email_status:'aguardando_configuracao'}).eq('id',data.id);return}
- try{await db.from('promocao_veste_phenix_30_anos').update({email_status:'enviando',email_tentativas:1,email_ultimo_erro:null}).eq('id',data.id);
+ if(!remetente||(!resendKey&&(!smtpUsuario||!smtpSenha))){await db.from('promocao_veste_phenix_30_anos').update({email_status:'aguardando_configuracao'}).eq('id',data.id);return false}
+ try{await db.from('promocao_veste_phenix_30_anos').update({email_status:'enviando',email_tentativas:data.tentativa??1,email_ultimo_erro:null}).eq('id',data.id);
   const numeros=data.numeros_sorte.map(n=>String(n).padStart(5,'0')).sort();
   const SITE='https://radarphenix.pages.dev';
   const primeiroNome=data.nome_completo.trim().split(/\s+/)[0]||data.nome_completo;
@@ -82,12 +82,34 @@ Você recebeu este e-mail porque se inscreveu na promoção Veste Phenix 30 anos
    'Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arroio do Sal/RS'
   ].join('\n');
   if(smtpUsuario&&smtpSenha){const transporte=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:smtpUsuario,pass:smtpSenha},connectionTimeout:15000,socketTimeout:20000});await transporte.sendMail({from:{name:nomeRemetente,address:remetente},to:data.email,subject:assunto,html,text})}else{const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:remetente,to:[data.email],subject:assunto,html,text})});if(!er.ok)throw new Error(`Serviço de e-mail respondeu ${er.status}`)}
-  await db.from('promocao_veste_phenix_30_anos').update({email_status:'enviado',email_confirmacao_enviado_em:new Date().toISOString(),email_ultimo_erro:null}).eq('id',data.id)
- }catch(e){console.error('Falha no e-mail',e);await db.from('promocao_veste_phenix_30_anos').update({email_status:'falhou',email_ultimo_erro:String(e).slice(0,500)}).eq('id',data.id)}
+  await db.from('promocao_veste_phenix_30_anos').update({email_status:'enviado',email_confirmacao_enviado_em:new Date().toISOString(),email_ultimo_erro:null}).eq('id',data.id);return true
+ }catch(e){console.error('Falha no e-mail',e);await db.from('promocao_veste_phenix_30_anos').update({email_status:'falhou',email_ultimo_erro:String(e).slice(0,500)}).eq('id',data.id);return false}
+}
+
+// Ação do painel admin: reenvia as confirmações que falharam (ex.: cota diária do Gmail esgotada).
+// Lote pequeno por chamada; para cedo se as primeiras falharem (cota ainda esgotada).
+const LOTE_REENVIO=20;
+async function reenviarEmails(req:Request){
+ const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+ const token=(req.headers.get('Authorization')||'').replace(/^Bearers+/i,'');
+ const{data:u,error:erroUsuario}=await db.auth.getUser(token);
+ if(erroUsuario||!u?.user)return json({ok:false,mensagem:'Faça login como administrador.'},401);
+ const{data:perfil}=await db.from('perfis').select('tipo_perfil,ativo').eq('user_id',u.user.id).maybeSingle();
+ if(perfil?.tipo_perfil!=='admin'||perfil?.ativo!==true)return json({ok:false,mensagem:'Somente administrador pode reenviar e-mails.'},403);
+ const{data:linhas,error}=await db.from('promocao_veste_phenix_30_anos_com_numeros').select('id,nome_completo,email,numeros_sorte,origem,email_tentativas').in('email_status',['falhou','aguardando_configuracao']).order('criado_em').limit(LOTE_REENVIO);
+ if(error)throw error;
+ let enviados=0,falharam=0;
+ for(const l of linhas??[]){
+  const ok=await enviarConfirmacao(db,{id:l.id,numeros_sorte:l.numeros_sorte,nome_completo:l.nome_completo,email:l.email,tentativa:(l.email_tentativas??0)+1},l.origem==='formulario_teste');
+  if(ok)enviados++;else falharam++;
+  if(!enviados&&falharam>=3)break;
+ }
+ const{count}=await db.from('promocao_veste_phenix_30_anos').select('id',{count:'exact',head:true}).in('email_status',['falhou','aguardando_configuracao']);
+ return json({ok:true,enviados,falharam,restantes:count??0});
 }
 
 Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});if(req.method!=='POST')return json({ok:false,mensagem:'Método não permitido.'},405);
- try{const b=await req.json();const cpf=String(b.cpf||'').replace(/\D/g,'');const cnpj=String(b.cnpj||'').replace(/\D/g,'');const agora=Date.now();const inicio=Date.parse('2026-10-06T00:00:00-03:00'),fim=Date.parse('2026-10-08T23:59:59-03:00');
+ try{const b=await req.json();if(b?.acao==='reenviar_emails')return await reenviarEmails(req);const cpf=String(b.cpf||'').replace(/\D/g,'');const cnpj=String(b.cnpj||'').replace(/\D/g,'');const agora=Date.now();const inicio=Date.parse('2026-10-06T00:00:00-03:00'),fim=Date.parse('2026-10-08T23:59:59-03:00');
   // O modo teste só vale antes da abertura: em 06/10 00:00 as inscrições passam a ser oficiais sozinhas,
   // e o cron limpar-testes-veste-phenix apaga as de teste no mesmo horário.
   const modoTeste=Deno.env.get('PROMO_MODO_TESTE')==='true'&&agora<inicio;

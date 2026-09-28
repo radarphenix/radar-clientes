@@ -13,6 +13,7 @@ const inteiro = (v:string|null) => v===null || /^\d{1,9}$/.test(v)
 const telefoneOk = (v:string) => { const d=v.replace(/\D/g,''); return /^[1-9][1-9]/.test(d) && (d.length===10 || (d.length===11 && d[2]==='9')) }
 const emailOk = (v:string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)
 const MAX_POR_PRODUTO = 3, MAX_ITENS = 40
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 type Item = Record<string,unknown>
 
 // Valida um produto da máquina; devolve a mensagem de erro ou os campos da linha.
@@ -40,7 +41,9 @@ Deno.serve(async req => {
     // Tela nova envia itens[]; a versão antiga (ainda em cache em algum tablet) envia um produto só, no corpo.
     const itens:Item[]=Array.isArray(b.itens)?b.itens:[b]
     if(itens.length>MAX_ITENS)return json({ok:false,mensagem:'Produtos demais em um só cadastro.'},400)
-    const grupo_id=crypto.randomUUID(), contagem=new Map<string,number>(), linhas:Record<string,unknown>[]=[]
+    // envio_id vem do aparelho (fila offline): reenviar o mesmo cadastro não duplica as linhas.
+    const envioId=typeof b.envio_id==='string'&&UUID.test(b.envio_id)?b.envio_id.toLowerCase():null
+    const grupo_id=envioId??crypto.randomUUID(), contagem=new Map<string,number>(), linhas:Record<string,unknown>[]=[]
     for(const i of itens){
       const linha=produtoDaLinha(papel,i)
       if(typeof linha==='string')return json({ok:false,mensagem:linha},400)
@@ -55,6 +58,11 @@ Deno.serve(async req => {
     if(!linhas.length)linhas.push({...comum,...produtoDaLinha(papel,{}) as Record<string,unknown>,grupo_id,item:null})
 
     const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}})
+    if(envioId){
+      const {data:existente,error:erroBusca}=await db.from('cadastro_produtos_feira_phenix').select('id').eq('grupo_id',envioId).limit(1)
+      if(erroBusca)throw erroBusca
+      if(existente?.length)return json({ok:true,duplicado:true},200)
+    }
     // Um único insert com todas as linhas: grava tudo ou nada.
     const {error}=await db.from('cadastro_produtos_feira_phenix').insert(linhas)
     if(error)throw error
