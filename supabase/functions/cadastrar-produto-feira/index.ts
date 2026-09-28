@@ -12,24 +12,52 @@ const inteiro = (v:string|null) => v===null || /^\d{1,9}$/.test(v)
 // Fixo (10 dígitos) ou celular (11 dígitos, começando com 9 após o DDD).
 const telefoneOk = (v:string) => { const d=v.replace(/\D/g,''); return /^[1-9][1-9]/.test(d) && (d.length===10 || (d.length===11 && d[2]==='9')) }
 const emailOk = (v:string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)
+const MAX_POR_PRODUTO = 3, MAX_ITENS = 40
+type Item = Record<string,unknown>
+
+// Valida um produto da máquina; devolve a mensagem de erro ou os campos da linha.
+function produtoDaLinha(papel:string|null,i:Item):string|Record<string,unknown>{
+  const produto=opcional(i.produto,80), modelo=opcional(i.modelo,80), posicao=opcional(i.posicao,160)
+  const linha={produto,modelo,posicao:produto&&precisaPosicao(produto)?posicao:null,comprimento:opcional(i.comprimento,30),largura:opcional(i.largura,30),cfm:opcional(i.cfm,80),gramatura:opcional(i.gramatura,80),espessura:opcional(i.espessura,80),teflonada:produto==='Secadora Espiral'&&i.teflonada===true,durabilidade:opcional(i.durabilidade,160)}
+  if(!decimal3(linha.comprimento)||!decimal3(linha.largura)||!decimal3(linha.espessura)||!inteiro(linha.cfm)||!inteiro(linha.gramatura))return 'Use três casas decimais para comprimento, largura e espessura; CFM e gramatura devem ser inteiros.'
+  if(produto&&(!papel||!(produtos[papel as keyof typeof produtos] as readonly string[]).includes(produto)))return 'Combinação de papel e produto inválida.'
+  if(modelo&&(!produto||!modelos(papel!,produto).includes(modelo)))return 'Modelo inválido para o produto informado.'
+  return linha
+}
 
 Deno.serve(async req => {
   if(req.method==='OPTIONS') return new Response('ok',{headers:cors})
   if(req.method!=='POST') return json({ok:false,mensagem:'Método não permitido.'},405)
   try {
-    const b=await req.json(), papel=opcional(b.papel,20), produto=opcional(b.produto,80), modelo=opcional(b.modelo,80), posicao=opcional(b.posicao,160)
+    const b=await req.json(), papel=opcional(b.papel,20)
     const email=opcional(b.email,254)?.toLowerCase() ?? null
-    const dados={empresa:texto(b.empresa,160),contato:texto(b.contato,160),telefone:texto(b.telefone,30),email,responsavel:texto(b.responsavel,160),maquina:opcional(b.maquina,160),tipo_papel:papel,produto,modelo,posicao:produto&&precisaPosicao(produto)?posicao:null,comprimento:opcional(b.comprimento,30),largura:opcional(b.largura,30),cfm:opcional(b.cfm,80),gramatura:opcional(b.gramatura,80),espessura:opcional(b.espessura,80),teflonada:produto==='Secadora Espiral'&&b.teflonada===true,durabilidade:opcional(b.durabilidade,160),velocidade_maquina:opcional(b.velocidade_maquina,160),informacoes_adicionais:texto(b.informacoes_adicionais,5000)}
-    if(dados.empresa.length<2||dados.contato.length<2||dados.responsavel.length<2||!dados.telefone)return json({ok:false,mensagem:'Preencha empresa, contato, telefone e quem fez o cadastro.'},400)
-    if(!telefoneOk(dados.telefone))return json({ok:false,mensagem:'Telefone inválido. Informe DDD e número fixo (8 dígitos) ou celular (9 dígitos).'},400)
+    const comum={empresa:texto(b.empresa,160),contato:texto(b.contato,160),telefone:texto(b.telefone,30),email,responsavel:texto(b.responsavel,160),maquina:opcional(b.maquina,160),tipo_papel:papel,velocidade_maquina:opcional(b.velocidade_maquina,160),informacoes_adicionais:texto(b.informacoes_adicionais,5000)}
+    if(comum.empresa.length<2||comum.contato.length<2||comum.responsavel.length<2||!comum.telefone)return json({ok:false,mensagem:'Preencha empresa, contato, telefone e quem fez o cadastro.'},400)
+    if(!telefoneOk(comum.telefone))return json({ok:false,mensagem:'Telefone inválido. Informe DDD e número fixo (8 dígitos) ou celular (9 dígitos).'},400)
     if(email&&!emailOk(email))return json({ok:false,mensagem:'E-mail inválido.'},400)
-    if(!decimal3(dados.comprimento)||!decimal3(dados.largura)||!decimal3(dados.espessura)||!inteiro(dados.cfm)||!inteiro(dados.gramatura))return json({ok:false,mensagem:'Use três casas decimais para comprimento, largura e espessura; CFM e gramatura devem ser inteiros.'},400)
     if(papel&&!(papel in produtos))return json({ok:false,mensagem:'Tipo de papel inválido.'},400)
-    if(produto&&(!papel||!(produtos[papel as keyof typeof produtos] as readonly string[]).includes(produto)))return json({ok:false,mensagem:'Combinação de papel e produto inválida.'},400)
-    if(modelo&&(!produto||!modelos(papel!,produto).includes(modelo)))return json({ok:false,mensagem:'Modelo inválido para o produto informado.'},400)
+
+    // Tela nova envia itens[]; a versão antiga (ainda em cache em algum tablet) envia um produto só, no corpo.
+    const itens:Item[]=Array.isArray(b.itens)?b.itens:[b]
+    if(itens.length>MAX_ITENS)return json({ok:false,mensagem:'Produtos demais em um só cadastro.'},400)
+    const grupo_id=crypto.randomUUID(), contagem=new Map<string,number>(), linhas:Record<string,unknown>[]=[]
+    for(const i of itens){
+      const linha=produtoDaLinha(papel,i)
+      if(typeof linha==='string')return json({ok:false,mensagem:linha},400)
+      let item:number|null=null
+      if(linha.produto){
+        item=(contagem.get(linha.produto as string)??0)+1; contagem.set(linha.produto as string,item)
+        if(item>MAX_POR_PRODUTO)return json({ok:false,mensagem:`No máximo ${MAX_POR_PRODUTO} unidades de ${linha.produto} por máquina.`},400)
+      }
+      linhas.push({...comum,...linha,grupo_id,item})
+    }
+    // Sem nenhum produto, grava só contato e máquina (como antes).
+    if(!linhas.length)linhas.push({...comum,...produtoDaLinha(papel,{}) as Record<string,unknown>,grupo_id,item:null})
+
     const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}})
-    const {error}=await db.from('cadastro_produtos_feira_phenix').insert(dados)
+    // Um único insert com todas as linhas: grava tudo ou nada.
+    const {error}=await db.from('cadastro_produtos_feira_phenix').insert(linhas)
     if(error)throw error
-    return json({ok:true},201)
+    return json({ok:true,linhas:linhas.length},201)
   } catch(error) { console.error(error); return json({ok:false,mensagem:'Não foi possível gravar o cadastro agora.'},500) }
 })
