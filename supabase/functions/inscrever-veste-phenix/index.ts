@@ -50,8 +50,12 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   if(!modoTeste&&Deno.env.get('PROMO_INSCRICOES_ATIVAS')!=='true')return json({ok:false,mensagem:'As inscrições ainda não estão abertas.'},403);if(!modoTeste&&(agora<inicio||agora>fim))return json({ok:false,mensagem:'Inscrição fora do período oficial da promoção.'},403);
   const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
   const ip=req.headers.get('cf-connecting-ip')||req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'';
-  if(ip&&!await dentroDoLimite(db,`ip:${ip}`,20,600))return json({ok:false,mensagem:'Muitas tentativas a partir desta conexão. Aguarde alguns minutos e tente novamente.'},429);
-  if(!await validarTurnstile(b.turnstile_token,ip))return json({ok:false,mensagem:'Não foi possível validar a verificação de segurança. Atualize a página e tente novamente.'},403);
+  // Totem do stand: código secreto no aparelho dispensa captcha e limite por IP (o limite por CPF continua).
+  const totem=Deno.env.get('PROMO_TOTEM_TOKEN')||'';const totemEnviado=typeof b.totem_token==='string'?b.totem_token:'';
+  const ehTotem=!!totem&&!!totemEnviado&&await hash(totemEnviado)===await hash(totem);
+  if(totemEnviado&&!ehTotem)return json({ok:false,mensagem:'Este tablet não está mais autorizado como totem. Avise a equipe da Phenix.'},403);
+  if(!ehTotem&&ip&&!await dentroDoLimite(db,`ip:${ip}`,60,600))return json({ok:false,mensagem:'Muitas tentativas a partir desta conexão. Aguarde alguns minutos e tente novamente.'},429);
+  if(!ehTotem&&!await validarTurnstile(b.turnstile_token,ip))return json({ok:false,mensagem:'Não foi possível validar a verificação de segurança. Atualize a página e tente novamente.'},403);
   if(!limite(b.nome_completo,160)||!limite(b.email,254)||!limite(b.telefone,30)||!limite(b.empresa,160)||!limite(b.cargo,120)||!limite(b.cidade,120))return json({ok:false,mensagem:'Preencha os campos obrigatórios com tamanho válido.'},400);
   if(!b.maior_18||!b.aceite_regulamento||!b.aceite_privacidade)return json({ok:false,mensagem:'Aceites obrigatórios não confirmados.'},400);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email||'')))return json({ok:false,mensagem:'E-mail inválido.'},400);
   if(!cpfValido(cpf))return json({ok:false,mensagem:'CPF inválido.'},400);if(cnpj&&!cnpjValido(cnpj))return json({ok:false,mensagem:'CNPJ inválido.'},400);
