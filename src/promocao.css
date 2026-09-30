@@ -115,3 +115,5 @@
 .promocao-comunicado button{flex:1 1 220px}
 .promocao-contemplado-teste{font-weight:700}
 .promocao-vencedor small{color:#754508;opacity:.85}
+
+.promocao-historico-buscas{margin-top:14px;padding:14px 18px;border-radius:10px;background:#f4f7fa;border-left:4px solid #b9cad6;color:#29425a}.promocao-historico-buscas ol{margin:8px 0 0;padding-left:18px;display:grid;gap:8px}

@@ -22,6 +22,8 @@ export default function PromocaoVestePhenix() {
   const [revertendoTodos, setRevertendoTodos] = useState(false);
   const [reenviando, setReenviando] = useState(false);
   const [apuracaoVigente, setApuracaoVigente] = useState(null);
+  const [buscasAnteriores, setBuscasAnteriores] = useState([]);
+  const [buscandoProximo, setBuscandoProximo] = useState(false);
   const [comunicando, setComunicando] = useState("");
   const [resultadoComunicado, setResultadoComunicado] = useState("");
   const [resultadoReenvio, setResultadoReenvio] = useState("");
@@ -38,9 +40,11 @@ export default function PromocaoVestePhenix() {
       .from("promocao_veste_phenix_30_anos_apuracoes")
       .select("*")
       .is("revertida_em", null)
-      .order("executado_em", { ascending: false })
-      .limit(1);
-    setApuracaoVigente(ap?.[0] || null);
+      .order("executado_em", { ascending: false });
+    // Vigente = a busca mais recente ainda não desclassificada; as desclassificadas
+    // ficam como histórico (registro permanente das buscas anteriores).
+    setApuracaoVigente((ap || []).find((a) => !a.desclassificada_em) || null);
+    setBuscasAnteriores((ap || []).filter((a) => a.desclassificada_em).sort((a, b) => a.ordem_busca - b.ordem_busca));
     setCarregando(false);
   }
 
@@ -168,6 +172,42 @@ export default function PromocaoVestePhenix() {
     if (error && !msg) { try { msg = (await error.context?.json?.())?.mensagem; } catch { /* sem JSON */ } }
     setResultadoComunicado(error || !r?.ok ? msg || "Não foi possível enviar a prévia." : `Prévia enviada para ${para}.`);
     setComunicando("");
+  }
+
+  // Contemplado não atende aos critérios do regulamento: desclassifica com motivo
+  // registrado e passa ao número válido seguinte mais próximo do mesmo resultado.
+  async function buscarProximo() {
+    if (!apuracaoVigente?.id || !contemplado) return;
+    const motivo = prompt(
+      `Motivo da desclassificação de ${contemplado.nome_completo} (fica registrado no histórico e na auditoria):
+
+Ex.: informação falsa sobre a empresa; não respondeu no prazo de 10 dias úteis; impedido de participar (seção 4).`,
+    );
+    if (motivo === null) return;
+    if (motivo.trim().length < 10) return setErro("Descreva o motivo da desclassificação (mínimo de 10 caracteres).");
+    if (
+      !confirm(
+        `Desclassificar ${contemplado.nome_completo} e buscar o próximo número mais próximo de ${String(apuracaoVigente.numero_loteria).padStart(5, "0")}?
+
+Esta ação é definitiva e fica registrada.`,
+      )
+    ) {
+      return;
+    }
+    setBuscandoProximo(true);
+    setErro("");
+    setResultadoComunicado("");
+    const { data: r, error } = await supabase.rpc("nova_busca_veste_phenix", {
+      p_apuracao_id: apuracaoVigente.id,
+      p_motivo: motivo.trim(),
+    });
+    if (error) {
+      setErro(error.message);
+    } else {
+      setResultado(r?.[0]);
+      await carregar();
+    }
+    setBuscandoProximo(false);
   }
 
   async function reverterApuracao() {
@@ -302,7 +342,9 @@ export default function PromocaoVestePhenix() {
         {resultadoComunicado && !apuracaoVigente && <p className="promocao-resultado-limpeza">{resultadoComunicado}</p>}
         {apuracaoVigente && contemplado && (
           <div className="promocao-vencedor">
-            <b>Contemplado: {contemplado.nome_completo}</b>
+            <b>
+              Contemplado{apuracaoVigente.ordem_busca > 1 ? ` (${apuracaoVigente.ordem_busca}ª busca)` : ""}: {contemplado.nome_completo}
+            </b>
             <span>
               Número {String(apuracaoVigente.vencedor_numero_sorte).padStart(5, "0")} • Loteria Federal{" "}
               {String(apuracaoVigente.numero_loteria).padStart(5, "0")} de{" "}
@@ -341,14 +383,36 @@ export default function PromocaoVestePhenix() {
             {apuracaoVigente.comunicado_ultimo_erro && !resultadoComunicado && (
               <span className="mensagem-erro">Último erro: {apuracaoVigente.comunicado_ultimo_erro}</span>
             )}
-            <button
-              type="button"
-              className="promocao-botao-secundario"
-              onClick={reverterApuracao}
-              disabled={revertendo}
-            >
-              {revertendo ? "Revertendo…" : "Reverter apuração (teste)"}
-            </button>
+            <div className="promocao-comunicado">
+              <button type="button" className="promocao-botao-perigo" onClick={buscarProximo} disabled={buscandoProximo}>
+                {buscandoProximo ? "Buscando…" : "Desclassificar e buscar próximo"}
+              </button>
+              {contemplado.origem === "formulario_teste" && (
+                <button
+                  type="button"
+                  className="promocao-botao-secundario"
+                  onClick={reverterApuracao}
+                  disabled={revertendo}
+                >
+                  {revertendo ? "Revertendo…" : "Reverter apuração (teste)"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {buscasAnteriores.length > 0 && (
+          <div className="promocao-historico-buscas">
+            <b>Histórico de buscas — contemplados desclassificados</b>
+            <ol>
+              {buscasAnteriores.map((b) => (
+                <li key={b.id}>
+                  <strong>{b.ordem_busca}ª busca:</strong> {b.vencedor_nome_completo} • número{" "}
+                  {String(b.vencedor_numero_sorte).padStart(5, "0")} • diferença {b.diferenca_absoluta}
+                  <br />
+                  Desclassificado em {new Date(b.desclassificada_em).toLocaleString("pt-BR")} — {b.motivo_desclassificacao}
+                </li>
+              ))}
+            </ol>
           </div>
         )}
 
