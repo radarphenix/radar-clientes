@@ -4,11 +4,14 @@ import './index.css'
 import App from './App.jsx'
 import FormularioPromocao from './FormularioPromocao.jsx'
 import FeiraVestePhenix from './FeiraVestePhenix.jsx'
+import CadastroProdutosAvulso from './CadastroProdutosAvulso.jsx'
 import { iniciarVerificacaoAtualizacao } from './atualizacaoApp.js'
 
 // Página pública sem login e sem menu — só alcançável pelo link direto.
 const ROTA_PROMOCAO_VESTE_PHENIX = '/promo/veste-phenix'
 const ROTA_FEIRA_VESTE_PHENIX = '/feira/veste-phenix'
+// Link avulso do cadastro de produtos para vendedores — sufixo aleatório para não ser adivinhado.
+const ROTA_CADASTRO_PRODUTOS = '/feira/cp-nrkdyzu'
 // O Radar mora em /radar/ (escopo do app instalado). Quem entra pela raiz — links
 // antigos, e-mails de recuperação de senha, instalações antigas — vai para /radar/
 // sem recarregar, preservando ?query e #hash (tokens do Supabase Auth).
@@ -20,6 +23,7 @@ if (rotaInicial === '/') {
 const rota = window.location.pathname.replace(/\/+$/, '') || '/'
 const ehPromocao = rota === ROTA_PROMOCAO_VESTE_PHENIX
 const ehFeiraVestePhenix = rota === ROTA_FEIRA_VESTE_PHENIX
+const ehCadastroProdutos = rota === ROTA_CADASTRO_PRODUTOS
 
 function identidadeVestePhenix(titulo) {
   document.title = titulo
@@ -42,11 +46,20 @@ if (ehPromocao) {
 // A feira tem página própria (feira/veste-phenix.html) com manifesto, ícones e título
 // do Veste Phenix já no HTML — trocar o manifesto via script não funciona para instalar.
 if (ehFeiraVestePhenix) identidadeVestePhenix('Veste Phenix — Feira')
+if (ehCadastroProdutos) {
+  identidadeVestePhenix('Veste Phenix — Cadastro de Produtos')
+  // Não oferece instalar o Radar nem aparece em buscadores.
+  document.querySelector('link[rel="manifest"]')?.remove()
+  const robots = document.createElement('meta')
+  robots.name = 'robots'
+  robots.content = 'noindex, nofollow'
+  document.head.appendChild(robots)
+}
 // Tablets da feira ficam abertos o dia todo: buscam versão nova e recarregam em momento seguro.
 if (ehPromocao || ehFeiraVestePhenix) iniciarVerificacaoAtualizacao()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {ehPromocao ? <FormularioPromocao /> : ehFeiraVestePhenix ? <FeiraVestePhenix /> : <App />}
+    {ehPromocao ? <FormularioPromocao /> : ehFeiraVestePhenix ? <FeiraVestePhenix /> : ehCadastroProdutos ? <CadastroProdutosAvulso /> : <App />}
   </StrictMode>,
 )

@@ -112,7 +112,9 @@ export default function CadastroProdutos({ voltarMenu }) {
       setAviso(naFila
         ? `Sem internet agora. ${quem}${qtd} ficou guardad${g} neste aparelho e será enviad${g} automaticamente quando a conexão voltar. Os dados do contato foram mantidos para a próxima.`
         : `${quem}${qtd} foi salv${g}. Os dados do contato foram mantidos para a próxima.`); window.scrollTo(0,0)
-    } else { setF(vazio); gravarRascunho({ f:vazio, itens:[] }); voltarMenu() }
+    } else if(voltarMenu){ setF(vazio); gravarRascunho({ f:vazio, itens:[] }); voltarMenu() }
+    // Link avulso (sem menu): conclui o atendimento limpando tudo e confirmando na tela.
+    else { setF(vazio); gravarRascunho({ f:vazio, itens:[] }); setErros({}); setAviso(naFila ? 'Sem internet agora. O cadastro ficou guardado neste aparelho e será enviado automaticamente quando a conexão voltar.' : 'Cadastro salvo com sucesso.'); window.scrollTo(0,0) }
   }
 
   const campo=(k,label,props={})=>{const{onChange,dica,className='',obrigatorio,...rest}=props;return <label className={`campo ${className}`}><span>{label}{obrigatorio&&<i className="obrig" aria-hidden="true">*</i>}{dica&&<em>{dica}</em>}</span><input ref={el=>{if(el)refs.current[k]=el}} className={erros[k]?'invalido':''} aria-invalid={!!erros[k]} value={f[k]} onChange={onChange||((e)=>set(k,e.target.value))} onBlur={k==='email'||k==='telefone'?()=>{ const p=problemas(f)[k]; if(p&&f[k].trim())setErros(x=>({...x,[k]:p})) }:undefined} {...rest}/>{erros[k]&&<small className="campo-erro">{erros[k]}</small>}</label>}
@@ -204,10 +206,10 @@ export default function CadastroProdutos({ voltarMenu }) {
         {itens.length>0&&<p className="resumo-salvar">Ao salvar, {itens.length===1?'será gravado 1 produto':`serão gravados ${itens.length} produtos`}: {itens.map(nomeItem).join(', ')}.</p>}
         <div className="acoes-cadastro">
           <button type="button" className="botao-principal" disabled={salvando} onClick={()=>salvar(true)}>{salvando?'Salvando…':'Salvar e cadastrar outra máquina'}</button>
-          <button type="submit" className="botao-secundario" disabled={salvando}>Salvar e voltar ao menu</button>
+          <button type="submit" className="botao-secundario" disabled={salvando}>{voltarMenu?'Salvar e voltar ao menu':'Salvar e concluir'}</button>
           <div className="acoes-leves">
             <button type="button" className="botao-link" onClick={()=>{if(limparTudo('Limpar o formulário'))window.scrollTo(0,0)}}>Limpar formulário</button>
-            <button type="button" className="botao-link" onClick={()=>{if(limparTudo('Cancelar'))voltarMenu()}}>Cancelar</button>
+            {voltarMenu&&<button type="button" className="botao-link" onClick={()=>{if(limparTudo('Cancelar'))voltarMenu()}}>Cancelar</button>}
           </div>
         </div>
       </form>
