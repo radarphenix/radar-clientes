@@ -129,6 +129,12 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
   - usuário comum: 0 linhas;
   - admin: todas as linhas.
 
+## 4.1 Botão VestControl (demonstração)
+
+- Terceiro botão do menu da feira (`src/MenuFeira.jsx`). Abre `https://vestcontrol.pages.dev/demo?voltar=<origem>/feira/veste-phenix` na mesma janela.
+- O VestControl entra sozinho com um usuário de **Consulta** (somente leitura) da empresa fictícia **Cartiera**, mostra a faixa "Modo demonstração" e o botão **← Voltar ao Veste Phenix**, que encerra a sessão e volta para o menu da feira.
+- Toda a lógica de acesso vive no projeto VestControl (`app/demo`, Edge Function `demo-session`; ver `CONTEXTO_PROJETO.md` de lá). Aqui só existe o link; se o endereço do VestControl mudar, trocar `VESTCONTROL_DEMO` em `src/MenuFeira.jsx`.
+
 ## 5. Publicação
 
 - **Frontend**: push na `main` → Cloudflare Pages publica sozinho em ~1 min.
