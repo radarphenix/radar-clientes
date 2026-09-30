@@ -6,14 +6,15 @@ import { fileURLToPath } from 'node:url'
 const MANIFESTO_RADAR = /<link rel="manifest" href="\/manifest\.webmanifest"[^>]*>\s*/g
 
 // O vite-plugin-pwa injeta o manifesto do Radar em todas as páginas; a página da
-// feira precisa anunciar somente o manifesto do Veste Phenix.
+// feira precisa anunciar somente o manifesto do Veste Phenix, e as páginas avulsas
+// (promoção e cadastro de produtos) não anunciam manifesto nenhum.
 const manifestoSoDoRadar = {
   name: 'manifesto-so-do-radar',
   enforce: 'post',
   transformIndexHtml: {
     order: 'post',
     handler(html, ctx) {
-      return ctx.path.startsWith('/feira/') ? html.replace(MANIFESTO_RADAR, '') : html
+      return /^\/(feira|promo)\//.test(ctx.path) ? html.replace(MANIFESTO_RADAR, '') : html
     },
   },
 }
@@ -26,6 +27,9 @@ export default defineConfig({
         radar: fileURLToPath(new URL('./index.html', import.meta.url)),
         // Servida pelo Cloudflare em /feira/veste-phenix (URL sem .html).
         feira: fileURLToPath(new URL('./feira/veste-phenix.html', import.meta.url)),
+        // Páginas próprias para a aba e a prévia do link já nascerem com a cara do Veste Phenix.
+        cadastroProdutos: fileURLToPath(new URL('./feira/cp-nrkdyzu.html', import.meta.url)),
+        promo: fileURLToPath(new URL('./promo/veste-phenix.html', import.meta.url)),
       },
     },
   },
@@ -38,7 +42,7 @@ export default defineConfig({
         // /feira/veste-phenix vem da página própria pré-cacheada (feira/veste-phenix.html),
         // nunca do index.html do Radar. PDFs (ex.: /regulamento.pdf aberto em nova aba)
         // também são navegação e precisam ir ao servidor, senão abrem a tela do Radar.
-        navigateFallbackDenylist: [/^\/feira\//, /\.pdf(\?.*)?$/i],
+        navigateFallbackDenylist: [/^\/feira\//, /^\/promo\//, /\.pdf(\?.*)?$/i],
       },
       manifest: {
         name: 'Radar de Clientes Phenix',
