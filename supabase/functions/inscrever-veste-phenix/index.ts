@@ -55,10 +55,11 @@ ${p('Sua inscrição na promoção <b>Veste Phenix 30 anos</b> está confirmada.
 <tr><td class="px" style="padding:0 28px">${grade}</td></tr>
 <tr><td class="px" style="padding:14px 32px 0">${p('Guarde este e-mail: ele é o seu comprovante de participação.','text-align:center;font-size:13px;color:#5b6f82;margin:0')}</td></tr>
 <tr><td class="px" style="padding:26px 32px 0">${caixa('#0e5886','#f1f6fa','Como funciona a apuração',p('Em <b>10/10/2026</b> será usado o número de 5 algarismos do <b>1º prêmio da Loteria Federal</b>. Ganha quem tiver o número da sorte igual ou mais próximo dele.','font-size:14px;line-height:21px;margin:0 0 8px')+p('O resultado sai em até 5 dias úteis após a apuração, e a Phenix entra em contato com o contemplado.','font-size:14px;line-height:21px;margin:0'))}</td></tr>
+<tr><td class="px" style="padding:16px 32px 0">${caixa('#c0392b','#fdf0ef','Informações verdadeiras',p('Os dados informados no cadastro serão verificados antes da confirmação do contemplado. Se for comprovada informação <b>inverídica ou falsa</b>, o potencial vencedor será <b>desclassificado</b> e o prêmio passará ao próximo número da sorte mais próximo, conforme o regulamento.','font-size:14px;line-height:21px;margin:0'))}</td></tr>
 <tr><td class="px" style="padding:16px 32px 0">${caixa('#f4b13b','#fdf6e7','O prêmio',p('Experiência técnica comemorativa Phenix 30 anos no Rio Grande do Sul, incluindo <b>passeio de balão</b>, conforme o regulamento.','font-size:14px;line-height:21px;margin:0'))}</td></tr>
 <tr><td align="center" style="padding:28px 32px 32px">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#0e5886" style="border-radius:10px;background:#0e5886">
-<a href="${SITE}/regulamento.pdf?v=20260928" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px">Ler o regulamento</a>
+<a href="${SITE}/regulamento.pdf?v=20260930" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px">Ler o regulamento</a>
 </td></tr></table>
 </td></tr>
 <tr><td bgcolor="#eef3f7" style="background:#eef3f7;padding:20px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#5b6f82;text-align:center">
@@ -76,8 +77,9 @@ Você recebeu este e-mail porque se inscreveu na promoção Veste Phenix 30 anos
    'Sua inscrição na promoção Veste Phenix 30 anos está confirmada.','',
    'SEUS 10 NÚMEROS DA SORTE:',numeros.slice(0,5).join('   '),numeros.slice(5).join('   '),'',
    'Guarde este e-mail: ele é o seu comprovante de participação.','',
+   'Informações verdadeiras: os dados do cadastro serão verificados antes da confirmação do contemplado. Se for comprovada informação inverídica ou falsa, o potencial vencedor será desclassificado e o prêmio passará ao próximo número da sorte mais próximo, conforme o regulamento.','',
    'Como funciona a apuração: em 10/10/2026 será usado o número de 5 algarismos do 1º prêmio da Loteria Federal. Ganha quem tiver o número da sorte igual ou mais próximo dele. O resultado sai em até 5 dias úteis após a apuração.','',
-   `Regulamento: ${SITE}/regulamento.pdf?v=20260928`,
+   `Regulamento: ${SITE}/regulamento.pdf?v=20260930`,
    `Política de privacidade: ${SITE}/politica-privacidade.pdf?v=20260925`,
    'Dúvidas: phenix@phenixonline.com.br','',
    'Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arroio do Sal/RS'

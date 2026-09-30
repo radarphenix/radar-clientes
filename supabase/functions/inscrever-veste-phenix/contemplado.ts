@@ -59,7 +59,7 @@ ${item(4, 'A data da experiência será combinada com você, com usufruto até <
 </table>`)}</td></tr>
 <tr><td align="center" style="padding:28px 32px 32px">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#0e5886" style="border-radius:10px;background:#0e5886">
-<a href="${SITE}/regulamento.pdf?v=20260928" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px">Ler o regulamento</a>
+<a href="${SITE}/regulamento.pdf?v=20260930" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px">Ler o regulamento</a>
 </td></tr></table>
 </td></tr>
 <tr><td bgcolor="#eef3f7" style="background:#eef3f7;padding:20px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#5b6f82;text-align:center">
@@ -79,7 +79,7 @@ Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arro
     '2. Separe os documentos: identificação, CPF, comprovante de vínculo com a empresa informada na inscrição e, quando aplicável, autorização da empresa.',
     '3. A Phenix enviará os termos para assinatura (recebimento do prêmio, uso de imagem e ciência sobre o passeio de balão).',
     '4. A data da experiência será combinada com você, com usufruto até 31/12/2027.', '',
-    `Regulamento: ${SITE}/regulamento.pdf?v=20260928`,
+    `Regulamento: ${SITE}/regulamento.pdf?v=20260930`,
     `Dúvidas: ${CONTATO_PHENIX}`, '',
     'Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arroio do Sal/RS',
   ].join('\n')
