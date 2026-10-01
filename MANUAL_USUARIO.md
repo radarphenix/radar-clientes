@@ -1055,6 +1055,8 @@ Outros representantes não veem o menu nem a aba, mesmo que tenham código de re
 
 O filtro de mês nessa lista segue a mesma regra da tela "Lançamentos financeiros" do MWComissoes: título **em aberto** aparece no mês do **vencimento**; título **já pago pelo cliente** aparece no mês em que foi **liquidado**, mesmo que o vencimento seja de outro mês (nesse caso a linha mostra "Liquidado em" abaixo do vencimento). Não é o que foi vendido naquele mês. A coluna "Mês origem" mostra separadamente em que mês a nota foi emitida.
 
+Quando o cliente paga um título com atraso, os **juros e a multa recebidos** também geram comissão. Eles aparecem como uma linha à parte da mesma nota, com o aviso "Juros e multa recebidos do cliente" abaixo do nome do cliente, no mês em que foram recebidos. Essa linha entra na comissão do mês, mas não na "Base de comissão", que soma só as vendas.
+
 Quando a base de uma parcela tiver sido reduzida manualmente no MW
 Comissões para compensar um adiantamento antigo, a nota continua aparecendo
 como uma comissão normal. Abaixo do cliente aparece o **Motivo** informado
