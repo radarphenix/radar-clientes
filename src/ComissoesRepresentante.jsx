@@ -210,6 +210,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
   const [mes, setMes] = useState(hoje.getMonth() + 1);
   const [aba, setAba] = useState("receber");
   const [lancamentos, setLancamentos] = useState([]);
+  const [lancamentosAno, setLancamentosAno] = useState([]);
   const [resumos, setResumos] = useState([]);
   const [faixas, setFaixas] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -244,7 +245,27 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
       const proximoMes = new Date(ano, mes, 1);
       const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}-01`;
 
-      const [retornoLancamentos, retornoResumos, retornoFaixas] =
+      // Histórico anual: todos os lançamentos do ano pela mesma competência de pagamento,
+      // para cada mês do histórico bater com a aba "a receber". Paginado porque o
+      // PostgREST devolve no máximo 1000 linhas por chamada.
+      async function buscarLancamentosDoAno() {
+        const tamanho = 1000;
+        let todos = [];
+        for (let de = 0; ; de += tamanho) {
+          const { data, error } = await supabase
+            .from("comissoes_lancamentos")
+            .select("*")
+            .gte("data_competencia_pagamento", `${ano}-01-01`)
+            .lt("data_competencia_pagamento", `${ano + 1}-01-01`)
+            .order("id")
+            .range(de, de + tamanho - 1);
+          if (error) return { data: null, error };
+          todos = todos.concat(data || []);
+          if (!data || data.length < tamanho) return { data: todos, error: null };
+        }
+      }
+
+      const [retornoLancamentos, retornoResumos, retornoFaixas, retornoLancamentosAno] =
         await Promise.all([
           supabase
             .from("comissoes_lancamentos")
@@ -264,10 +285,11 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
             .from("comissoes_faixas")
             .select("*")
             .order("valor_meta", { ascending: true }),
+          buscarLancamentosDoAno(),
         ]);
 
       if (!ativo) return;
-      const erro = retornoLancamentos.error || retornoResumos.error || retornoFaixas.error;
+      const erro = retornoLancamentos.error || retornoResumos.error || retornoFaixas.error || retornoLancamentosAno.error;
 
       if (erro) {
         if (import.meta.env.DEV) {
@@ -279,6 +301,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
               : [perfil?.codigo_representante].filter(Boolean),
           );
           setLancamentos(demo.lancamentos);
+          setLancamentosAno(demo.lancamentos);
           setResumos(demo.resumos);
           setFaixas(demo.faixas);
           setDemonstrativo(true);
@@ -287,6 +310,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
           );
         } else {
           setLancamentos([]);
+          setLancamentosAno([]);
           setResumos([]);
           setFaixas([]);
           setDemonstrativo(false);
@@ -294,6 +318,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
         }
       } else {
         setLancamentos(retornoLancamentos.data || []);
+        setLancamentosAno(retornoLancamentosAno.data || []);
         setResumos(retornoResumos.data || []);
         setFaixas(retornoFaixas.data || []);
         setDemonstrativo(false);
@@ -334,8 +359,39 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
     [faixas, codigoEmExibicao, exibeEquipe],
   );
 
+  const lancamentosAnoVisiveis = useMemo(
+    () => lancamentosAno.filter(pertenceAoSelecionado),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lancamentosAno, codigoEmExibicao, exibeEquipe],
+  );
+
+  // Pagamento de cada mês do ano pela competência de pagamento, com as mesmas contas
+  // dos indicadores da aba "a receber" (totais): o histórico anual precisa bater com ela.
+  const pagamentoPorMes = useMemo(() => {
+    const porMes = new Map();
+    lancamentosAnoVisiveis.forEach((item) => {
+      if (item.considerar === false) return;
+      const mesItem = Number(String(item.data_competencia_pagamento || item.data_vencimento || "").slice(5, 7));
+      if (!mesItem) return;
+      const atual = porMes.get(mesItem) || { comissao: 0, descontos: 0, pago: 0, aReceber: 0 };
+      const valor = Number(item.valor_comissao || 0);
+      if (item.tipo_lancamento === "DESCONTO") atual.descontos += Math.abs(valor);
+      else atual.comissao += valor;
+      if (item.pago) atual.pago += valor;
+      else atual.aReceber += valor;
+      porMes.set(mesItem, atual);
+    });
+    return porMes;
+  }, [lancamentosAnoVisiveis]);
+
   const resumosHistorico = useMemo(() => {
-    if (!exibeEquipe) return resumosVisiveis;
+    if (!exibeEquipe) {
+      // Mês que só tem pagamento (parcelas de notas de meses anteriores) também aparece.
+      const semResumo = [...pagamentoPorMes.keys()]
+        .filter((mesItem) => !resumosVisiveis.some((item) => Number(item.mes) === mesItem))
+        .map((mesItem) => ({ ano, mes: mesItem, codigo_representante: codigoEmExibicao, semNotas: true }));
+      return [...resumosVisiveis, ...semResumo].sort((a, b) => Number(a.mes) - Number(b.mes));
+    }
     return MESES.map((_, indice) => {
       const itens = resumosVisiveis.filter((item) => Number(item.mes) === indice + 1);
       const somar = (campo) => itens.reduce((total, item) => total + Number(item[campo] || 0), 0);
@@ -359,7 +415,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
         comissao_paga: somar("comissao_paga"),
       };
     });
-  }, [ano, exibeEquipe, resumosVisiveis]);
+  }, [ano, exibeEquipe, resumosVisiveis, pagamentoPorMes, codigoEmExibicao]);
 
   const resumoMes = useMemo(
     () => resumosHistorico.find((item) => Number(item.mes) === Number(mes)),
@@ -601,13 +657,14 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                 const comissaoGerada = Number(item.comissao_gerada || 0) || Number(item.comissao_prevista || 0) + descontoPago;
                 const fixoPrevisto = Number(item.valor_fixo || 0);
                 const comissaoPercentual = comissaoGerada - fixoPrevisto;
-                const ajustesMes = lancamentosVisiveis.filter((lancamento) => {
+                const pagamento = pagamentoPorMes.get(Number(item.mes)) || { comissao: 0, descontos: 0, pago: 0, aReceber: 0 };
+                const ajustesMes = lancamentosAnoVisiveis.filter((lancamento) => {
                   if (!lancamento.lancamento_devolucao) return false;
                   const data = String(lancamento.data_emissao || "").slice(0, 10).split("-");
                   return Number(data[0]) === Number(item.ano) && Number(data[1]) === Number(item.mes)
                     && (exibeEquipe || normalizarCodigo(lancamento.codigo_representante) === normalizarCodigo(item.codigo_representante));
                 });
-                const devolucoesQueReduziramBase = lancamentosVisiveis.filter((lancamento) => {
+                const devolucoesQueReduziramBase = lancamentosAnoVisiveis.filter((lancamento) => {
                   if (!lancamento.lancamento_devolucao || !lancamento.competencia_origem_devolucao) return false;
                   const origem = String(lancamento.competencia_origem_devolucao).slice(0, 10).split("-");
                   return Number(origem[0]) === Number(item.ano) && Number(origem[1]) === Number(item.mes)
@@ -617,8 +674,20 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                 <article className="comissoes-mes-card" key={`${item.codigo_representante || "equipe"}-${item.ano}-${item.mes}`}>
                   <header>
                     <div><span>Mês</span><strong>{MESES[Number(item.mes) - 1]}</strong></div>
-                    <div className="comissoes-mes-prevista"><span>Líquido previsto</span><strong>{moeda(item.comissao_prevista)}</strong></div>
+                    <div className="comissoes-mes-prevista"><span>A pagar no mês</span><strong>{moeda(pagamento.comissao - pagamento.descontos)}</strong></div>
                   </header>
+                  <section className="comissoes-mes-bloco">
+                    <h4>Pagamento do mês (competência de pagamento)</h4>
+                    <dl>
+                      <div><dt>Comissão do mês</dt><dd>{moeda(pagamento.comissao)}</dd></div>
+                      {pagamento.descontos > 0 && <div className="linha-deducao"><dt>(−) Descontos</dt><dd>{moeda(pagamento.descontos)}</dd></div>}
+                      <div><dt>Já paga</dt><dd>{moeda(pagamento.pago)}</dd></div>
+                      <div className="linha-total destaque"><dt>A receber</dt><dd>{moeda(pagamento.aReceber)}</dd></div>
+                    </dl>
+                  </section>
+                  {item.semNotas ? (
+                    <section className="comissoes-mes-bloco"><p className="comissoes-sem-ajuste">Nenhuma nota revisada emitida neste mês.</p></section>
+                  ) : (<>
                   <section className="comissoes-mes-bloco">
                     <h4>Notas emitidas no mês</h4>
                     <dl>
@@ -661,7 +730,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                     <dl>
                       <div className="linha-deducao"><dt>(−) Recuperar de valores já pagos</dt><dd>{moeda(descontoPago)}</dd></div>
                       <div><dt>Redução em lançamentos ainda pendentes</dt><dd>{moeda(reducaoPendente)}</dd></div>
-                      <div className="linha-total destaque"><dt>(=) Líquido previsto neste mês</dt><dd>{moeda(item.comissao_prevista)}</dd></div>
+                      <div className="linha-total destaque"><dt>(=) Líquido previsto das notas deste mês</dt><dd>{moeda(item.comissao_prevista)}</dd></div>
                     </dl>
                     {ajustesMes.length ? ajustesMes.map((ajuste) => {
                       const faixaPaga = Number(ajuste.ajuste_faixa_pago || 0);
@@ -677,6 +746,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                     }) : <p className="comissoes-sem-ajuste">Nenhuma devolução processada neste mês.</p>}
                   </section>
                   <footer><span>Comissão já marcada como paga nas notas deste mês</span><strong>{moeda(item.comissao_paga)}</strong></footer>
+                  </>)}
                 </article>
                 );
               })}
