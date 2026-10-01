@@ -117,3 +117,4 @@
 .promocao-vencedor small{color:#754508;opacity:.85}
 
 .promocao-historico-buscas{margin-top:14px;padding:14px 18px;border-radius:10px;background:#f4f7fa;border-left:4px solid #b9cad6;color:#29425a}.promocao-historico-buscas ol{margin:8px 0 0;padding-left:18px;display:grid;gap:8px}
+.promocao-sorteios{margin-top:14px;padding:14px 18px;border-radius:10px;background:#f4f7fa;border-left:4px solid #1f78d1;color:#29425a;display:grid;gap:6px}.promocao-sorteios .promocao-tabela-wrap{margin-top:6px}.promocao-sorteios tr.selecionado{background:#fff3d7}.promocao-sorteios td button{padding:6px 12px}

@@ -8,6 +8,10 @@ const formatarTelefone = (t) => {
   return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : t;
 };
 
+// API pública de resultados da Caixa (responde com CORS liberado, então o painel consulta direto).
+const API_LOTERIA_FEDERAL = "https://servicebus2.caixa.gov.br/portaldeloterias/api/federal";
+const PAGINA_LOTERIA_FEDERAL = "https://loterias.caixa.gov.br/Paginas/Federal.aspx";
+
 export default function PromocaoVestePhenix() {
   const [aba, setAba] = useState("promocao");
   const [inscricoes, setInscricoes] = useState([]);
@@ -27,6 +31,10 @@ export default function PromocaoVestePhenix() {
   const [comunicando, setComunicando] = useState("");
   const [resultadoComunicado, setResultadoComunicado] = useState("");
   const [resultadoReenvio, setResultadoReenvio] = useState("");
+  const [concurso, setConcurso] = useState("");
+  const [sorteios, setSorteios] = useState(null);
+  const [buscandoSorteios, setBuscandoSorteios] = useState(false);
+  const [erroSorteios, setErroSorteios] = useState("");
 
   async function carregar() {
     setCarregando(true);
@@ -117,6 +125,46 @@ export default function PromocaoVestePhenix() {
     );
   }
 
+  // Extrações da Loteria Federal dos últimos 30 dias, para conferência do número apurado.
+  // A API só devolve um concurso por chamada; percorre do mais recente para trás.
+  async function buscarSorteios() {
+    setBuscandoSorteios(true);
+    setErroSorteios("");
+    const limite = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const lista = [];
+    try {
+      let url = API_LOTERIA_FEDERAL;
+      for (let i = 0; i < 12; i++) {
+        const resp = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const j = await resp.json();
+        const [dia, mes, ano] = String(j.dataApuracao).split("/");
+        const dataIso = `${ano}-${mes}-${dia}`;
+        if (new Date(`${dataIso}T12:00:00`).getTime() < limite) break;
+        lista.push({
+          concurso: j.numero,
+          data: dataIso,
+          premios: (j.listaDezenas || []).map((n) => String(n).slice(-5).padStart(5, "0")),
+        });
+        if (!j.numeroConcursoAnterior) break;
+        url = `${API_LOTERIA_FEDERAL}/${j.numeroConcursoAnterior}`;
+      }
+      setSorteios(lista);
+    } catch {
+      setSorteios(lista.length ? lista : null);
+      setErroSorteios("Não foi possível consultar a Caixa agora. Tente de novo em instantes ou confira no site oficial.");
+    } finally {
+      setBuscandoSorteios(false);
+    }
+  }
+
+  function usarSorteio(s) {
+    setNumero(s.premios[0]);
+    setData(s.data);
+    setConcurso(String(s.concurso));
+    setErro("");
+  }
+
   async function apurar() {
     if (!/^\d+$/.test(numero)) {
       return setErro(
@@ -129,8 +177,8 @@ export default function PromocaoVestePhenix() {
     const { data: r, error } = await supabase.rpc("apurar_veste_phenix", {
       p_numero_loteria: Number(numero),
       p_data_extracao: data,
-      p_concurso: null,
-      p_fonte_url: null,
+      p_concurso: concurso || null,
+      p_fonte_url: concurso ? PAGINA_LOTERIA_FEDERAL : null,
     });
     if (error) return setErro(error.message);
     setResultado(r?.[0]);
@@ -321,7 +369,7 @@ Esta ação é definitiva e fica registrada.`,
             <input
               value={numero}
               inputMode="numeric"
-              onChange={(e) => setNumero(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) => { setNumero(e.target.value.replace(/\D/g, "")); setConcurso(""); }}
             />
           </label>
           <label>
@@ -329,7 +377,7 @@ Esta ação é definitiva e fica registrada.`,
             <input
               type="date"
               value={data}
-              onChange={(e) => setData(e.target.value)}
+              onChange={(e) => { setData(e.target.value); setConcurso(""); }}
             />
           </label>
           <button type="button" onClick={apurar}>
@@ -338,7 +386,54 @@ Esta ação é definitiva e fica registrada.`,
           <button type="button" className="promocao-botao-secundario" onClick={enviarPrevia} disabled={Boolean(comunicando)}>
             {comunicando === "previa" ? "Enviando…" : "Prévia do e-mail do contemplado"}
           </button>
+          <button type="button" className="promocao-botao-secundario" onClick={buscarSorteios} disabled={buscandoSorteios}>
+            {buscandoSorteios ? "Consultando a Caixa…" : "Buscar sorteios dos últimos 30 dias"}
+          </button>
         </div>
+        {erroSorteios && <p className="mensagem-erro">{erroSorteios}</p>}
+        {sorteios && (
+          <div className="promocao-sorteios">
+            <b>Loteria Federal — extrações dos últimos 30 dias</b>
+            {sorteios.length === 0 ? (
+              <p>Nenhuma extração encontrada no período.</p>
+            ) : (
+              <div className="promocao-tabela-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Concurso</th>
+                      <th>Data</th>
+                      <th>1º prêmio</th>
+                      <th>2º ao 5º prêmio</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorteios.map((s) => (
+                      <tr key={s.concurso} className={String(s.concurso) === concurso ? "selecionado" : ""}>
+                        <td>{s.concurso}</td>
+                        <td>{new Date(`${s.data}T12:00:00`).toLocaleDateString("pt-BR")}</td>
+                        <td>
+                          <b>{s.premios[0]}</b>
+                        </td>
+                        <td>{s.premios.slice(1).join(" • ")}</td>
+                        <td>
+                          <button type="button" className="promocao-botao-secundario" onClick={() => usarSorteio(s)}>
+                            Usar na apuração
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <small>
+              Fonte: Caixa Econômica Federal. Vale o 1º prêmio. “Usar na apuração” só preenche os campos — confira no{" "}
+              <a href={PAGINA_LOTERIA_FEDERAL} target="_blank" rel="noreferrer">site oficial</a> antes de realizar a apuração.
+            </small>
+          </div>
+        )}
         {resultadoComunicado && !apuracaoVigente && <p className="promocao-resultado-limpeza">{resultadoComunicado}</p>}
         {apuracaoVigente && contemplado && (
           <div className="promocao-vencedor">
