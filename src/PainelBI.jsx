@@ -74,6 +74,34 @@ function vendasEmpresa(lista) {
   return jaCalculada ? Number(jaCalculada.vendas_liquidas_empresa || 0) : somar(lista, "vendas_liquidas");
 }
 
+// O PostgREST devolve no máximo 1000 linhas por chamada: sem paginar, o painel
+// passaria a somar só uma parte dos lançamentos quando a tabela crescesse.
+async function buscarTudo(tabela, ordem) {
+  const tamanho = 1000;
+  let todos = [];
+  for (let de = 0; ; de += tamanho) {
+    let consulta = supabase.from(tabela).select("*");
+    ordem.forEach((coluna) => { consulta = consulta.order(coluna); });
+    const { data, error } = await consulta.range(de, de + tamanho - 1);
+    if (error) return { data: null, error };
+    todos = todos.concat(data || []);
+    if (!data || data.length < tamanho) return { data: todos, error: null };
+  }
+}
+
+// Mesma regra da aba Comissões e do MWComissoes (Lançamentos financeiros): o lançamento
+// entra no mês da competência de pagamento - liquidação quando o título já foi pago,
+// senão vencimento. Só conta o que está marcado para pagar (considerar).
+function lancamentosDaCompetencia(lancamentos, ano, mes) {
+  const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
+  const proximoMes = new Date(ano, mes, 1);
+  const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}-01`;
+  return lancamentos.filter((item) => {
+    const competencia = item.data_competencia_pagamento || item.data_vencimento;
+    return item.considerar !== false && competencia >= inicio && competencia < fim;
+  });
+}
+
 function PainelBI({ perfil, usuariosPerfis = [] }) {
   const hoje = new Date();
   const [ano, setAno] = useState(hoje.getFullYear());
@@ -92,8 +120,8 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
       setCarregando(true);
       setMensagemErro("");
       const [retornoResumos, retornoLancamentos, retornoFaixas] = await Promise.all([
-        supabase.from("comissoes_resumos_mensais").select("*"),
-        supabase.from("comissoes_lancamentos").select("*"),
+        buscarTudo("comissoes_resumos_mensais", ["ano", "mes", "codigo_representante"]),
+        buscarTudo("comissoes_lancamentos", ["id"]),
         supabase.from("comissoes_faixas").select("*"),
       ]);
       if (!ativo) return;
@@ -136,9 +164,16 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
     [resumos, anoAnt, mesAnt],
   );
 
+  const lancamentosDoMes = useMemo(() => lancamentosDaCompetencia(lancamentos, ano, mes), [lancamentos, ano, mes]);
+  const lancamentosMesAnterior = useMemo(() => lancamentosDaCompetencia(lancamentos, anoAnt, mesAnt), [lancamentos, anoAnt, mesAnt]);
+
   const kpis = useMemo(() => {
     const vendas = vendasEmpresa(resumosDoMes);
+    // comissao: gerada pelas notas faturadas no mês (base do custo sobre vendas).
+    // aPagar: o que entra para pagamento no mês, pela competência de pagamento.
     const comissao = somar(resumosDoMes, "comissao_prevista");
+    const aPagar = somar(lancamentosDoMes, "valor_comissao");
+    const aPagarAnt = somar(lancamentosMesAnterior, "valor_comissao");
     const custo = vendas ? (comissao * 100) / vendas : 0;
     const repsAtivos = new Set(
       resumosDoMes
@@ -156,13 +191,14 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
     ).size;
 
     return {
-      vendas, comissao, custo, repsAtivos,
+      vendas, comissao, aPagar, custo, repsAtivos,
+      deltaAPagar: calcularDelta(aPagar, aPagarAnt),
       deltaVendas: calcularDelta(vendas, vendasAnt),
       deltaComissao: calcularDelta(comissao, comissaoAnt),
       deltaCusto: calcularDelta(custo, custoAnt),
       deltaReps: calcularDelta(repsAtivos, repsAnt),
     };
-  }, [resumosDoMes, resumosMesAnterior]);
+  }, [resumosDoMes, resumosMesAnterior, lancamentosDoMes, lancamentosMesAnterior]);
 
   const janela = useMemo(() => janela12Meses(ano, mes), [ano, mes]);
 
@@ -193,7 +229,13 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
       const codigo = normalizarCodigo(item.codigo_representante);
       const atual = porRepresentante.get(codigo) || { vendas: 0, comissao: 0, codigo: item.codigo_representante };
       atual.vendas += Number(item.vendas_liquidas || 0);
-      atual.comissao += Number(item.comissao_prevista || 0);
+      porRepresentante.set(codigo, atual);
+    });
+    // Comissão do ranking = a pagar no mês (competência de pagamento), como no MWComissoes.
+    lancamentosDoMes.forEach((item) => {
+      const codigo = normalizarCodigo(item.codigo_representante);
+      const atual = porRepresentante.get(codigo) || { vendas: 0, comissao: 0, codigo: item.codigo_representante };
+      atual.comissao += Number(item.valor_comissao || 0);
       porRepresentante.set(codigo, atual);
     });
     return [...porRepresentante.values()]
@@ -201,9 +243,10 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
         rotulo: nomeRepresentante(item.codigo),
         valor: ordenarRankingPor === "vendas" ? item.vendas : item.comissao,
       }))
+      .filter((item) => Math.abs(item.valor) > 0.005)
       .sort((a, b) => b.valor - a.valor);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumosDoMes, ordenarRankingPor, usuariosPerfis]);
+  }, [resumosDoMes, lancamentosDoMes, ordenarRankingPor, usuariosPerfis]);
 
   const distribuicaoFaixas = useMemo(() => {
     const contagem = new Map();
@@ -230,16 +273,8 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
   }, [resumosDoMes, faixas]);
 
   const topClientes = useMemo(() => {
-    const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
-    const proximoMes = new Date(ano, mes, 1);
-    const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}-01`;
-    // Competência de pagamento: liquidação quando o título já foi pago, senão vencimento.
-    const doPeriodo = lancamentos.filter((item) => {
-      const competencia = item.data_competencia_pagamento || item.data_vencimento;
-      return item.considerar !== false && competencia >= inicio && competencia < fim;
-    });
     const porCliente = new Map();
-    doPeriodo.forEach((item) => {
+    lancamentosDoMes.forEach((item) => {
       const chave = item.nome_cliente || item.codigo_cliente || "Não identificado";
       porCliente.set(chave, (porCliente.get(chave) || 0) + Number(item.valor_comissao || 0));
     });
@@ -248,7 +283,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([rotulo, valor]) => ({ rotulo, valor }));
-  }, [lancamentos, ano, mes]);
+  }, [lancamentosDoMes]);
 
   const devolucoesPorMes = useMemo(
     () => janela.map(({ ano: a, mes: m }) => {
@@ -307,7 +342,12 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
         <p className="bi-vazio">Carregando painel...</p>
       ) : (
         <>
-          <div className="bi-kpis">
+          <p className="bi-nota-competencia" style={{ margin: "0 0 12px", color: "#526b86", fontSize: 13 }}>
+            <b>Comissão a pagar no mês</b>, o ranking por comissão e o Top 10 clientes seguem a competência de pagamento
+            (título liquidado entra no mês em que foi pago; em aberto, no mês do vencimento), igual aos Lançamentos financeiros do
+            MWComissoes. Vendas, comissão gerada, custo sobre vendas e faixas seguem o mês de faturamento das notas.
+          </p>
+          <div className="bi-kpis" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
             <StatTile
               label="Vendas líquidas"
               valor={moeda(kpis.vendas)}
@@ -315,14 +355,20 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
               deltaFavoravel={kpis.deltaVendas >= 0}
             />
             <StatTile
-              label="Comissão prevista"
-              valor={moeda(kpis.comissao)}
-              delta={kpis.deltaComissao !== null ? `${percentual(Math.abs(kpis.deltaComissao))} vs mês anterior` : null}
-              deltaFavoravel={kpis.deltaComissao >= 0}
+              label="Comissão a pagar no mês"
+              valor={moeda(kpis.aPagar)}
+              delta={kpis.deltaAPagar !== null ? `${percentual(Math.abs(kpis.deltaAPagar))} vs mês anterior` : null}
+              deltaFavoravel={kpis.deltaAPagar >= 0}
               destaque
             />
             <StatTile
-              label="Custo de comissão"
+              label="Comissão gerada pelas vendas"
+              valor={moeda(kpis.comissao)}
+              delta={kpis.deltaComissao !== null ? `${percentual(Math.abs(kpis.deltaComissao))} vs mês anterior` : null}
+              deltaFavoravel={kpis.deltaComissao >= 0}
+            />
+            <StatTile
+              label="Custo de comissão sobre vendas"
               valor={percentual(kpis.custo)}
               delta={kpis.deltaCusto !== null ? `${percentual(Math.abs(kpis.deltaCusto))} vs mês anterior` : null}
               deltaFavoravel={kpis.deltaCusto <= 0}
@@ -357,7 +403,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
                 className={ordenarRankingPor === "comissao" ? "ativo" : ""}
                 onClick={() => setOrdenarRankingPor("comissao")}
               >
-                Comissão
+                Comissão a pagar
               </button>
             </div>
             <BarChart
