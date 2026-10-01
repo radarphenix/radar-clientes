@@ -386,8 +386,8 @@ Esta ação é definitiva e fica registrada.`,
           <button type="button" className="promocao-botao-secundario" onClick={enviarPrevia} disabled={Boolean(comunicando)}>
             {comunicando === "previa" ? "Enviando…" : "Prévia do e-mail do contemplado"}
           </button>
-          <button type="button" className="promocao-botao-secundario" onClick={buscarSorteios} disabled={buscandoSorteios}>
-            {buscandoSorteios ? "Consultando a Caixa…" : "Buscar sorteios dos últimos 30 dias"}
+          <button type="button" className="promocao-botao-secundario" onClick={sorteios ? () => setSorteios(null) : buscarSorteios} disabled={buscandoSorteios}>
+            {buscandoSorteios ? "Consultando a Caixa…" : sorteios ? "Ocultar sorteios" : "Buscar sorteios dos últimos 30 dias"}
           </button>
         </div>
         {erroSorteios && <p className="mensagem-erro">{erroSorteios}</p>}
