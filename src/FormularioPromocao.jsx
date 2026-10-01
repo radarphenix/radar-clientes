@@ -7,7 +7,7 @@ import { recarregarSeAtualizado } from './atualizacaoApp.js';
 const publicado = true;
 const modoTeste = false;
 // ?v= força a versão nova do PDF em quem já abriu o regulamento anterior.
-const REGULAMENTO_URL = '/regulamento.pdf?v=20261001';
+const REGULAMENTO_URL = '/regulamento.pdf?v=20261001b';
 // Mesmo período validado pela Edge Function inscrever-veste-phenix.
 const INICIO_INSCRICOES = Date.parse('2026-10-06T00:00:00-03:00');
 const FIM_INSCRICOES = Date.parse('2026-10-20T23:59:59-03:00');
