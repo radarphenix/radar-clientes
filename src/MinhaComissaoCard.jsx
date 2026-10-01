@@ -153,10 +153,12 @@ function MinhaComissaoCard({ perfil }) {
           .order("valor_meta", { ascending: true }),
         supabase
           .from("comissoes_lancamentos")
-          .select("data_vencimento, valor_comissao, considerar, pago")
+          // Mês do lançamento = competência de pagamento (liquidação quando o título
+          // já foi pago, senão vencimento), igual à aba Comissões.
+          .select("data_competencia_pagamento, valor_comissao, considerar, pago")
           .eq("codigo_representante", perfil.codigo_representante)
-          .gte("data_vencimento", inicioJanela)
-          .lt("data_vencimento", fimJanela),
+          .gte("data_competencia_pagamento", inicioJanela)
+          .lt("data_competencia_pagamento", fimJanela),
       ]);
 
       if (!ativo) return;
@@ -169,7 +171,7 @@ function MinhaComissaoCard({ perfil }) {
         );
         const comissaoAReceber = lancamentos
           .filter((lancamento) => {
-            const [anoVenc, mesVenc] = String(lancamento.data_vencimento || "")
+            const [anoVenc, mesVenc] = String(lancamento.data_competencia_pagamento || "")
               .slice(0, 7)
               .split("-")
               .map(Number);

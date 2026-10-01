@@ -1053,7 +1053,7 @@ Outros representantes não veem o menu nem a aba, mesmo que tenham código de re
 
 ### Lista "a receber/pago"
 
-O filtro de mês nessa lista é pelo **vencimento** do título (igual à tela "Lançamentos financeiros" do MWComissoes) - mostra o que vence naquele mês, não o que foi vendido naquele mês. A coluna "Mês origem" mostra separadamente em que mês a nota foi emitida.
+O filtro de mês nessa lista segue a mesma regra da tela "Lançamentos financeiros" do MWComissoes: título **em aberto** aparece no mês do **vencimento**; título **já pago pelo cliente** aparece no mês em que foi **liquidado**, mesmo que o vencimento seja de outro mês (nesse caso a linha mostra "Liquidado em" abaixo do vencimento). Não é o que foi vendido naquele mês. A coluna "Mês origem" mostra separadamente em que mês a nota foi emitida.
 
 Quando a base de uma parcela tiver sido reduzida manualmente no MW
 Comissões para compensar um adiantamento antigo, a nota continua aparecendo
@@ -1069,7 +1069,7 @@ Aqui sim a competência é pela **emissão** da nota, porque é o que define a f
 
 ### Card de comissão no Meu Dia
 
-Representante-piloto vê, no topo da tela Meu Dia, três gráficos lado a lado dos últimos 6 meses: **Sua comissão** (prevista, com barra de progresso até a próxima faixa quando aplicável), **Faturamento** (vendas líquidas) e **Comissões a receber** (lançamentos com vencimento no mês, ainda não pagos - mesma regra da lista "a receber", não é a diferença entre previsto e pago da competência). Passar o mouse (ou navegar por teclado) numa barra mostra o valor daquele mês.
+Representante-piloto vê, no topo da tela Meu Dia, três gráficos lado a lado dos últimos 6 meses: **Sua comissão** (prevista, com barra de progresso até a próxima faixa quando aplicável), **Faturamento** (vendas líquidas) e **Comissões a receber** (lançamentos do mês - pelo vencimento, ou pela liquidação quando o título já foi pago - com comissão ainda não paga - mesma regra da lista "a receber", não é a diferença entre previsto e pago da competência). Passar o mouse (ou navegar por teclado) numa barra mostra o valor daquele mês.
 
 Quando um **administrador** usa o seletor "Meu Dia de" para ver o dia de outro usuário, esse card também passa a mostrar os gráficos da pessoa selecionada (se ela for representante-piloto) - é a única tela do sistema em que escolher outro usuário no Meu Dia também troca o conteúdo financeiro exibido. Em qualquer outra tela (Clientes, Rotas, Administração), o admin continua vendo com seus próprios direitos, independentemente de quem estiver selecionado no Meu Dia.
 

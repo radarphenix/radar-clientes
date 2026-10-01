@@ -233,9 +233,11 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
     const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
     const proximoMes = new Date(ano, mes, 1);
     const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}-01`;
-    const doPeriodo = lancamentos.filter(
-      (item) => item.considerar !== false && item.data_vencimento >= inicio && item.data_vencimento < fim,
-    );
+    // Competência de pagamento: liquidação quando o título já foi pago, senão vencimento.
+    const doPeriodo = lancamentos.filter((item) => {
+      const competencia = item.data_competencia_pagamento || item.data_vencimento;
+      return item.considerar !== false && competencia >= inicio && competencia < fim;
+    });
     const porCliente = new Map();
     doPeriodo.forEach((item) => {
       const chave = item.nome_cliente || item.codigo_cliente || "Não identificado";

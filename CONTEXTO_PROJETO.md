@@ -1834,3 +1834,18 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
   - Causa: o consolidado "Toda a equipe" cria os 12 meses mesmo quando não há resumo e esses itens não possuem `modalidade`; o JSX anterior interpretava qualquer valor diferente de `"V"` como `"Fixa"`.
   - Correção: "Por metas" continua exclusivo de `modalidade="V"`, "Fixa" agora aparece somente quando `modalidade="F"` vier explicitamente da origem e ausência de modalidade é exibida como `-`.
   - Ajuste complementar após conferência no Radar oficial: o cartão também mostrava incondicionalmente "Fixo previsto R$ 0,00" e "Total comissão + fixo". Quando `valor_fixo=0`, a linha de fixo agora é ocultada e o total passa a se chamar apenas "Total comissão"; a menção a fixo permanece somente nos meses em que existe valor fixo real.
+
+  - [2026-10-01] Comissões: mês do lançamento pela competência de pagamento (migration aplicada e front publicado na `main`):
+    - regra nova do MWComissoes: boleto que vence no mês X e é pago no mês Y
+      entra no mês Y; título em aberto continua pelo vencimento
+    - migration `20261001120000_comissoes_competencia_liquidacao.sql`:
+      colunas `data_liquidacao` e `data_competencia_pagamento` em
+      `comissoes_lancamentos` (aplicada no Supabase em 01/10/2026; as 529
+      linhas existentes ficaram com a competência igual ao vencimento até o
+      próximo sync)
+    - `ComissoesRepresentante.jsx` e `MinhaComissaoCard.jsx` filtram por
+      `data_competencia_pagamento` (antes `data_vencimento`); `PainelBI.jsx`
+      usa a competência com recuo para o vencimento
+    - a lista "a receber" mostra "Liquidado em" abaixo do vencimento
+    - a data de liquidação só chega ao Radar depois que o MWComissoesSync
+      novo rodar; detalhes em `MWComissoesSync/MWCOMISSOESSYNC_ACOMPANHAMENTO.md`

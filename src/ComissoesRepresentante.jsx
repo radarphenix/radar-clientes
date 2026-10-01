@@ -249,8 +249,11 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
           supabase
             .from("comissoes_lancamentos")
             .select("*")
-            .gte("data_vencimento", inicio)
-            .lt("data_vencimento", fim)
+            // Mês em que o lançamento entra para pagamento: título liquidado vai para o
+            // mês da liquidação, título em aberto fica no vencimento (mesma regra da
+            // tela de lançamentos financeiros do MWComissoes desde 01/10/2026).
+            .gte("data_competencia_pagamento", inicio)
+            .lt("data_competencia_pagamento", fim)
             .order("data_vencimento", { ascending: true }),
           supabase
             .from("comissoes_resumos_mensais")
@@ -516,7 +519,10 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                     {lancamentosVisiveis.map((item) => (
                       <tr key={item.id || `${item.codigo_lancamento}-${item.nota_fiscal}`}>
                         {exibeEquipe && <td data-label="Representante">{nomeRepresentante(item.codigo_representante)}</td>}
-                        <td data-label="Vencimento">{dataBr(item.data_vencimento)}</td>
+                        <td data-label="Vencimento">
+                          {dataBr(item.data_vencimento)}
+                          {item.data_liquidacao && <small className="comissoes-nf-origem">Liquidado em {dataBr(item.data_liquidacao)}</small>}
+                        </td>
                         <td data-label="Mês origem">{mesAnoOrigem(item.data_emissao)}</td>
                         <td data-label="Nota fiscal">
                           {item.nota_fiscal || "-"}
