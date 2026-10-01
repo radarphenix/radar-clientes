@@ -118,3 +118,13 @@
 
 .promocao-historico-buscas{margin-top:14px;padding:14px 18px;border-radius:10px;background:#f4f7fa;border-left:4px solid #b9cad6;color:#29425a}.promocao-historico-buscas ol{margin:8px 0 0;padding-left:18px;display:grid;gap:8px}
 .promocao-sorteios{margin-top:14px;padding:14px 18px;border-radius:10px;background:#f4f7fa;border-left:4px solid #1f78d1;color:#29425a;display:grid;gap:6px}.promocao-sorteios .promocao-tabela-wrap{margin-top:6px}.promocao-sorteios tr.selecionado{background:#fff3d7}.promocao-sorteios td button{padding:6px 12px}
+/* Correção e exclusão de cadastros de produtos (admin). */
+.relatorio-produtos-acoes{flex-wrap:wrap}
+.relatorio-produtos-lote{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:10px 14px;border:1px solid #dce6ed;border-radius:10px;background:#f7fafc;color:#29425a}
+.relatorio-produtos-botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.relatorio-produtos-edicao{display:grid;gap:10px}
+.relatorio-produtos-edicao>div:not(.relatorio-produtos-botoes){display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 16px}
+.relatorio-produtos-edicao label{display:grid;gap:4px;font-size:12px;color:#6d7f8b;font-weight:600;min-width:0}
+.relatorio-produtos-edicao label.largo{grid-column:1/-1}
+.relatorio-produtos-edicao label.marcacao{display:flex;align-items:center;gap:8px;font-size:14px;color:#29425a}
+.relatorio-produtos-edicao input:not([type=checkbox]),.relatorio-produtos-edicao select,.relatorio-produtos-edicao textarea{padding:9px;border:1px solid #b9cad6;border-radius:7px;font:inherit;color:#1c2f3d;min-width:0;width:100%;box-sizing:border-box}
