@@ -372,7 +372,8 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
     const ajustesPercentual = validos.filter((item) => item.tipo_lancamento === "AJUSTE_PERCENTUAL");
     const comissoes = validos.filter((item) => item.tipo_lancamento !== "DESCONTO");
     return {
-      base: validos.filter((item) => !item.tipo_lancamento || item.tipo_lancamento === "COMISSAO").reduce((soma, item) => soma + Number(item.valor_base_comissao || 0), 0),
+      // Juros e multa recebidos entram na base, como no rodapé "Base da comissão" do MWComissoes.
+      base: validos.filter((item) => !item.tipo_lancamento || item.tipo_lancamento === "COMISSAO" || item.tipo_lancamento === "JUROS_MULTA").reduce((soma, item) => soma + Number(item.valor_base_comissao || 0), 0),
       comissao: comissoes.reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
       pago: validos.filter((item) => item.pago).reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
       aReceber: validos.filter((item) => !item.pago).reduce((soma, item) => soma + Number(item.valor_comissao || 0), 0),
