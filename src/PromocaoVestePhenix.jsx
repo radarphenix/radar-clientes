@@ -14,7 +14,7 @@ export default function PromocaoVestePhenix() {
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [numero, setNumero] = useState("");
-  const [data, setData] = useState("2026-10-10");
+  const [data, setData] = useState("2026-11-04");
   const [resultado, setResultado] = useState(null);
   const [limpando, setLimpando] = useState(false);
   const [resultadoLimpeza, setResultadoLimpeza] = useState("");

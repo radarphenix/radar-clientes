@@ -50,16 +50,16 @@ ${p(`Você foi o <b>contemplado</b> da promoção <b>Veste Phenix 30 anos</b>. O
 <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#c5d0d8">Número apurado na Loteria Federal: ${cinco(c.numeroLoteria)}</div>
 </td></tr></table>
 </td></tr>
-<tr><td class="px" style="padding:0 32px">${caixa('#f4b13b', '#fdf6e7', 'O seu prêmio', p('Experiência técnica comemorativa Phenix 30 anos no Rio Grande do Sul, incluindo <b>passeio de balão</b>, conforme o regulamento.', 'font-size:14px;line-height:21px;margin:0'))}</td></tr>
+<tr><td class="px" style="padding:0 32px">${caixa('#f4b13b', '#fdf6e7', 'O seu prêmio', p('Experiência técnica comemorativa Phenix 30 anos no Rio Grande do Sul, de 3 dias e 2 noites, com despesas pagas para você e um acompanhante, incluindo <b>passeio de balão</b>, conforme o regulamento.', 'font-size:14px;line-height:21px;margin:0'))}</td></tr>
 <tr><td class="px" style="padding:16px 32px 0">${caixa('#0e5886', '#f1f6fa', 'Próximos passos', `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 ${item(1, `<b>Responda este e-mail em até 10 dias úteis</b> confirmando o seu interesse. Sem resposta nesse prazo, o regulamento prevê a perda do direito ao prêmio.`)}
 ${item(2, 'Separe os documentos: documento de identificação, CPF, comprovante de vínculo com a empresa informada na inscrição e, quando aplicável, autorização da empresa.')}
 ${item(3, 'A Phenix enviará os termos para assinatura (recebimento do prêmio, uso de imagem e ciência sobre o passeio de balão).')}
-${item(4, 'A data da experiência será combinada com você, com usufruto até <b>31/12/2027</b>, conforme a disponibilidade e as condições climáticas.')}
+${item(4, 'A data da experiência será combinada com você, com usufruto até <b>30/06/2027</b>, conforme a disponibilidade e as condições climáticas.')}
 </table>`)}</td></tr>
 <tr><td align="center" style="padding:28px 32px 32px">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#0e5886" style="border-radius:10px;background:#0e5886">
-<a href="${SITE}/regulamento.pdf?v=20260930" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px">Ler o regulamento</a>
+<a href="${SITE}/regulamento.pdf?v=20261001" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px">Ler o regulamento</a>
 </td></tr></table>
 </td></tr>
 <tr><td bgcolor="#eef3f7" style="background:#eef3f7;padding:20px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#5b6f82;text-align:center">
@@ -73,13 +73,13 @@ Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arro
     c.teste ? '[AMBIENTE DE TESTE - comunicado de homologação, sem validade.]\n' : '',
     `Parabéns, ${primeiroNome(c.nome)}!`, '',
     `Você foi o contemplado da promoção Veste Phenix 30 anos. Seu número da sorte ${cinco(c.numeroSorte)} foi o mais próximo do 1º prêmio da Loteria Federal de ${dataBr(c.dataExtracao)} (número apurado ${cinco(c.numeroLoteria)}).`, '',
-    'Prêmio: experiência técnica comemorativa Phenix 30 anos no Rio Grande do Sul, incluindo passeio de balão, conforme o regulamento.', '',
+    'Prêmio: experiência técnica comemorativa Phenix 30 anos no Rio Grande do Sul, de 3 dias e 2 noites, com despesas pagas para você e um acompanhante, incluindo passeio de balão, conforme o regulamento.', '',
     'Próximos passos:',
     '1. Responda este e-mail em até 10 dias úteis confirmando o seu interesse. Sem resposta nesse prazo, o regulamento prevê a perda do direito ao prêmio.',
     '2. Separe os documentos: identificação, CPF, comprovante de vínculo com a empresa informada na inscrição e, quando aplicável, autorização da empresa.',
     '3. A Phenix enviará os termos para assinatura (recebimento do prêmio, uso de imagem e ciência sobre o passeio de balão).',
-    '4. A data da experiência será combinada com você, com usufruto até 31/12/2027.', '',
-    `Regulamento: ${SITE}/regulamento.pdf?v=20260930`,
+    '4. A data da experiência será combinada com você, com usufruto até 30/06/2027.', '',
+    `Regulamento: ${SITE}/regulamento.pdf?v=20261001`,
     `Dúvidas: ${CONTATO_PHENIX}`, '',
     'Phenix Indústria e Comércio de Filtros LTDA · CNPJ 01.170.987/0001-55 · Arroio do Sal/RS',
   ].join('\n')
