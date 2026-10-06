@@ -35,15 +35,21 @@ export default function PromocaoVestePhenix() {
   const [sorteios, setSorteios] = useState(null);
   const [buscandoSorteios, setBuscandoSorteios] = useState(false);
   const [erroSorteios, setErroSorteios] = useState("");
+  const [atualizando, setAtualizando] = useState(false);
+  const [atualizadoEm, setAtualizadoEm] = useState(null);
 
-  async function carregar() {
-    setCarregando(true);
+  // silencioso: recarga automática/botão Atualizar — mantém a tabela na tela e,
+  // se a rede falhar, preserva a última lista carregada.
+  async function carregar({ silencioso = false } = {}) {
+    if (!silencioso) setCarregando(true);
+    else setAtualizando(true);
     const { data: d, error } = await supabase
       .from("promocao_veste_phenix_30_anos_com_numeros")
       .select("*")
       .order("criado_em");
-    setInscricoes(d || []);
+    if (!error || !silencioso) setInscricoes(d || []);
     setErro(error ? "Não foi possível carregar as inscrições." : "");
+    if (!error) setAtualizadoEm(new Date());
     const { data: ap } = await supabase
       .from("promocao_veste_phenix_30_anos_apuracoes")
       .select("*")
@@ -54,11 +60,26 @@ export default function PromocaoVestePhenix() {
     setApuracaoVigente((ap || []).find((a) => !a.desclassificada_em) || null);
     setBuscasAnteriores((ap || []).filter((a) => a.desclassificada_em).sort((a, b) => a.ordem_busca - b.ordem_busca));
     setCarregando(false);
+    setAtualizando(false);
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carregamento inicial da lista
     carregar();
+  }, []);
+
+  // Durante a feira as inscrições chegam com o painel aberto: recarrega a cada minuto
+  // (só com a aba visível) e ao voltar para a aba.
+  useEffect(() => {
+    const recarregar = () => {
+      if (document.visibilityState === "visible") carregar({ silencioso: true });
+    };
+    const timer = setInterval(recarregar, 60000);
+    document.addEventListener("visibilitychange", recarregar);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", recarregar);
+    };
   }, []);
 
   const falhasEmail = inscricoes.filter((i) => ["falhou", "aguardando_configuracao"].includes(i.email_status)).length;
@@ -566,6 +587,10 @@ Esta ação é definitiva e fica registrada.`,
           <button type="button" onClick={exportar} disabled={!inscricoes.length}>
             Exportar Excel
           </button>
+          <button type="button" className="promocao-botao-secundario" onClick={() => carregar({ silencioso: true })} disabled={atualizando || carregando}>
+            {atualizando ? "Atualizando…" : "Atualizar"}
+          </button>
+          {atualizadoEm && <span>atualizado às {atualizadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>}
           <button type="button" className="promocao-botao-secundario" onClick={reenviarEmails} disabled={!falhasEmail || reenviando}>
             {reenviando ? "Reenviando…" : "Reenviar e-mails com falha"}
           </button>
