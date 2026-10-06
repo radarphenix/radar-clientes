@@ -6,6 +6,7 @@ import FormularioPromocao from './FormularioPromocao.jsx'
 import FeiraVestePhenix from './FeiraVestePhenix.jsx'
 import CadastroProdutosAvulso from './CadastroProdutosAvulso.jsx'
 import { iniciarVerificacaoAtualizacao } from './atualizacaoApp.js'
+import { registrarAcessoPromocao } from './eventosVestePhenix.js'
 
 // Página pública sem login e sem menu — só alcançável pelo link direto.
 const ROTA_PROMOCAO_VESTE_PHENIX = '/promo/veste-phenix'
@@ -41,6 +42,8 @@ if (ehPromocao) {
   identidadeVestePhenix('Veste Phenix — 30 anos')
   // Página pública de inscrição: não oferece instalar o Radar.
   document.querySelector('link[rel="manifest"]')?.remove()
+  // Contador de acessos (QR code: link com ?origem=qrcode).
+  registrarAcessoPromocao()
 }
 
 // A feira tem página própria (feira/veste-phenix.html) com manifesto, ícones e título

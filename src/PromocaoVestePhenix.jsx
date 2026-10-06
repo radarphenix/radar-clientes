@@ -12,6 +12,16 @@ const formatarTelefone = (t) => {
 const API_LOTERIA_FEDERAL = "https://servicebus2.caixa.gov.br/portaldeloterias/api/federal";
 const PAGINA_LOTERIA_FEDERAL = "https://loterias.caixa.gov.br/Paginas/Federal.aspx";
 
+// Contador da feira (tabela veste_phenix_eventos): nome de cada evento no painel.
+const EVENTOS_FEIRA = [
+  ["menu_veste_phenix", "Botão Veste Phenix (menu da feira)"],
+  ["menu_cadastro_produtos", "Botão Cadastro de Produtos (menu da feira)"],
+  ["menu_vestcontrol", "Botão VestControl (menu da feira)"],
+  ["acesso_promocao", "Acessos à página da promoção (link/QR code)"],
+  ["inscricao_concluida", "Inscrições concluídas"],
+];
+const NOME_ORIGEM = { stand: "tablets do stand", qrcode: "QR code", direto: "link direto (sem origem)" };
+
 export default function PromocaoVestePhenix() {
   const [aba, setAba] = useState("promocao");
   const [inscricoes, setInscricoes] = useState([]);
@@ -37,6 +47,7 @@ export default function PromocaoVestePhenix() {
   const [erroSorteios, setErroSorteios] = useState("");
   const [atualizando, setAtualizando] = useState(false);
   const [atualizadoEm, setAtualizadoEm] = useState(null);
+  const [eventos, setEventos] = useState([]);
 
   // silencioso: recarga automática/botão Atualizar — mantém a tabela na tela e,
   // se a rede falhar, preserva a última lista carregada.
@@ -50,6 +61,8 @@ export default function PromocaoVestePhenix() {
     if (!error || !silencioso) setInscricoes(d || []);
     setErro(error ? "Não foi possível carregar as inscrições." : "");
     if (!error) setAtualizadoEm(new Date());
+    const { data: ev, error: erroEventos } = await supabase.rpc("resumo_eventos_veste_phenix");
+    if (!erroEventos) setEventos(ev || []);
     const { data: ap } = await supabase
       .from("promocao_veste_phenix_30_anos_apuracoes")
       .select("*")
@@ -574,6 +587,43 @@ Esta ação é definitiva e fica registrada.`,
           <p className="promocao-resultado-limpeza">{resultadoLimpeza}</p>
         )}
         {erro && <p className="mensagem-erro">{erro}</p>}
+      </div>
+
+      <div className="admin-bloco">
+        <h3>Contador da feira</h3>
+        <div className="promocao-tabela-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Origem</th>
+                <th>Hoje</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {EVENTOS_FEIRA.map(([chave, nome]) => {
+                const linhas = eventos.filter((e) => e.evento === chave);
+                if (!linhas.length) return (
+                  <tr key={chave}>
+                    <td>{nome}</td>
+                    <td>—</td>
+                    <td>0</td>
+                    <td>0</td>
+                  </tr>
+                );
+                return linhas.map((e, i) => (
+                  <tr key={`${chave}-${e.origem}`}>
+                    <td>{i === 0 ? nome : ""}</td>
+                    <td>{NOME_ORIGEM[e.origem] || e.origem}</td>
+                    <td>{e.hoje}</td>
+                    <td>{e.total}</td>
+                  </tr>
+                ));
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="admin-bloco">
