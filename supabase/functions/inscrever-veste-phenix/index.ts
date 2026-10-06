@@ -93,7 +93,7 @@ Você recebeu este e-mail porque se inscreveu na promoção Veste Phenix 30 anos
 async function enviarEmail(m:{para:string;assunto:string;html:string;text:string;replyTo?:string}){
  const resendKey=Deno.env.get('RESEND_API_KEY');const smtpUsuario=Deno.env.get('PROMO_SMTP_USUARIO');const smtpSenha=Deno.env.get('PROMO_SMTP_SENHA');const remetente=Deno.env.get('PROMO_FROM_EMAIL')||smtpUsuario;const nomeRemetente=Deno.env.get('PROMO_FROM_NAME')||'Promoção Veste Phenix 30 anos';
  if(!remetente||(!resendKey&&(!smtpUsuario||!smtpSenha)))throw new Error('Envio de e-mail não configurado no servidor.');
- if(smtpUsuario&&smtpSenha){const transporte=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:smtpUsuario,pass:smtpSenha},connectionTimeout:15000,socketTimeout:20000});await transporte.sendMail({from:{name:nomeRemetente,address:remetente},to:m.para,subject:m.assunto,html:m.html,text:m.text,...(m.replyTo?{replyTo:m.replyTo}:{})})}
+ if(smtpUsuario&&smtpSenha){const transporte=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:smtpUsuario,pass:smtpSenha},connectionTimeout:15000,greetingTimeout:30000,socketTimeout:60000});await transporte.sendMail({from:{name:nomeRemetente,address:remetente},to:m.para,subject:m.assunto,html:m.html,text:m.text,...(m.replyTo?{replyTo:m.replyTo}:{})})}
  else{const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:remetente,to:[m.para],subject:m.assunto,html:m.html,text:m.text,...(m.replyTo?{reply_to:m.replyTo}:{})})});if(!er.ok)throw new Error(`Serviço de e-mail respondeu ${er.status}`)}
 }
 
@@ -181,6 +181,8 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   if(ip&&!await dentroDoLimite(db,`iph:${ip}`,300,3600))return json({ok:false,mensagem:'Muitos cadastros a partir desta conexão. Aguarde alguns minutos e tente novamente.'},429);
   if(!limite(b.nome_completo,160)||!limite(b.email,254)||!limite(b.telefone,30)||!limite(b.empresa,160)||!limite(b.cargo,120)||!limite(b.cidade,120))return json({ok:false,mensagem:'Preencha os campos obrigatórios com tamanho válido.'},400);
   if(!b.maior_18||!b.aceite_regulamento||!b.aceite_privacidade)return json({ok:false,mensagem:'Aceites obrigatórios não confirmados.'},400);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email||'')))return json({ok:false,mensagem:'E-mail inválido.'},400);
+  // Domínio terminando em letras e sem erros comuns de digitação (ex.: "suzano.comb.r", ".con").
+  {const em=String(b.email).trim();if(!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i.test(em)||/\.(con|cmo|cpm|comb|vom|xom|om|cm)(\.[a-z]{1,2})?$|\.com\.b$|\.b\.r$/i.test(em))return json({ok:false,mensagem:'Confira o e-mail: o final parece digitado errado (ex.: .com.br, .com).'},400)}
   if(!cpfValido(cpf))return json({ok:false,mensagem:'CPF inválido.'},400);if(cnpj&&!cnpjValido(cnpj))return json({ok:false,mensagem:'CNPJ inválido.'},400);
   if(!UFS.has(String(b.uf||'').toUpperCase())||!SEGMENTOS.has(String(b.segmento||'')))return json({ok:false,mensagem:'Selecione o estado e o segmento da lista.'},400);
   if(!await dentroDoLimite(db,`cpf:${cpf}`,5,3600))return json({ok:false,mensagem:'Muitas tentativas para este CPF. Aguarde uma hora e tente novamente.'},429);
