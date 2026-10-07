@@ -532,6 +532,24 @@
   margin-left: 14px;
 }
 
+.menu-subgrupo {
+  display: grid;
+  gap: 5px;
+  padding: 7px 0 2px 12px;
+  border-left: 2px solid #dbe8f8;
+}
+
+.menu-subgrupo > span {
+  padding: 0 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.menu-subgrupo button { min-height: 40px; font-size: 14px; }
+
 .home-botao-menu-mobile {
   position: static !important;
   min-width: 104px !important;

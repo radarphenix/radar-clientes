@@ -11,6 +11,15 @@
 .bi-filtros { display:flex; gap:12px; padding:14px; background:#f5f9ff; border:1px solid #dbe8f8; border-radius:12px; }
 .bi-filtros label { display:grid; gap:5px; color:#334155; font-size:12px; font-weight:800; }
 .bi-filtros select { min-width:150px; height:40px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#1f2f46; padding:0 10px; }
+.bi-filtros input { min-width:150px; height:40px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#1f2f46; padding:0 10px; }
+.bi-ajuda-filtro { align-self:end; color:#526b86; font-size:12px; font-weight:700; padding-bottom:4px; }
+.bi-secao-titulo { margin:4px 0 -8px; color:#032b63; font-size:15px; font-weight:900; }
+.bi-detalhe-faturamento > .bi-chart-cabecalho span { color:#64748b; font-size:12px; font-weight:700; }
+.bi-documento { border-top:1px solid #e2e8f0; }
+.bi-documento-resumo { width:100%; display:grid; grid-template-columns:auto minmax(190px,1fr) auto auto; align-items:center; gap:12px; padding:13px 4px; color:#163a63; background:transparent; text-align:left; }
+.bi-documento-resumo span { display:grid; gap:3px; min-width:0; }.bi-documento-resumo strong { font-size:13px; }.bi-documento-resumo small { overflow:hidden; color:#64748b; text-overflow:ellipsis; white-space:nowrap; }.bi-documento-resumo b { color:#032b63; white-space:nowrap; }
+.bi-documento-resumo em { padding:4px 7px; border-radius:99px; font-size:10px; font-style:normal; font-weight:900; text-transform:uppercase; white-space:nowrap; }.bi-selo-previsto { color:#93410d; background:#fff0e5; }.bi-selo-faturado { color:#075e35; background:#e4f7ed; }
+.bi-documento-expansao { display:grid; gap:12px; padding:0 8px 16px 34px; }.bi-financeiro-resumo { display:flex; flex-wrap:wrap; gap:10px 20px; padding:10px; border-radius:8px; background:#f5f9ff; color:#526b86; font-size:12px; }.bi-financeiro-resumo strong { color:#163a63; }
 
 .bi-kpis { display:grid; grid-template-columns:repeat(4, minmax(160px, 1fr)); gap:16px; }
 .bi-stat-tile { display:grid; gap:8px; align-content:start; min-width:0; padding:20px; border:1px solid #dbe8f8; border-radius:16px; background:#f8fbff; }
@@ -106,6 +115,10 @@
   .bi-kpis { grid-template-columns:1fr; }
   .bi-barh-overlay { grid-template-columns:96px 1fr 76px; }
   .bi-barh-linha { grid-template-columns:96px 1fr 76px; }
+  .bi-documento-resumo { grid-template-columns:auto minmax(0,1fr) auto; gap:8px; }
+  .bi-documento-resumo em { grid-column:2; width:fit-content; }
+  .bi-documento-resumo b { grid-column:3; grid-row:1 / span 2; }
+  .bi-documento-expansao { padding-left:8px; }
 }
 
 @media print {

@@ -11,7 +11,7 @@ const MB = 34;
 const PLOT_W = VB_W - ML - MR;
 const PLOT_H = VB_H - MT - MB;
 
-function LineChart({ titulo, series, formatarValor = (v) => v, area }) {
+function LineChart({ titulo, series, formatarValor = (v) => v, area, onSelecionarPonto }) {
   const svgRef = useRef(null);
   const [hoverIndex, setHoverIndex] = useState(null);
   const [modoTabela, setModoTabela] = useState(false);
@@ -90,6 +90,10 @@ function LineChart({ titulo, series, formatarValor = (v) => v, area }) {
     }
   }
 
+  function aoClicar(evento) {
+    if (onSelecionarPonto) onSelecionarPonto(indicePorPonteiro(evento.clientX));
+  }
+
   const tooltipVisivel = hoverIndex !== null && hoverIndex !== undefined;
   const tooltipEsquerda = tooltipVisivel ? (x(hoverIndex) / VB_W) * 100 : 0;
   const tooltipAlinharDireita = tooltipEsquerda > 60;
@@ -145,6 +149,7 @@ function LineChart({ titulo, series, formatarValor = (v) => v, area }) {
             className="bi-svg"
             role="img"
             aria-label={titulo}
+            onClick={onSelecionarPonto ? aoClicar : undefined}
           >
             {ticks.map((tick) => (
               <g key={tick}>
@@ -256,7 +261,7 @@ function LineChart({ titulo, series, formatarValor = (v) => v, area }) {
               onFocus={() => setHoverIndex((atual) => (atual === null ? n - 1 : atual))}
               onBlur={() => setHoverIndex(null)}
               onKeyDown={aoTeclar}
-              style={{ cursor: "crosshair" }}
+              style={{ cursor: onSelecionarPonto ? "pointer" : "crosshair" }}
             />
           </svg>
 

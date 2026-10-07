@@ -20,6 +20,7 @@ import HistoricoCliente from "./HistoricoCliente.jsx";
 import ImpressaoPesquisaRotas from "./ImpressaoPesquisaRotas.jsx";
 import ComissoesRepresentante from "./ComissoesRepresentante.jsx";
 import PainelBI from "./PainelBI.jsx";
+import PainelBIFaturamento from "./PainelBIFaturamento.jsx";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
@@ -93,6 +94,7 @@ const TELAS_PERSISTIDAS = new Set([
   "comissoes",
   "clientesEmPauta",
   "painelBI",
+  "painelBIFaturamento",
 ]);
 
 const FILTROS_PESQUISA_ROTAS_INICIAIS = {
@@ -5238,17 +5240,15 @@ function App() {
             </button>
 
             {perfil?.tipo_perfil === "admin" && (
-              <button
-                type="button"
-                className={telaAtual === "painelBI" ? "ativo" : ""}
-                onClick={() => {
-                  setTelaAtual("painelBI");
-                  setMenuMobileAberto(false);
-                }}
-              >
-                <LineChart size={20} />
-                Painel BI
-              </button>
+              <div className="menu-subgrupo">
+                <span>Painel BI</span>
+                <button type="button" className={telaAtual === "painelBI" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBI"); setMenuMobileAberto(false); }}>
+                  <LineChart size={18} /> Comissões
+                </button>
+                <button type="button" className={telaAtual === "painelBIFaturamento" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIFaturamento"); setMenuMobileAberto(false); }}>
+                  <LineChart size={18} /> Faturamento
+                </button>
+              </div>
             )}
 
             {(perfil?.tipo_perfil === "admin" ||
@@ -7012,6 +7012,10 @@ function App() {
 
         {perfil?.tipo_perfil === "admin" && telaAtual === "painelBI" && (
           <PainelBI perfil={perfil} usuariosPerfis={usuariosPerfis} />
+        )}
+
+        {perfil?.tipo_perfil === "admin" && telaAtual === "painelBIFaturamento" && (
+          <PainelBIFaturamento perfil={perfil} />
         )}
 
         {telaAtual === "clientesEmPauta" && (

@@ -1055,7 +1055,7 @@ Outros representantes não veem o menu nem a aba, mesmo que tenham código de re
 
 O filtro de mês nessa lista segue a mesma regra da tela "Lançamentos financeiros" do MWComissoes: título **em aberto** aparece no mês do **vencimento**; título **já pago pelo cliente** aparece no mês em que foi **liquidado**, mesmo que o vencimento seja de outro mês (nesse caso a linha mostra "Liquidado em" abaixo do vencimento). Não é o que foi vendido naquele mês. A coluna "Mês origem" mostra separadamente em que mês a nota foi emitida.
 
-Quando o cliente paga um título com atraso, os **juros e a multa recebidos** também geram comissão. Eles aparecem como uma linha à parte da mesma nota, com o aviso "Juros e multa recebidos do cliente" abaixo do nome do cliente, no mês em que foram recebidos. Essa linha entra na comissão do mês, mas não na "Base de comissão", que soma só as vendas.
+Quando o cliente paga um título com atraso, os **juros e a multa recebidos** também geram comissão. Eles aparecem como uma linha à parte da mesma nota, com o aviso "Juros e multa recebidos do cliente" abaixo do nome do cliente, no mês em que foram recebidos. Essa linha entra na comissão do mês e na "Base de comissão" da lista, igual ao rodapé "Base da comissão" do MWComissoes. O que os juros e a multa **não** alteram é a base de vendas que define a faixa/percentual do mês (metas e histórico anual), que continua só com o faturamento das notas.
 
 Quando a base de uma parcela tiver sido reduzida manualmente no MW
 Comissões para compensar um adiantamento antigo, a nota continua aparecendo
@@ -1068,6 +1068,17 @@ mensal do representante.
 ### Histórico anual
 
 Aqui sim a competência é pela **emissão** da nota, porque é o que define a faixa de comissão do mês. Quando uma devolução posterior reduz a base de vendas de um mês já fechado, aparece a linha "Base válida após devoluções posteriores" com um link "Ver devolução(ões) que reduziu(ram) a base" - mostra a nota de origem, a devolução, a data e o representante responsável.
+
+Na visão **Toda a equipe** (administrador), "Vendas emitidas" e "Vendas líquidas" usam o total da empresa: uma nota com dois representantes conta uma vez só, igual ao Painel BI e ao MW Comissões. Na visão de um representante a nota compartilhada continua contando inteira para ele, porque vale para a meta de cada um (07/10/2026).
+
+### Parcelas retidas ("Pagar" desmarcado no MW Comissões)
+
+Regra de 07/10/2026 - visão micro (representante) x macro (gestor):
+
+- **Representante**: a parcela retida não existe para ele - não aparece na lista, não soma nos totais, não aparece no card do Meu Dia, e a comissão dela também não entra no "Total comissão" / "Líquido previsto" do Histórico. O banco nem envia essa linha para a conta dele.
+- **Administrador** (aba Comissões): a parcela aparece em cinza com a situação **Retida** e a comissão **riscada** (a comissão que ela teria), fora dos totais, com o total retido destacado acima da lista. No Histórico aparece a linha "Retida no MW Comissões (já fora do total, oculta ao representante)".
+
+Desmarcar o Pagar depois de revisado também tira a parcela da tela do representante na próxima sincronização, sem aviso.
 
 ### Card de comissão no Meu Dia
 
@@ -1143,6 +1154,7 @@ Um único filtro de **Mês/Ano** no topo, que atualiza todos os indicadores e gr
 - **Distribuição por faixa de meta** - quantos representantes estão em cada faixa de comissão no momento.
 - **Devoluções por mês** - valor devolvido, mês a mês, nos últimos 12 meses.
 - **Top 10 clientes por comissão** - os clientes que mais geraram comissão no mês selecionado.
+- **Comissão retida** (indicador) e **Parcelas retidas** (tabela, quando houver): comissão das parcelas com "Pagar" desmarcado no MW Comissões, pelo mês de emissão da nota - representante, NF/parcela, cliente, vencimento, situação do título, base, % e comissão retida. Esse valor já está fora da "Comissão prevista" do mês (07/10/2026) e o representante não o vê.
 
 Passar o mouse (ou navegar com Tab e as setas do teclado, nos gráficos de linha) sobre qualquer ponto ou barra mostra o valor exato numa caixinha. Todo gráfico tem um botão **Ver como tabela**, que troca o desenho por uma tabela com os mesmos números - útil para conferência ou para quem prefere números a gráfico.
 
@@ -1150,7 +1162,17 @@ Passar o mouse (ou navegar com Tab e as setas do teclado, nos gráficos de linha
 
 Botão **Imprimir painel** no topo gera uma versão para impressão/PDF só com os indicadores e gráficos, sem o menu nem os filtros.
 
-## 24. App da feira Veste Phenix (atendimento sem login)
+## 24. Painel BI - Faturamento (somente admin)
+
+No grupo **Gestão e Análise**, o submenu **Painel BI** reúne **Comissões** e **Faturamento**. A visão de Faturamento é exclusiva de administradores.
+
+### Atualização da leitura executiva
+
+O painel separa duas competências. No **Comercial**, a previsão é o valor integral do item de pedido na data planejada, mesmo quando o item já foi faturado. A regra operacional de atingimento é o **controle 50** do item no CIGAM: pedido existente com controle 50 é `1 = 1` (previsto e faturado); pedido existente em outro controle comercial é `1 = 0` (previsto e pendente). A nota que não encontra pedido + item correspondente é `0 = 1` (faturado não previsto). O vínculo cliente + pedido + item faz essa última conferência documental. A coluna “Total Faturado” do relatório operacional de pedidos não serve para definir a situação: ela pode exibir o valor do pedido ainda em orçamento ou pendente; o painel usa o controle do item.
+
+No **Caixa**, previsão é título comercial R01 pelo vencimento, recebido é título R01 liquidado pela data de liquidação e atraso é o saldo com vencimento anterior ao final do filtro. Não há pagamentos parciais nesta operação. Os gráficos anuais seguem essas bases e um clique no mês detalha somente aquele mês. Em documentos, clique no pedido ou na nota para abrir os itens.
+
+## 25. App da feira Veste Phenix (atendimento sem login)
 
 Endereco: `radarphenix.pages.dev/feira/veste-phenix` (pode ser instalado como
 aplicativo, ver secao 18). Nao pede login: e usado pelos representantes no

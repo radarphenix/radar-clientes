@@ -6,6 +6,14 @@ O Radar nao exibe nem agrega notas ainda nao revisadas no MWComissoes. Vendas, m
 
 No Historico anual, a composicao da comissao mostra separadamente comissao percentual, fixo previsto e total comissao + fixo.
 
+## Comissoes: parcela retida, total da equipe e adiantamento (2026-10-07)
+
+- **Parcela retida** (`considerar=false`, "Pagar" desmarcado no MWComissoes): invisivel ao representante em todo lugar. A policy de `comissoes_lancamentos` exige `considerar is not false` para o representante (migration `20261007200000`). A view `EX_MW_VW_RADAR_COMISSOES_RES` tira a comissao retida de `comissao_gerada`/`comissao_prevista` e a envia em `comissao_retida` (migration `20261007210000`, `MWComissoesSync`). O admin ve "Retida" na aba Comissoes (cinza, comissao riscada, total retido) e no Historico; o Painel BI tem o indicador "Comissao retida" e a tabela de parcelas retidas pelo mes da nota. Commits `362d2ed` e `9db6706`.
+- **Historico "Toda a equipe"**: vendas emitidas/liquidas pelo total da empresa (`vendas_*_empresa`), entao a nota com 2+ representantes conta uma vez (agosto/2026: 959.429,88, igual ao desktop e ao BI).
+- **Sem vendedor (000000)** nasce Revisado e com Pagar marcado no MWComissoes (comissao zero). Sem o Revisado a nota sumia do faturamento da empresa ate alguem revisar.
+- **Adiantamento do cliente**: R01 com `CD_TIPO='E'` (entrada do adiantamento, portador Y01) nao e' parcela no MWComissoes, na view de comissoes nem na view financeira do `MWFaturamentoSync` (NF 10225/2 lanc. 594 e NF 10443/1 lanc. 1649 estavam duplicadas).
+- Diferenca de agosto investigada no mesmo dia: desktop 959.429,88 x Radar 649.513,92 eram 4 notas (10400, 10420, 10422, 10423) ainda nao revisadas na hora do sync; Historico 700 mil x BI 649 mil eram as notas com 2 representantes (10413, 10435) somadas duas vezes.
+
 ## Regras Operacionais (Copilot + Codex)
 
 - Nao realizar push para GitHub sem solicitacao explicita do usuario.
@@ -19,6 +27,35 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
   os registros de teste que ele gerar, nao.
 
 ## Snapshot Atual
+
+- [Retomada BI Faturamento — 2026-09-29, fim do dia]
+  - Objetivo do painel: visão executiva em duas competências independentes. **Comercial**: previsão de faturamento, faturado, previsão atingida e pendente. **Caixa**: previsão de recebimento por vencimento, recebido por liquidação e saldo em atraso. Não misturar notas/pedidos com recebimentos.
+  - Regra comercial final, confirmada pelo usuário: `1=0` = existe pedido e o item ainda não foi faturado; `1=1` = existe pedido e o item foi faturado; `0=1` = existe nota faturada sem pedido + item correspondente. Para o pedido, a regra operacional é `FAITEMPE.CONTROLE = 50`: somente controle 50 significa faturado; os demais controles comerciais permanecem pendentes. O vínculo pedido–nota não decide se o pedido está pendente; ele decide se uma **nota** é sem previsão.
+  - Chave do item de pedido: `FAITEMPE.CD_EMPRESA + CD_PEDIDO + SEQUENCIA` (não usar `FAPEDIDO.CD_CLIENTE`). A view já filtra `FAITEMPE.CD_ESPECIE = 'R'` para item comercial. A nota traz `ESMOVIME.PEDIDO_OC` + `SEQ_PEDIDO_O` para o vínculo.
+  - Supabase: migrations aplicadas no remoto: `20260929110000_faturamento_lancamentos_bi.sql`, `20260929143000_bi_faturamento_vinculo_pedido_nota.sql` e `20260929150000_bi_faturamento_controle_item.sql`. As duas últimas adicionam origem de pedido nas notas e situação/controle nos itens de pedido.
+  - Desktop: script Oracle atual é `01_Desktop/MWFaturamentoSync/MWFaturamentoSync/Sql/Oracle/001_ex_mw_vw_radar_faturamento.sql`; Release atual compilado com sucesso em `.../bin/Release/MWFaturamentoSync.exe`. Ainda falta o usuário instalar a view no CIGAM, substituir o EXE em uso e executar sincronização completa para preencher as novas colunas. Não avaliar o painel novo com espelho antigo.
+  - Painel local: `src/PainelBIFaturamento.jsx`. Dois gráficos anuais: previsão × faturado comercial e previsto × recebido de caixa. Clique no gráfico agora está no SVG inteiro (inclusive rótulo do mês), em `src/bi/LineChart.jsx`; seleciona o mês no filtro. `npm run lint`, `npm run build` e compilação Release passaram em 2026-09-29; build só avisa chunk acima de 500 kB.
+  - Validação pendente após sync: conferir setembro com relatório operacional por **item**, não pelo cabeçalho do pedido. O arquivo enviado pelo usuário mostrou que o relatório de pedidos soma no rodapé R$ 6.595.768,45, mas a coluna denominada “Total Faturado” inclui R$ 1.567.466,44 de `ORCAMENTO` e R$ 4.445.435,06 de `PENDENTE`; apenas as linhas `FATURADO` somaram R$ 582.866,95. Portanto esse rodapé não é faturamento real e não pode ser comparado ao KPI “Total faturado” (notas ESMOVIME) do BI.
+  - Ponto a decidir antes de fechar a origem comercial: o relatório contém `7949A - REMESSA DO ATIVO` e `6916A - RETORNO CONSERTO`, que não parecem venda/faturamento comercial. Confirmar quais tipos de operação devem ser excluídos explicitamente da view; até confirmação, a view usa espécie de item `R`, não tipo de operação.
+  - Não houve push/commit/publicação do frontend. Backups desta etapa: `.codex-backups/20260929_142500_bi_faturamento_executivo`, `20260929_150000_controle_50_faturado`, `20260929_153000_clique_grafico_validacao_controle` e `20260929_160000_retomada_bi_faturamento`.
+
+- [2026-09-29] Validação com relatório operacional de pedidos confirmou que a coluna “Total Faturado” é enganosa para BI: no mesmo relatório ela contém o valor integral de pedidos `ORCAMENTO` e `PENDENTE`. A classificação do painel deve usar exclusivamente o controle do item (`50` faturado), não esse total. Corrigido também o clique no gráfico: o mês passa a selecionar o período mesmo quando o usuário clica diretamente no rótulo do eixo.
+
+- [2026-09-29] Regra final do BI de Faturamento confirmada: `1=0` é pedido existente cujo item ainda não está no controle 50; `1=1` é pedido existente com item no controle 50; `0=1` é nota faturada sem pedido + item correspondente. O controle decide o estado do pedido e o vínculo pedido–nota decide se uma nota é faturamento não previsto. Migration `20260929150000_bi_faturamento_controle_item.sql` pronta para aplicar; view/sync já foram ajustados para transportar `FAITEMPE.CONTROLE`.
+
+- [2026-09-29] BI de Faturamento reestruturado localmente para visÃ£o executiva: previsÃ£o comercial (item integral, inclusive quando faturado), previsÃ£o atingida `1=1`, pendente `1=0`, e faturamento sem previsÃ£o `0=1` ficam separados de previsÃ£o de recebimento, recebido e atraso. A migration `20260929143000_bi_faturamento_vinculo_pedido_nota.sql` foi aplicada no Supabase e adiciona o vÃ­nculo de origem da nota. A view Oracle e o Release do `MWFaturamentoSync` foram atualizados/compilados para enviar `ESMOVIME.PEDIDO_OC` + `SEQ_PEDIDO_O`; a chave de pedido usa `FAITEMPE.CD_EMPRESA + CD_PEDIDO + SEQUENCIA`, conforme regra validada. Falta instalar a view atualizada no CIGAM, substituir o EXE Release e executar uma sincronizaÃ§Ã£o para preencher os novos campos.
+
+- [2026-09-29] Ajustes pré-homologação do BI de Faturamento: a previsão do Radar passou a calcular apenas o valor proporcional ao saldo aberto do item de pedido; parcelas financeiras emitidas antes do período continuam vinculadas à nota exibida. No script Oracle do `MWFaturamentoSync`, a identidade da nota passou a incluir a sequência do item, evitando conflito de upsert e perda de itens em notas com mais de uma linha. Ainda é necessário instalar novamente a view no CIGAM antes da primeira carga.
+
+- [2026-09-29] O primeiro teste do `MWFaturamentoSync` encontrou lançamento de `GFLANCAM` sem `DT_VENCIMENTO` e interrompeu com `InvalidCastException`. Corrigidos o script Oracle (filtra datas obrigatórias) e o executável (ignora defensivamente tais lançamentos e informa a contagem em `resumo_rodada.txt`/`sucesso.txt`). Release recompilado com sucesso; é preciso reexecutar o script Oracle antes da nova tentativa.
+
+- [2026-09-29] A validação pré-envio do `MWFaturamentoSync` encontrou IDs repetidos em `bi_pedidos_itens`. A identidade correta definida para o espelho é cliente + pedido + item do pedido (`CD_CLIENTE`, `CD_PEDIDO`, `SEQUENCIA`). Após comparar com a consulta operacional de pedidos do CIGAM, a view passou a trazer apenas `FAITEMPE.CD_ESPECIE = 'R'` (item comercial), deixando baixas/cancelamentos fora da previsão; reexecutar o script no CIGAM antes da tentativa seguinte.
+
+- [2026-09-29] Caixa do BI separado da visão comercial: a fonte financeira do `MWFaturamentoSync` passou a trazer somente títulos comerciais `GFLANCAM.CD_HISTORICO = 'R01'`, como no sync de Comissões. Com autorização do usuário, o executável também passou a limpar após carga completa as linhas de lotes anteriores nos três espelhos, removendo lançamentos companheiros e registros não mais presentes na origem. Release recompilado; reexecutar view Oracle e sincronizar novamente.
+
+- [2026-09-28] Painel BI de Faturamento criado localmente: submenu admin em Gestão e Análise separa Painel BI - Comissões e Painel BI - Faturamento. A nova tela (`src/PainelBIFaturamento.jsx`) filtra por período, compara previsão/faturamento diário, classifica situação financeira e permite expandir documento até seus itens. A migration `20260929110000_faturamento_lancamentos_bi.sql` criou três espelhos RLS admin-only e foi aplicada com sucesso no Supabase remoto. O sync consulta exclusivamente views CIGAM, sem duplicar financeiro nos itens. Projeto independente `01_Desktop/MWFaturamentoSync` criado e compilado em Release: usa as mesmas credenciais locais criptografadas do `MWComissoesSync`, mas o usuário Oracle precisa apenas de SELECT nas views de pedidos (`FAPEDIDO` + `FAITEMPE`), notas de saída (`ESMOVIME`) e parcelas (`GFLANCAM`). Views, executável e primeira carga continuam pendentes de implantação/homologação em sessão GO-Global autorizada. Build do Radar passou; lint permanece bloqueado por erro pré-existente de React não usado em `src/MenuFeira.jsx`.
+
+  - Retomada detalhada registrada em `01_Desktop/MWFaturamentoSync/MWFaturamentoSync/MWFATURAMENTOSYNC_ACOMPANHAMENTO.md`, seção "Retomada — checklist para amanhã": instalar 3 views no schema CIGAM, liberar somente SELECT ao usuário operacional, publicar Release no GO-Global, rodar uma carga manual e validar pedido, nota, parcelas e não duplicação de saldo antes de agendar.
 
 - [2026-09-28] Formulário público Veste Phenix sem captcha (Turnstile retirado): a Edge Function `inscrever-veste-phenix` limita 60 envios/min por IP e 5/h por CPF (migration `20260928120000`); CNPJ opcional (migration `20260928150000`). Detalhes em `veste-phenix-30-anos/PENDENCIAS_ANTES_PUBLICACAO.md`.
 
@@ -1391,7 +1428,7 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
     `supabase/functions/inscrever-veste-phenix`, que usa a service role e
     valida: maior de 18, aceite de regulamento e privacidade, formato de
     e-mail, CPF e CNPJ com digito verificador, janela oficial de inscricao
-    (06 a 08/10/2026, exceto em modo teste) e a flag
+    (06 a 20/10/2026, exceto em modo teste) e a flag
     `PROMO_INSCRICOES_ATIVAS`;
   - `cpf` e unico na tabela (bloqueia segunda inscricao com erro 409); o
     `numero_sorte` e sorteado aleatoriamente entre 00000 e 99999, unico por
