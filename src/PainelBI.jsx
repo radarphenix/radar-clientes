@@ -252,19 +252,15 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
 
   // Parcelas retidas ("Pagar" desmarcado no MWComissoes) - o representante nao as ve (policy
   // do Supabase, migration 20261007200000); o gestor ve o quanto esta retido no mes e onde.
-  // Mesma competencia de topClientes. "Pagar" desmarcado a mao grava comissao zero, entao
-  // vale a comissao que a parcela teria (base x percentual).
+  // Mes da NOTA (data_emissao), o mesmo do resumo: a view ja tira a retida da "Comissao
+  // prevista" desse mes (coluna comissao_retida), entao prevista + retida fecha o total.
+  // "Pagar" desmarcado a mao grava comissao zero, entao vale base x percentual da parcela.
   const retidas = useMemo(() => {
-    const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
-    const proximoMes = new Date(ano, mes, 1);
-    const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}-01`;
+    const competencia = `${ano}-${String(mes).padStart(2, "0")}`;
     return lancamentos
-      .filter((item) => {
-        const competencia = item.data_competencia_pagamento || item.data_vencimento;
-        return item.considerar === false && !item.lancamento_devolucao
-          && normalizarCodigo(item.codigo_representante) !== CODIGO_SEM_REPRESENTANTE
-          && competencia >= inicio && competencia < fim;
-      })
+      .filter((item) => item.considerar === false && !item.lancamento_devolucao
+        && normalizarCodigo(item.codigo_representante) !== CODIGO_SEM_REPRESENTANTE
+        && String(item.data_emissao || "").startsWith(competencia))
       .map((item) => ({
         ...item,
         comissaoRetida: Number(item.valor_comissao || 0)

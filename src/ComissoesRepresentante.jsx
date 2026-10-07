@@ -372,6 +372,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
         comissao_gerada: somar("comissao_gerada"),
         comissao_prevista: comissaoPrevista,
         comissao_paga: somar("comissao_paga"),
+        comissao_retida: somar("comissao_retida"),
       };
     });
   }, [ano, exibeEquipe, resumosVisiveis]);
@@ -656,6 +657,8 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                       <div><dt>Comissão percentual</dt><dd>{moeda(comissaoPercentual)}</dd></div>
                       {fixoPrevisto !== 0 && <div><dt>Fixo previsto</dt><dd>{moeda(fixoPrevisto)}</dd></div>}
                       <div className="linha-total"><dt>{fixoPrevisto !== 0 ? "Total comissão + fixo" : "Total comissão"}</dt><dd>{moeda(comissaoGerada)}</dd></div>
+                      {/* Só o gestor: a view já tirou a parcela retida do total (o representante nem sabe que existiu). */}
+                      {administrador && Number(item.comissao_retida || 0) > 0 && <div className="linha-detalhe"><dt>Retida no MWComissoes (já fora do total, oculta ao representante)</dt><dd>{moeda(item.comissao_retida)}</dd></div>}
                       {item.percentual_manual != null && <div className="linha-detalhe"><dt>Ajuste manual vigente ({percentual(item.percentual_sistema)} → {percentual(item.percentual_manual)})</dt><dd>{moeda(ajustePercentualManual)}</dd></div>}
                       {item.percentual_manual != null && item.motivo_percentual_manual && <div className="linha-detalhe"><dt>Motivo do último ajuste manual</dt><dd>{item.motivo_percentual_manual}</dd></div>}
                     </dl>
