@@ -227,8 +227,25 @@ export default function EstatisticasFeira() {
 
   const cliques = Object.entries(NOME_EVENTO).map(([chave, rotulo]) => ({ rotulo, valor: somaEvento(chave), cor }));
 
+  // Imprimir/PDF: o CSS de impressão (promocao.css) mostra só esta aba enquanto a classe estiver no body.
+  function imprimir() {
+    document.body.classList.add("modo-impressao-estat");
+    window.print();
+    document.body.classList.remove("modo-impressao-estat");
+  }
+  const periodo = diaAtivo === TODOS
+    ? dias.length ? `Período todo: ${rotuloDia(dias[0])} a ${rotuloDia(dias[dias.length - 1])}` : "Período todo"
+    : `Dia ${rotuloDia(diaAtivo)}`;
+
   return (
     <div className="bi-painel estat-feira">
+      <header className="estat-cabecalho-impressao">
+        <img src="/phenix-30-anos-transparente.png" alt="Phenix 30 anos" />
+        <div>
+          <h2>Veste Phenix 30 anos · Estatísticas da feira</h2>
+          <p>{periodo} · gerado em {new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p>
+        </div>
+      </header>
       <div className="estat-filtros">
         <div className="estat-dias" role="group" aria-label="Dia da feira">
           {dias.map((d) => (
@@ -242,6 +259,9 @@ export default function EstatisticasFeira() {
         </div>
         <button type="button" className="promocao-botao-secundario" onClick={carregar} disabled={carregando}>
           {carregando ? "Atualizando…" : "Atualizar"}
+        </button>
+        <button type="button" onClick={imprimir} disabled={carregando}>
+          Imprimir / PDF
         </button>
         {atualizadoEm && <span className="estat-atualizado">atualizado às {atualizadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>}
       </div>

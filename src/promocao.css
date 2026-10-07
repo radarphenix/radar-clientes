@@ -151,3 +151,39 @@
 .estat-legenda-item i{display:inline-block;width:14px;height:14px;border-radius:3px}
 .estat-nota{color:#5b6f7c;font-size:12px;margin:0}
 .estat-feira>*{min-width:0}
+
+/* Impressão / PDF da aba Estatísticas: mostra só a aba (o resto do Radar some). */
+.estat-cabecalho-impressao{display:none}
+@media print{
+  @page{size:A4 portrait;margin:10mm}
+  body.modo-impressao-estat{background:#fff!important}
+  body.modo-impressao-estat *:not(:has(.estat-feira)):not(.estat-feira):not(.estat-feira *){display:none!important}
+  body.modo-impressao-estat *:has(.estat-feira){padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;background:#fff!important;max-width:none!important;width:auto!important;min-height:0!important;overflow:visible!important}
+  body.modo-impressao-estat .estat-feira{display:grid;gap:10px;width:100%;overflow:visible}
+  body.modo-impressao-estat .estat-cabecalho-impressao{display:flex;align-items:center;gap:14px;border-bottom:2px solid #0b5687;padding-bottom:8px}
+  body.modo-impressao-estat .estat-cabecalho-impressao img{height:44px}
+  body.modo-impressao-estat .estat-cabecalho-impressao h2{margin:0;font-size:18px;color:#032b63}
+  body.modo-impressao-estat .estat-cabecalho-impressao p{margin:2px 0 0;font-size:11px;color:#52514e}
+  body.modo-impressao-estat .estat-filtros,
+  body.modo-impressao-estat .bi-botao-tabela,
+  body.modo-impressao-estat .bi-tooltip{display:none!important}
+  body.modo-impressao-estat .bi-kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  body.modo-impressao-estat .bi-stat-tile{padding:10px}
+  body.modo-impressao-estat .bi-stat-tile strong{font-size:18px}
+  body.modo-impressao-estat .bi-graficos-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  body.modo-impressao-estat .bi-chart-card{padding:10px;box-shadow:none}
+  body.modo-impressao-estat .bi-chart-card,
+  body.modo-impressao-estat .bi-stat-tile,
+  body.modo-impressao-estat .estat-mapa{break-inside:avoid}
+  body.modo-impressao-estat .estat-feira *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.modo-impressao-estat .estat-mapa-rolagem{overflow:visible}
+  body.modo-impressao-estat .estat-celula{min-width:0;height:22px}
+  body.modo-impressao-estat .bi-barh-overlay,
+  body.modo-impressao-estat .bi-barh-linha{grid-template-columns:118px 1fr 26px;gap:6px}
+  body.modo-impressao-estat .bi-barh-linha{min-height:20px;padding:0 4px;font-size:11px}
+  body.modo-impressao-estat .bi-barh-linhas{padding-bottom:14px}
+  body.modo-impressao-estat .bi-barv-plot{height:130px}
+  body.modo-impressao-estat .bi-chart-cabecalho{margin-bottom:4px}
+  body.modo-impressao-estat .bi-chart-cabecalho h3{font-size:13px}
+  body.modo-impressao-estat .bi-vazio{margin:6px 0;font-size:12px}
+}
