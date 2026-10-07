@@ -33,6 +33,10 @@
 .comissoes-status.devolucao { background:#dbe8f8; color:#032b63; }
 .comissoes-status.desconto { background:#fee2e2; color:#991b1b; }
 .comissoes-status.ajuste { background:#fef3c7; color:#854d0e; }
+/* Parcela retida ("Pagar" desmarcado no MWComissoes) - so' o admin ve. */
+.comissoes-status.retida { background:#f1f5f9; color:#64748b; border:1px dashed #94a3b8; }
+.comissoes-linha-retida td { color:#94a3b8; }
+.comissoes-retido { border-style:dashed; border-color:#94a3b8; }
 .comissoes-motivo,.comissoes-percentual-manual { display:block; margin-top:4px; color:#64748b; font-size:9px; font-weight:700; line-height:1.35; }
 .comissoes-composicao { display:flex; justify-content:flex-end; gap:22px; margin:-6px 0 14px; padding:10px 14px; border:1px solid #dbe8f8; border-radius:10px; background:#f8fafc; color:#526b86; font-size:12px; }
 .comissoes-composicao strong { margin-left:6px; color:#17385f; }

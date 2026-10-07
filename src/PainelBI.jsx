@@ -250,6 +250,30 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
       .map(([rotulo, valor]) => ({ rotulo, valor }));
   }, [lancamentos, ano, mes]);
 
+  // Parcelas retidas ("Pagar" desmarcado no MWComissoes) - o representante nao as ve (policy
+  // do Supabase, migration 20261007200000); o gestor ve o quanto esta retido no mes e onde.
+  // Mesma competencia de topClientes. "Pagar" desmarcado a mao grava comissao zero, entao
+  // vale a comissao que a parcela teria (base x percentual).
+  const retidas = useMemo(() => {
+    const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
+    const proximoMes = new Date(ano, mes, 1);
+    const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}-01`;
+    return lancamentos
+      .filter((item) => {
+        const competencia = item.data_competencia_pagamento || item.data_vencimento;
+        return item.considerar === false && !item.lancamento_devolucao
+          && normalizarCodigo(item.codigo_representante) !== CODIGO_SEM_REPRESENTANTE
+          && competencia >= inicio && competencia < fim;
+      })
+      .map((item) => ({
+        ...item,
+        comissaoRetida: Number(item.valor_comissao || 0)
+          || Math.round(Number(item.valor_base_comissao || 0) * Number(item.percentual_comissao || 0)) / 100,
+      }))
+      .sort((a, b) => b.comissaoRetida - a.comissaoRetida);
+  }, [lancamentos, ano, mes]);
+  const totalRetido = useMemo(() => retidas.reduce((total, item) => total + item.comissaoRetida, 0), [retidas]);
+
   const devolucoesPorMes = useMemo(
     () => janela.map(({ ano: a, mes: m }) => {
       const competencia = `${a}-${String(m).padStart(2, "0")}`;
@@ -328,6 +352,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
               deltaFavoravel={kpis.deltaCusto <= 0}
             />
             <StatTile label="Representantes ativos" valor={kpis.repsAtivos} />
+            <StatTile label={`Comissão retida (${retidas.length} parcela${retidas.length === 1 ? "" : "s"})`} valor={moeda(totalRetido)} />
           </div>
 
           <div className="bi-graficos-grid">
@@ -393,6 +418,34 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
             formatarValor={moeda}
             corPadrao={CATEGORICAL.vendas}
           />
+
+          {retidas.length > 0 && (
+            <div className="bi-chart-card">
+              <div className="bi-chart-cabecalho">
+                <h3>{`Parcelas retidas · ${MESES[mes - 1]} de ${ano}`}</h3>
+                <span>{`${moeda(totalRetido)} · fora dos totais e invisível ao representante`}</span>
+              </div>
+              <div className="bi-tabela-container">
+                <table className="bi-tabela">
+                  <thead><tr><th>Representante</th><th>NF</th><th>Cliente</th><th>Vencimento</th><th>Situação do título</th><th>Base</th><th>%</th><th>Comissão retida</th></tr></thead>
+                  <tbody>
+                    {retidas.map((item) => (
+                      <tr key={item.id || `${item.codigo_representante}-${item.codigo_lancamento}`}>
+                        <td>{nomeRepresentante(item.codigo_representante)}</td>
+                        <td>{item.nota_fiscal}{item.numero_parcela ? ` (${item.numero_parcela})` : ""}</td>
+                        <td>{item.nome_cliente || item.codigo_cliente}</td>
+                        <td>{item.data_vencimento ? item.data_vencimento.split("-").reverse().join("/") : "-"}</td>
+                        <td>{item.situacao_financeira || "-"}</td>
+                        <td>{moeda(item.valor_base_comissao)}</td>
+                        <td>{percentual(item.percentual_comissao)}</td>
+                        <td><strong>{moeda(item.comissaoRetida)}</strong></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>
