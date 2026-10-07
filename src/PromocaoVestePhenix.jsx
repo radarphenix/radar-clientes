@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "./supabaseClient";
 import RelatorioProdutosFeira from "./RelatorioProdutosFeira.jsx";
+import EstatisticasFeira from "./EstatisticasFeira.jsx";
 
 const formatarTelefone = (t) => {
   const d = String(t || "").replace(/\D/g, "");
@@ -387,9 +388,12 @@ Esta ação é definitiva e fica registrada.`,
         <button type="button" role="tab" aria-selected={aba === "produtos"} className={aba === "produtos" ? "ativa" : ""} onClick={() => setAba("produtos")}>
           Cadastros de produtos
         </button>
+        <button type="button" role="tab" aria-selected={aba === "estatisticas"} className={aba === "estatisticas" ? "ativa" : ""} onClick={() => setAba("estatisticas")}>
+          Estatísticas
+        </button>
       </div>
 
-      {aba === "produtos" ? <RelatorioProdutosFeira /> : <>
+      {aba === "produtos" ? <RelatorioProdutosFeira /> : aba === "estatisticas" ? <EstatisticasFeira /> : <>
 
       <div className="admin-bloco">
         <h3>Apuração pela Loteria Federal</h3>

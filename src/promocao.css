@@ -128,3 +128,26 @@
 .relatorio-produtos-edicao label.largo{grid-column:1/-1}
 .relatorio-produtos-edicao label.marcacao{display:flex;align-items:center;gap:8px;font-size:14px;color:#29425a}
 .relatorio-produtos-edicao input:not([type=checkbox]),.relatorio-produtos-edicao select,.relatorio-produtos-edicao textarea{padding:9px;border:1px solid #b9cad6;border-radius:7px;font:inherit;color:#1c2f3d;min-width:0;width:100%;box-sizing:border-box}
+
+/* Aba Estatísticas da feira (EstatisticasFeira.jsx) */
+.estat-feira{max-width:none}
+.estat-filtros{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.estat-dias{display:flex;flex-wrap:wrap;gap:6px;margin-right:auto}
+.estat-dias button{border:1px solid #c9d8e3;background:#fff;color:#21465f;border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer}
+.estat-dias button.ativo{background:#0b5687;border-color:#0b5687;color:#fff}
+.estat-atualizado{color:#5b6f7c;font-size:13px}
+.estat-mapa-rolagem{overflow-x:auto}
+.estat-mapa-grade{border-collapse:separate;border-spacing:2px;font-size:12px;min-width:100%}
+.estat-mapa-grade th{color:#52514e;font-weight:700;padding:4px 6px;white-space:nowrap;text-align:center}
+.estat-mapa-grade tbody th{text-align:left}
+.estat-mapa-grade td{padding:0}
+.estat-celula{position:relative;display:flex;align-items:center;justify-content:center;min-width:34px;height:32px;border-radius:4px;background:#f1f4f7;color:#0b0b0b;font-weight:700}
+.estat-celula.escura{color:#fff}
+.estat-celula.ativo{outline:2px solid #0b0b0b;outline-offset:1px}
+.estat-tooltip{top:auto;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;text-align:left;font-weight:400}
+.estat-total{font-weight:800;color:#032b63;text-align:center;padding:0 8px!important}
+.estat-legenda{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;color:#52514e;font-size:12px}
+.estat-legenda-item{display:inline-flex;align-items:center;gap:4px}
+.estat-legenda-item i{display:inline-block;width:14px;height:14px;border-radius:3px}
+.estat-nota{color:#5b6f7c;font-size:12px;margin:0}
+.estat-feira>*{min-width:0}
