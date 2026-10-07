@@ -616,14 +616,27 @@ Esta ação é definitiva e fica registrada.`,
                     <td>0</td>
                   </tr>
                 );
-                return linhas.map((e, i) => (
-                  <tr key={`${chave}-${e.origem}`}>
-                    <td>{i === 0 ? nome : ""}</td>
-                    <td>{NOME_ORIGEM[e.origem] || e.origem}</td>
-                    <td>{e.hoje}</td>
-                    <td>{e.total}</td>
-                  </tr>
-                ));
+                // Nome em todas as linhas: com a celula vazia na 2a origem, parecia um evento sem
+                // nome (07/10/2026). Mais de uma origem ganha uma linha de total do evento.
+                const somar = (campo) => linhas.reduce((t, e) => t + Number(e[campo] || 0), 0);
+                return [
+                  ...linhas.map((e) => (
+                    <tr key={`${chave}-${e.origem}`}>
+                      <td>{nome}</td>
+                      <td>{NOME_ORIGEM[e.origem] || e.origem}</td>
+                      <td>{e.hoje}</td>
+                      <td>{e.total}</td>
+                    </tr>
+                  )),
+                  linhas.length > 1 && (
+                    <tr key={`${chave}-total`} style={{ fontWeight: 700 }}>
+                      <td>{nome} - total</td>
+                      <td>todas as origens</td>
+                      <td>{somar("hoje")}</td>
+                      <td>{somar("total")}</td>
+                    </tr>
+                  ),
+                ];
               })}
             </tbody>
           </table>
