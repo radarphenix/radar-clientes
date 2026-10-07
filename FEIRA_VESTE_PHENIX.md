@@ -118,7 +118,10 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
 
 - Menu admin do Radar → **Promoção 30 anos** (`src/PromocaoVestePhenix.jsx`) → abas
   **Promoção** | **Cadastros de produtos** (`src/RelatorioProdutosFeira.jsx`, estilos em
-  `src/promocao.css`).
+  `src/promocao.css`) | **Estatísticas** (`src/EstatisticasFeira.jsx`, seção 4.3).
+- A aba **Promoção** recarrega a lista de inscrições e o "Contador da feira" sozinha a cada
+  minuto, só com a aba visível, e também ao voltar para ela. Tem ainda o botão **Atualizar**
+  com "atualizado às HH:MM". Desde 06/10/2026, commit `0b1b1d7`.
 - Indicadores (cadastros, empresas, sem comprimento/largura), busca, filtros por papel e
   produto, linha expansível com todos os campos, "Atualizar" e "Exportar Excel" (respeita os
   filtros).
@@ -134,6 +137,45 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
 - Terceiro botão do menu da feira (`src/MenuFeira.jsx`). Abre `https://vestcontrol.pages.dev/demo?voltar=<origem>/feira/veste-phenix` na mesma janela.
 - O VestControl entra sozinho com um usuário de **Consulta** (somente leitura) da empresa fictícia **Cartiera**, mostra a faixa "Modo demonstração" e o botão **← Voltar ao Veste Phenix**, que encerra a sessão e volta para o menu da feira.
 - Toda a lógica de acesso vive no projeto VestControl (`app/demo`, Edge Function `demo-session`; ver `CONTEXTO_PROJETO.md` de lá). Aqui só existe o link; se o endereço do VestControl mudar, trocar `VESTCONTROL_DEMO` em `src/MenuFeira.jsx`.
+
+## 4.2 Contador da feira (cliques e acessos)
+
+- Tabela `veste_phenix_eventos`. Ela **não guarda dado pessoal**: nada de IP, aparelho ou
+  identificação. Só `evento`, `origem` e `criado_em`. Migration `20261006150000`.
+- A gravação pública passa só pela função `registrar_evento_veste_phenix(evento, origem)`, que
+  valida o evento numa lista fechada. No front fica em `src/eventosVestePhenix.js` (fetch com
+  `keepalive`, que nunca trava a tela; uma falha de rede é ignorada).
+- Eventos:
+
+  | Evento | Onde | Origem |
+  | --- | --- | --- |
+  | `menu_veste_phenix`, `menu_cadastro_produtos`, `menu_vestcontrol` | botões do menu da feira (`MenuFeira.jsx`) | `stand` |
+  | `acesso_promocao` | abrir `/promo/veste-phenix` (uma vez por visita) | `?origem=` do link, ou `direto` |
+  | `inscricao_concluida` | tela de sucesso do formulário | `stand` (tablet) ou a origem do link |
+
+- **QR code**: o QR impresso no stand aponta para `https://radarphenix.pages.dev/promo/veste-phenix`
+  sem marcação. Por isso os acessos dele entram como `direto`, junto com quem abre o link pelo
+  WhatsApp. Numa reimpressão, usar `…/promo/veste-phenix?origem=qrcode` para separar.
+- Leitura (admin): `resumo_eventos_veste_phenix()` (total e hoje) e
+  `eventos_por_hora_veste_phenix()` (por dia e hora, migration `20261006210000`). As duas
+  conferem perfil admin ativo.
+
+## 4.3 Aba Estatísticas e PDF
+
+- `src/EstatisticasFeira.jsx` reaproveita os gráficos do Painel BI (`src/bi/BarChart.jsx`,
+  `StatTile.jsx`, `paletteBI.js`, `bi-panel.css`).
+- Filtro por dia da feira (horário de Brasília) e "Período todo". Mostra 8 indicadores
+  (inscrições, empresas, acessos link/QR, conversão, pico, aceite de novidades, e-mails com
+  falha, cadastros de produtos), gráficos por hora, segmento, UF, relação, empresas, cidades,
+  cliques e produtos, e o **mapa de calor dia × hora** das inscrições.
+- Agrupamentos:
+  - **Empresa**: pelo domínio do e-mail corporativo. "Fernandez" e "Fernandez Indústria de
+    Papel" entram juntas. Quem usou e-mail pessoal (gmail, hotmail…) entra pelo nome digitado.
+  - **Cidade**: ignora maiúsculas, acentos e a UF digitada junto ("Amparo-SP" = "Amparo").
+- **Imprimir / PDF**: o botão põe a classe `modo-impressao-estat` no `body`, e o CSS de
+  impressão em `promocao.css` esconde todo o resto do Radar (`:has(.estat-feira)`). O resultado
+  são 2 páginas A4 com logo, dia e hora de geração. No navegador, escolher "Salvar como PDF".
+- O PDF do 1º dia está em `veste-phenix-30-anos/Publicar/Estatisticas_Feira_Veste_Phenix_2026-10-06.pdf`.
 
 ## 5. Publicação
 
@@ -160,6 +202,33 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
 | Computador diz "instalado", mas não cria o segundo ícone | Firefox: não instala dois apps separados do mesmo site | Instalar pelo Chrome ou pelo Edge (confirmado funcionando no Chrome em 2026-09-25) |
 | Alternativa que sempre funciona no celular | — | Chrome ⋮ → Adicionar à tela inicial → **Criar atalho** (abre no navegador, com o ícone de cada app) |
 
+## 6.1 Operação durante a feira (e-mails, WhatsApp, consultas)
+
+Todos os scripts ficam em `scripts/`, leem o token de `.env.supabase.local` e nunca o exibem.
+
+| Situação | O que fazer |
+| --- | --- |
+| Conferir números ao vivo | `bash scripts/consulta-leitura-radar.sh arquivo.sql`. Roda o SQL numa transação **somente leitura** e termina em rollback |
+| E-mail aparece como "falhou", mas está na caixa de saída do Gmail (timeout do Gmail) | `bash scripts/marcar-email-enviado-veste-phenix.sh email@x`. Marca como enviado só aquela inscrição (exige exatamente 1). **Não** clicar em "Reenviar", senão sai uma 2ª cópia |
+| E-mail digitado errado (domínio inexistente, `.comb.r`, faltou `.br`) | Conferir o domínio certo (`nslookup -type=MX dominio`, padrão dos colegas da mesma empresa) → `bash scripts/corrigir-email-veste-phenix.sh errado@x certo@x` → no painel, **Reenviar e-mails com falha** |
+| Recusado por spam ou "endereço não existe" na empresa (550) | Mandar os números por WhatsApp: `bash scripts/whatsapp-numeros-veste-phenix.sh email@x` (prévia) e depois com `--enviar`. Acrescentar `--endereco` quando o servidor não reconheceu o endereço: o texto diz que "tivemos um retorno do servidor" (sem dizer que está errado) e pede para a pessoa confirmar o e-mail |
+
+- O WhatsApp sai pelo WAHA da VM do MW_Aniversarios (mesmo número). O script lê a chave na VM
+  por SSH e confere `check-exists` antes de enviar. As respostas chegam nesse número.
+- **Acentos no WhatsApp**: o corpo vai para o `curl` por arquivo, com os acentos escritos como
+  códigos `\uXXXX`. Passar UTF-8 como argumento do curl no Windows quebrou os acentos da 1ª
+  mensagem de 06/10, que foi apagada e reenviada.
+- Os e-mails saem do `radarphenix@gmail.com` (Gmail SMTP), sem DKIM do domínio Phenix. Filtros
+  corporativos (BRDrive, Microsoft 365) podem recusar. Esses casos são tratados como exceção
+  por WhatsApp. A solução definitiva, se o volume crescer, é um provedor transacional
+  (Resend) com DNS do domínio.
+- O tempo de espera do SMTP é de 60 s desde 06/10 (`socketTimeout`). Com 20 s, o Gmail lento
+  marcava como "falhou" um e-mail que tinha saído.
+- **Validação de e-mail** (formulário e Edge Function, desde 06/10): recusa domínio que não
+  termina em letras e os erros comuns `.con`, `.cpm`, `.cm`, `.vom`, `.comb.r` e `.com.b`. Um
+  domínio válido porém inexistente (`empresa.com` em vez de `.com.br`) **não** é detectado.
+  Isso foi decisão de 06/10: com o volume baixo, é corrigido um a um.
+
 ## 7. Histórico
 
 - **2026-09-24** (outra IA): cadastro de produtos, menu da feira, rota própria `/feira/veste-phenix`
@@ -173,5 +242,19 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
   - separação dos dois apps instaláveis (escopo `/radar/`, HTML próprio da feira, ícones
     próprios);
   - chaves do Supabase CLI por projeto.
+- **2026-10-06 (1º dia de feira)**:
+  - painel com recarga automática e botão Atualizar (`0b1b1d7`);
+  - SMTP com 60 s de espera e validação de e-mail mais rígida (`3829c4c`);
+  - contador de cliques e acessos (`79b98d3` banco, `1142d1f` telas);
+  - aba Estatísticas (`fe8f9ac` banco, `998e2ec` telas) e Imprimir / PDF (`1b1f3de`).
+  - Correções feitas no dia:
+    - e-mail do Rafael (`suzano.comb.r` → `.com.br`) e do Luiz (`fernandezpapel.com` →
+      `.com.br`) corrigidos e reenviados;
+    - Kelvyn (Papel Tangará, recusa por spam), Luiz e Fabrício (Fernandez, endereço não
+      reconhecido) receberam os números por WhatsApp;
+    - um falso "falhou" do compras3@gmail.com (timeout) foi marcado como enviado.
+  - Fechamento do dia: 30 inscrições de 16 empresas, pico às 15h, 79% de conversão
+    link/QR → inscrição e **0 cadastros de produtos**. Os tablets quase não foram usados (2
+    cliques em cada botão do menu); conferir com a equipe do stand.
 - Registro existente no banco em 2026-09-25: cadastro "marcelo" / Tela Acabadora, feito pelo
   usuário como teste. Não foi apagado; aguarda decisão dele.
