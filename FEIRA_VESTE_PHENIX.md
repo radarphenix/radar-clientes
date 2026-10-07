@@ -256,5 +256,15 @@ Todos os scripts ficam em `scripts/`, leem o token de `.env.supabase.local` e nu
   - Fechamento do dia: 30 inscrições de 16 empresas, pico às 15h, 79% de conversão
     link/QR → inscrição e **0 cadastros de produtos**. Os tablets quase não foram usados (2
     cliques em cada botão do menu); conferir com a equipe do stand.
+- **2026-10-07 (2º dia de feira)**:
+  - Joaquim Silva (g.producao@cipel.com.br) tinha o telefone gravado no campo empresa;
+    corrigido para "Cipel de Pádua", o mesmo nome usado pelo outro inscrito da Cipel. Só esse
+    campo foi alterado; os números da sorte continuam os mesmos e o e-mail não foi reenviado.
+  - Revisão das 30 inscrições do 1º dia: todos os CPFs e CNPJs são válidos, não há CPF,
+    e-mail ou telefone repetido, e os 300 números são distintos, 10 por inscrição. Ficou para
+    **depois da promoção**, por decisão do usuário, a padronização de nomes de empresa
+    (Suzano / Suzano SA, Novacki…), a correção de "Luteprl" para Lutepel, das cidades
+    "Amparo-SP" e "Amparo SP" e das maiúsculas de nomes e cidades. Durante a promoção só se
+    corrige dado claramente errado.
 - Registro existente no banco em 2026-09-25: cadastro "marcelo" / Tela Acabadora, feito pelo
   usuário como teste. Não foi apagado; aguarda decisão dele.
