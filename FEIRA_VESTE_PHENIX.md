@@ -266,5 +266,24 @@ Todos os scripts ficam em `scripts/`, leem o token de `.env.supabase.local` e nu
     (Suzano / Suzano SA, Novacki…), a correção de "Luteprl" para Lutepel, das cidades
     "Amparo-SP" e "Amparo SP" e das maiúsculas de nomes e cidades. Durante a promoção só se
     corrige dado claramente errado.
+  - Contador da feira (`c9b4bca`): quando um evento tinha mais de uma origem, a 2ª linha
+    aparecia sem nome e parecia "acesso sem evento". Agora o nome aparece em todas as linhas e
+    há uma linha de total do evento.
+  - Primeiras inscrições pelos **tablets do stand**: Evaldo Melão (Cartonifício Valinhos,
+    15:51) e Valdemar Szymkow (Novacki, 16:15), identificadas pelo horário do evento. Os
+    colegas deles (Josué e Marcelo Vasilko) se inscreveram no mesmo minuto pelo link/QR.
+  - Fechamento do dia: **26 inscrições** de 12 empresas (domínio de e-mail), pico às 15h,
+    todas com e-mail enviado. Total da promoção: **56**. Cadastros de produtos: **0** de novo.
+  - O contador só existe desde a tarde do dia 1 (`79b98d3`), por isso "Inscrições concluídas"
+    no contador (39) é menor que o total de inscrições (56).
+
+### Retomada (2026-10-08)
+
+- Tablets: 0 cadastros de produtos em dois dias. Conferir com a equipe do stand se o
+  botão "Cadastro de Produtos" está sendo oferecido, ou se há algum problema na tela.
+- Painel admin: conferir se o contador novo aparece (Ctrl+F5 se o navegador segurar a
+  versão anterior).
+- Depois de 20/10: padronizar empresas e cidades (lista na entrada de 07/10 acima) e decidir
+  sobre o registro de teste "marcelo" de 25/09.
 - Registro existente no banco em 2026-09-25: cadastro "marcelo" / Tela Acabadora, feito pelo
   usuário como teste. Não foi apagado; aguarda decisão dele.

@@ -28,6 +28,13 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
 
 ## Snapshot Atual
 
+- [Retomada — 2026-10-08 (fim do dia 07/10)]
+  - **Publicado** em 07/10: `362d2ed` e `9db6706` (parcela retida invisível ao vendedor, total da equipe, BI de retidas, migrations `20261007200000`/`20261007210000` aplicadas), `4771988` (docs da feira) e `c9b4bca` (contador da feira).
+  - **Só local, não publicado**: `bceee2d` — BI Faturamento (`PainelBIFaturamento.jsx` + `App.jsx`), scripts operacionais, `cigam/views` e esta documentação. O push leva o BI Faturamento ao ar; só fazer quando o usuário decidir. Se precisar publicar outra coisa antes, usar uma branch a partir de `origin/main` com cherry-pick, como foi feito com `c9b4bca`.
+  - Comissões em produção (GO-Global): view `_RES`/`_LANC` nova, `MWComissoesSync` e `MWComissoes` novos e script `022` já rodados; o sync das 17:41 trouxe `comissao_retida` (000059: jan 321,16 e ago 4.262,10). **Conferir no próximo sync** o 000105: o usuário revisou as NFs 10238 e 10283, então a retida de 612,74 deve aparecer no resumo dele.
+  - BI Faturamento / `MWFaturamentoSync`: não publicado. A view em `MWFaturamentoSync/Publicar/Sql/Oracle` já tem o filtro de adiantamento. O sync nunca foi agendado (último dado no Supabase é de 29/09).
+  - Feira: ver "Retomada (2026-10-08)" em `FEIRA_VESTE_PHENIX.md`.
+
 - [Retomada BI Faturamento — 2026-09-29, fim do dia]
   - Objetivo do painel: visão executiva em duas competências independentes. **Comercial**: previsão de faturamento, faturado, previsão atingida e pendente. **Caixa**: previsão de recebimento por vencimento, recebido por liquidação e saldo em atraso. Não misturar notas/pedidos com recebimentos.
   - Regra comercial final, confirmada pelo usuário: `1=0` = existe pedido e o item ainda não foi faturado; `1=1` = existe pedido e o item foi faturado; `0=1` = existe nota faturada sem pedido + item correspondente. Para o pedido, a regra operacional é `FAITEMPE.CONTROLE = 50`: somente controle 50 significa faturado; os demais controles comerciais permanecem pendentes. O vínculo pedido–nota não decide se o pedido está pendente; ele decide se uma **nota** é sem previsão.
