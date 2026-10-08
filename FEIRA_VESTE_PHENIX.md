@@ -274,6 +274,8 @@ Todos os scripts ficam em `scripts/`, leem o token de `.env.supabase.local` e nu
     colegas deles (Josué e Marcelo Vasilko) se inscreveram no mesmo minuto pelo link/QR.
   - Fechamento do dia: **26 inscrições** de 12 empresas (domínio de e-mail), pico às 15h,
     todas com e-mail enviado. Total da promoção: **56**. Cadastros de produtos: **0** de novo.
+  - E-mail de confirmação do Ilam (ilam0810@hotmail.com) voltou; números enviados por
+    WhatsApp para +55 47 99265-5341 (HTTP 201).
   - O contador só existe desde a tarde do dia 1 (`79b98d3`), por isso "Inscrições concluídas"
     no contador (39) é menor que o total de inscrições (56).
 
