@@ -1166,9 +1166,13 @@ Botão **Imprimir painel** no topo gera uma versão para impressão/PDF só com 
 
 No grupo **Gestão e Análise**, o submenu **Painel BI** reúne **Comissões** e **Faturamento**. A visão de Faturamento é exclusiva de administradores.
 
+### Ver os documentos de cada número
+
+Clique em qualquer card (Previsão, Faturado bruto, Devoluções, Faturado líquido, Atingimento, etapas, Caixa), numa barra dos rankings ou das faixas de atraso, ou num cliente da tabela de maiores saldos vencidos. Abre uma janela com as notas, os pedidos ou os títulos que formam aquele número. O total da janela é sempre igual ao número clicado. Na janela, clique no título de uma coluna para ordenar, e use **Exportar Excel** para levar a lista. Para fechar, use **Esc**, o **X** ou clique fora da janela.
+
 ### Filtros
 
-Os filtros ficam em dois blocos:
+Os filtros ficam em duas linhas:
 
 - **Período**: atalhos **Mês atual**, **Mês anterior**, **Trimestre**, **Semestre** e **Ano** (pegam o período inteiro, para a previsão aparecer completa), ou datas livres em **De/Até**. Clicar num mês do gráfico anual também seleciona aquele mês.
 - **Recortes**: cliente, representante e situação na lista (detalhados abaixo). **Limpar recortes** volta tudo.
@@ -1190,7 +1194,8 @@ O controle do item de pedido no CIGAM define a etapa:
 | Faturado | 50 | Sim |
 | Suspenso/cancelado | 85, 90, 95 | Não |
 
-- **Previsão de faturamento**: itens de pedido com data de previsão no período, em todas as etapas menos suspenso/cancelado. Os cards de **Previsão por etapa** mostram quanto dela já foi faturado, quanto está aprovado, aguardando aprovação ou em negociação.
+- **Previsão de faturamento**: itens de pedido com data de previsão no período, em todas as etapas menos suspenso/cancelado. Os cards de **Previsão por etapa** mostram quanto dela já foi faturado (**Previsto já faturado**, controle 50), quanto está aprovado, aguardando aprovação ou em negociação. A soma dos quatro é igual à previsão.
+- **Previsto já faturado** e **Faturado bruto** são números diferentes. O primeiro é o valor dos pedidos **previstos no período** que já estão no controle 50. O segundo é o valor das **notas emitidas no período**, que inclui notas sem pedido e notas de pedidos previstos em outros meses.
 - **Faturado bruto**: notas de saída do período.
 - **Devoluções**: notas de devolução de venda do período (entrada com CFOP 1201, 2201 ou 3201, mesma regra do MWComissoes), pela data da devolução.
 - **Faturado líquido** = bruto − devoluções. É o número principal. Logo abaixo, a comparação com o período anterior e com o mesmo período do ano anterior, ambos no líquido. A comparação vai só até hoje nos dois lados: em 09/10, compara 01 a 09/10 com 01 a 09/09.
@@ -1204,9 +1209,10 @@ Rankings: **Top 10 clientes por faturado líquido**, **Top 10 clientes por carte
 
 ### Caixa
 
-- **Previsão de recebimento**: títulos R01 com vencimento no período. **Recebido**: títulos liquidados no período. Não existem pagamentos parciais.
-- **Títulos vencidos**: escolha o recorte pelo vencimento: **Do mês**, **Do trimestre**, **Do semestre**, **Do ano** ou **Todos**. O padrão é **Do mês**, para o atraso antigo, de quando a baixa não era controlada no CIGAM, não dominar a leitura. O recorte vale para o card **Vencido em aberto**, para as **faixas de atraso** (1–30, 31–60, 61–90, mais de 90 dias), para os **Maiores saldos vencidos** e para a aba de vencidos do Excel.
-- **A vencer**: saldo em aberto com vencimento a partir da data de referência. A referência é a data final do filtro, ou hoje se o filtro termina no futuro.
+- **Títulos com vencimento no período**: **Previsão de recebimento** = **Recebido** + **Vencido em aberto** + **A vencer**, sempre sobre os mesmos títulos (R01 que vencem no período). Vencido e a vencer são separados pela data de referência: o fim do filtro, ou hoje se o filtro termina no futuro. Não existem pagamentos parciais.
+- **Entradas de caixa no período** (na linha abaixo dos cards): todas as liquidações do período, inclusive de títulos que venciam em outros meses. Por isso pode ser maior ou menor que o "Recebido".
+- O gráfico anual de Caixa usa a mesma base dos cards: previsto e recebido pelo mês de vencimento.
+- **Carteira vencida**: estoque de títulos vencidos e não pagos, independente do período. Escolha o recorte pelo vencimento: **Do mês**, **Do trimestre**, **Do semestre**, **Do ano** ou **Todos**. O padrão é **Do mês**, para o atraso antigo, de quando a baixa não era controlada no CIGAM, não dominar a leitura. O recorte vale para o card **Vencido em aberto**, para as **faixas de atraso** (1–30, 31–60, 61–90, mais de 90 dias), para os **Maiores saldos vencidos** e para a aba de vencidos do Excel.
 - **Em validação:** o saldo vem do CIGAM. Títulos baixados por outro meio, fora do CIGAM, ainda aparecem como vencidos.
 
 ### Pedidos, notas e devoluções do período

@@ -5,6 +5,7 @@ import { supabase } from "./supabaseClient";
 import StatTile from "./bi/StatTile.jsx";
 import LineChart from "./bi/LineChart.jsx";
 import BarChart from "./bi/BarChart.jsx";
+import DetalheBI from "./bi/DetalheBI.jsx";
 import { CATEGORICAL, SEQUENCIAL_ORDINAL } from "./bi/paletteBI.js";
 import "./bi-panel.css";
 
@@ -132,7 +133,7 @@ function agruparTop(linhas, chaveDe, rotuloDe, valorDe, limite = 10) {
   const mapa = new Map();
   linhas.forEach((x) => {
     const k = chaveDe(x);
-    const atual = mapa.get(k) || { rotulo: rotuloDe(x), valor: 0 };
+    const atual = mapa.get(k) || { chave: k, rotulo: rotuloDe(x), valor: 0 };
     atual.valor += valorDe(x);
     mapa.set(k, atual);
   });
@@ -149,6 +150,8 @@ export default function PainelBIFaturamento({ perfil }) {
   const [financeiro, setFinanceiro] = useState([]);
   const [devolucoes, setDevolucoes] = useState([]);
   const [recorteVencidos, setRecorteVencidos] = useState("mes");
+  const [detalhe, setDetalhe] = useState(null);
+  const fecharDetalhe = useCallback(() => setDetalhe(null), []);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [abertos, setAbertos] = useState(new Set());
@@ -274,14 +277,24 @@ export default function PainelBIFaturamento({ perfil }) {
 
   // Caixa: a posição de contas a receber é na data de referência (fim do filtro, no máximo hoje).
   const referencia = fim < hoje() ? fim : hoje();
+  // Títulos com vencimento no período: previsão = recebido + vencido + a vencer, sempre.
+  const titulosPeriodo = periodo.pc;
+  const recebidoPeriodo = soma(titulosPeriodo, (x) => n(x.valor) - n(x.valor_saldo));
+  const vencidoPeriodo = titulosPeriodo.filter((x) => n(x.valor_saldo) > 0 && x.data_vencimento < referencia);
+  const aVencerPeriodo = titulosPeriodo.filter((x) => n(x.valor_saldo) > 0 && x.data_vencimento >= referencia);
+  // Entradas de caixa: liquidações no período, inclusive de títulos que venciam em outros meses.
+  const entradasCaixa = soma(periodo.r, (x) => n(x.valor));
+  // Carteira vencida (estoque), com o recorte escolhido pelo vencimento.
   const emAberto = financeiroF.filter((x) => n(x.valor_saldo) > 0);
   const inicioVencidos = inicioRecorte(referencia, recorteVencidos);
   const rotuloRecorte = RECORTES_VENCIDOS.find(([t]) => t === recorteVencidos)[1].toLowerCase();
   const vencidos = emAberto.filter((x) => x.data_vencimento < referencia && (!inicioVencidos || x.data_vencimento >= inicioVencidos));
-  const aVencer = emAberto.filter((x) => x.data_vencimento >= referencia);
   const faixas = FAIXAS_ATRASO.map((faixa, i) => {
     const de = i === 0 ? 1 : FAIXAS_ATRASO[i - 1].ate + 1;
     return {
+      chave: i,
+      de,
+      ate: faixa.ate,
       rotulo: faixa.rotulo,
       cor: SEQUENCIAL_ORDINAL[i],
       valor: soma(vencidos.filter((x) => { const d = diasEntre(x.data_vencimento, referencia); return d >= de && d <= faixa.ate; }), (x) => n(x.valor_saldo)),
@@ -307,7 +320,8 @@ export default function PainelBIFaturamento({ perfil }) {
       pf: em(itensPedido.filter((x) => PREVISTAS.has(x.etapa)), "data_previsao", (x) => x.valor),
       fat: em(notasF, "data_movimento", (x) => n(x.valor_liquido)) - em(devolucoesF, "data_movimento", (x) => n(x.valor_liquido)),
       pr: em(financeiroF, "data_vencimento", (x) => n(x.valor)),
-      rec: em(financeiroF.filter((x) => n(x.valor_saldo) === 0), "data_ultima_liquidacao", (x) => n(x.valor)),
+      // Mesma base dos cards de Caixa: títulos pelo mês de vencimento, recebido = valor - saldo.
+      rec: em(financeiroF, "data_vencimento", (x) => n(x.valor) - n(x.valor_saldo)),
     };
   }), [ano, itensPedido, notasF, devolucoesF, financeiroF]);
 
@@ -368,6 +382,63 @@ export default function PainelBIFaturamento({ perfil }) {
   const selecionarMes = (i) => setPeriodo([`${ano}-${pad(i + 1)}-01`, fimDoMes(Number(ano), i)]);
   const limparFiltros = () => { setCliente(""); setRepresentante(""); setSituacao("todas"); };
 
+  // ---- Detalhe ao clicar em cards, barras e clientes ----
+  const nomeRep = (c) => nomeRepresentante(c || SEM_REPRESENTANTE);
+  const COL_NOTAS = [
+    { chave: "data", rotulo: "Data", tipo: "data" }, { chave: "documento", rotulo: "Documento" },
+    { chave: "cliente", rotulo: "Cliente" }, { chave: "representante", rotulo: "Representante" },
+    { chave: "pedido", rotulo: "Pedido(s)" }, { chave: "valor", rotulo: "Valor", tipo: "moeda" },
+  ];
+  const COL_PEDIDOS = [
+    { chave: "data", rotulo: "Previsão", tipo: "data" }, { chave: "pedido", rotulo: "Pedido" },
+    { chave: "cliente", rotulo: "Cliente" }, { chave: "representante", rotulo: "Representante" },
+    { chave: "item", rotulo: "Item" }, { chave: "situacao", rotulo: "Situação" },
+    { chave: "notas", rotulo: "Nota(s)" }, { chave: "valor", rotulo: "Valor", tipo: "moeda" },
+  ];
+  const COL_TITULOS = [
+    { chave: "vencimento", rotulo: "Vencimento", tipo: "data" }, { chave: "liquidacao", rotulo: "Liquidação", tipo: "data" },
+    { chave: "nf", rotulo: "NF" }, { chave: "lancamento", rotulo: "Lançamento" }, { chave: "cliente", rotulo: "Cliente" },
+    { chave: "valor", rotulo: "Valor", tipo: "moeda" }, { chave: "recebido", rotulo: "Recebido", tipo: "moeda" },
+    { chave: "saldo", rotulo: "Saldo", tipo: "moeda" }, { chave: "atraso", rotulo: "Dias de atraso", tipo: "numero" },
+  ];
+  function linhasNotas(notasLista, devLista = []) {
+    const mapa = new Map();
+    notasLista.forEach((x) => {
+      const k = `N|${x.nf}|${x.serie}|${x.cd_empresa}`;
+      const l = mapa.get(k) || { id: k, data: x.data_movimento, documento: `NF ${x.nf}`, cliente: x.nome_cliente || x.codigo_cliente, representante: nomeRep(x.codigo_representante), pedidos: new Set(), valor: 0 };
+      l.valor += n(x.valor_liquido);
+      if (x.pedido_origem) l.pedidos.add(x.pedido_origem);
+      mapa.set(k, l);
+    });
+    devLista.forEach((x) => {
+      const k = `D|${x.nf}|${x.serie}|${x.codigo_cliente}`;
+      const l = mapa.get(k) || { id: k, data: x.data_movimento, documento: `Devolução ${x.nf}${x.nota_origem ? ` (da NF ${x.nota_origem})` : ""}`, cliente: x.nome_cliente || x.codigo_cliente, representante: nomeRep(x.codigo_representante), pedidos: new Set(), valor: 0 };
+      l.valor -= n(x.valor_liquido);
+      mapa.set(k, l);
+    });
+    return [...mapa.values()].map(({ pedidos: ped, ...l }) => ({ ...l, pedido: [...ped].join(", ") || "—" }))
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  }
+  const linhasPedidos = (itens) => itens.map((x) => ({
+    id: x.id, data: x.data_previsao, pedido: x.cd_pedido, cliente: x.nome_cliente || x.codigo_cliente,
+    representante: nomeRep(x.codigo_representante), item: `${x.codigo_material} · ${x.descricao_item}`,
+    situacao: `${CONTROLES[x.controle_item] || "Controle"} (${x.controle_item ?? "—"})`,
+    notas: x.notasVinculadas.map((nota) => nota.nf).join(", ") || "—", valor: x.valor,
+  })).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  const linhasTitulos = (lista) => lista.map((x) => ({
+    id: x.id, vencimento: x.data_vencimento, liquidacao: x.data_ultima_liquidacao, nf: x.serie ? `${x.nf}/${x.serie}` : x.nf,
+    lancamento: x.cd_lancamento, cliente: nomesClientes.get(x.cd_empresa) || x.cd_empresa,
+    valor: n(x.valor), recebido: n(x.valor) - n(x.valor_saldo), saldo: n(x.valor_saldo),
+    atraso: n(x.valor_saldo) > 0 && x.data_vencimento < referencia ? diasEntre(x.data_vencimento, referencia) : 0,
+  })).sort((a, b) => String(a.vencimento).localeCompare(String(b.vencimento)));
+  const abrir = (titulo, colunas, linhas, campoTotal = "valor", subtitulo = `${dataBR(inicio)} a ${dataBR(fim)}`) => setDetalhe({
+    titulo, subtitulo, colunas, linhas, total: soma(linhas, (l) => n(l[campoTotal])),
+    arquivo: `bi_${titulo.normalize("NFD").replace(/[^A-Za-z0-9]+/g, "_").toLowerCase()}_${inicio}`,
+  });
+  const doCliente = (c) => (x) => (x.codigo_cliente ?? x.cd_empresa) === c;
+  const doRepresentante = (c) => (x) => (x.codigo_representante || SEM_REPRESENTANTE) === c;
+  const detalheEtapa = (etapa, titulo) => abrir(titulo, COL_PEDIDOS, linhasPedidos(periodo.p.filter((x) => x.etapa === etapa)));
+
   const tituloDoc = (d) => (d.tipo === "P" ? `Pedido ${d.pedido}` : d.tipo === "D" ? `Devolução ${d.nf}` : `Nota ${d.nf}`);
   const valorItem = (d, x) => (d.tipo === "P" ? x.valor : d.tipo === "D" ? -n(x.valor_liquido) : n(x.valor_liquido));
   const situacaoItem = (d, x) => {
@@ -414,8 +485,8 @@ export default function PainelBIFaturamento({ perfil }) {
     </div>
 
     <div className="bi-filtros bi-filtros-fat">
-      <fieldset className="bi-grupo-filtro">
-        <legend>Período</legend>
+      <div className="bi-linha-filtro">
+        <span className="bi-linha-rotulo">Período</span>
         <div className="bi-atalhos" role="group" aria-label="Atalhos de período">
           {ATALHOS.map(([t, r]) => (
             <button key={t} type="button" className={atalhoAtivo === t ? "ativo" : ""} onClick={() => setPeriodo(atalho(t))}>{r}</button>
@@ -423,14 +494,14 @@ export default function PainelBIFaturamento({ perfil }) {
         </div>
         <label>De<input type="date" value={inicio} max={fim} onChange={(e) => setInicio(e.target.value)} /></label>
         <label>Até<input type="date" value={fim} min={inicio} onChange={(e) => setFim(e.target.value)} /></label>
-      </fieldset>
-      <fieldset className="bi-grupo-filtro">
-        <legend>Recortes</legend>
-        <label>Cliente
+      </div>
+      <div className="bi-linha-filtro">
+        <span className="bi-linha-rotulo">Recortes</span>
+        <label className="bi-campo-cliente">Cliente
           <input type="search" list="bi-fat-clientes" placeholder="Nome ou código" value={cliente} onChange={(e) => setCliente(e.target.value)} />
           <datalist id="bi-fat-clientes">{[...nomesClientes.entries()].map(([c, nome]) => <option key={c} value={nome}>{c}</option>)}</datalist>
         </label>
-        <label>Representante
+        <label className="bi-campo-representante">Representante
           <select value={representante} onChange={(e) => setRepresentante(e.target.value)}>
             <option value="">Todos</option>
             {representantes.map(([c, nome]) => <option key={c} value={c}>{nome}</option>)}
@@ -449,9 +520,9 @@ export default function PainelBIFaturamento({ perfil }) {
           </select>
         </label>
         {filtroAtivo && <button type="button" className="bi-limpar" onClick={limparFiltros}>Limpar recortes</button>}
-      </fieldset>
+      </div>
       <span className="bi-ajuda-filtro">
-        Clique em um mês do gráfico para detalhar o período.
+        Clique nos cards, nas barras e nos clientes para ver os documentos; num mês do gráfico para filtrar o período.
         {ultimaSincronizacao && <> Dados do CIGAM sincronizados em {dataHoraBR(ultimaSincronizacao)}.</>}
       </span>
     </div>
@@ -460,12 +531,12 @@ export default function PainelBIFaturamento({ perfil }) {
     {carregando ? <p className="bi-vazio">Carregando...</p> : <>
       <h3 className="bi-secao-titulo">Comercial</h3>
       <div className="bi-kpis bi-kpis-5">
-        <StatTile label="Previsão de faturamento" valor={moeda(previsao)} />
-        <StatTile label="Faturado bruto" valor={moeda(faturado)} />
-        <StatTile label="Devoluções" valor={devolvido > 0 ? `− ${moeda(devolvido)}` : moeda(0)} />
-        <StatTile label="Faturado líquido" valor={moeda(liquido)} destaque
+        <StatTile label="Previsão de faturamento" valor={moeda(previsao)} onClick={() => abrir("Previsão de faturamento", COL_PEDIDOS, linhasPedidos(periodo.previstos))} />
+        <StatTile label="Faturado bruto" valor={moeda(faturado)} onClick={() => abrir("Faturado bruto", COL_NOTAS, linhasNotas(periodo.no))} />
+        <StatTile label="Devoluções" valor={devolvido > 0 ? `− ${moeda(devolvido)}` : moeda(0)} onClick={() => abrir("Devoluções", COL_NOTAS, linhasNotas([], periodo.dv))} />
+        <StatTile label="Faturado líquido" valor={moeda(liquido)} destaque onClick={() => abrir("Faturado líquido", COL_NOTAS, linhasNotas(periodo.no, periodo.dv))}
           delta={deltaAnterior === null ? null : `${pct(Math.abs(deltaAnterior))} vs período anterior`} deltaFavoravel={deltaAnterior >= 0} />
-        <StatTile label="Atingimento da previsão" valor={previsao > 0 ? pct(atingida / previsao) : "—"} />
+        <StatTile label="Atingimento da previsão" valor={previsao > 0 ? pct(atingida / previsao) : "—"} onClick={() => detalheEtapa("faturado", "Previsão já faturada (controle 50)")} />
       </div>
       {comparacao && <p className="bi-comparativo">
         Ticket médio por nota: <strong>{notasDistintas ? moeda(faturado / notasDistintas) : "—"}</strong>
@@ -477,11 +548,11 @@ export default function PainelBIFaturamento({ perfil }) {
       </p>}
       <h4 className="bi-subtitulo">Previsão por etapa · faturado sem pedido</h4>
       <div className="bi-kpis bi-kpis-5">
-        <StatTile label="Faturado (controle 50)" valor={moeda(atingida)} />
-        <StatTile label="Carteira aprovada (30 a 40)" valor={moeda(porEtapa("carteira"))} />
-        <StatTile label="Aguardando aprovação (15)" valor={moeda(porEtapa("pendente"))} />
-        <StatTile label="Em negociação (10 e 20)" valor={moeda(porEtapa("negociacao"))} />
-        <StatTile label="Faturado não previsto" valor={moeda(naoPrevistoValor)} />
+        <StatTile label="Previsto já faturado (controle 50)" valor={moeda(atingida)} onClick={() => detalheEtapa("faturado", "Previsão já faturada (controle 50)")} />
+        <StatTile label="Carteira aprovada (30 a 40)" valor={moeda(porEtapa("carteira"))} onClick={() => detalheEtapa("carteira", "Carteira aprovada")} />
+        <StatTile label="Aguardando aprovação (15)" valor={moeda(porEtapa("pendente"))} onClick={() => detalheEtapa("pendente", "Aguardando aprovação")} />
+        <StatTile label="Em negociação (10 e 20)" valor={moeda(porEtapa("negociacao"))} onClick={() => detalheEtapa("negociacao", "Em negociação")} />
+        <StatTile label="Faturado não previsto" valor={moeda(naoPrevistoValor)} onClick={() => abrir("Faturado não previsto", COL_NOTAS, linhasNotas(periodo.no.filter(naoPrevista)))} />
       </div>
       {porEtapa("fora") > 0 && <p className="bi-comparativo">
         Fora da previsão: <strong>{moeda(porEtapa("fora"))}</strong> suspenso/cancelado (controles 85, 90 e 95).
@@ -492,45 +563,66 @@ export default function PainelBIFaturamento({ perfil }) {
           { nome: "Previsão", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pf })) },
           { nome: "Faturado", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.fat })) },
         ]} formatarValor={moeda} />
-        <LineChart titulo={`Caixa anual ${ano} · previsto × recebido`} onSelecionarPonto={selecionarMes} series={[
+        <LineChart titulo={`Caixa anual ${ano} · previsto × recebido, por vencimento`} onSelecionarPonto={selecionarMes} series={[
           { nome: "Previsto", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pr })) },
           { nome: "Recebido", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.rec })) },
         ]} formatarValor={moeda} />
       </div>
 
       <div className="bi-graficos-grid">
-        <BarChart titulo="Top 10 clientes · faturado líquido no período" itens={rankingFaturado} corPadrao={CATEGORICAL.vendas} formatarValor={moeda} />
-        <BarChart titulo="Top 10 clientes · carteira a faturar" itens={rankingCarteira} corPadrao={CATEGORICAL.comissao} formatarValor={moeda} />
+        <BarChart titulo="Top 10 clientes · faturado líquido no período" itens={rankingFaturado} corPadrao={CATEGORICAL.vendas} formatarValor={moeda}
+          onSelecionarItem={(item) => abrir(`Faturado líquido · ${item.rotulo}`, COL_NOTAS, linhasNotas(periodo.no.filter(doCliente(item.chave)), periodo.dv.filter(doCliente(item.chave))))} />
+        <BarChart titulo="Top 10 clientes · carteira a faturar" itens={rankingCarteira} corPadrao={CATEGORICAL.comissao} formatarValor={moeda}
+          onSelecionarItem={(item) => abrir(`Carteira a faturar · ${item.rotulo}`, COL_PEDIDOS, linhasPedidos(periodo.p.filter((x) => PREVISTAS.has(x.etapa) && x.etapa !== "faturado" && x.codigo_cliente === item.chave)))} />
       </div>
-      {!representante && <BarChart titulo="Faturado líquido por representante" itens={rankingRepresentantes} corPadrao={CATEGORICAL.vendas} formatarValor={moeda} />}
+      {!representante && <BarChart titulo="Faturado líquido por representante" itens={rankingRepresentantes} corPadrao={CATEGORICAL.vendas} formatarValor={moeda}
+        onSelecionarItem={(item) => abrir(`Faturado líquido · ${item.rotulo}`, COL_NOTAS, linhasNotas(periodo.no.filter(doRepresentante(item.chave)), periodo.dv.filter(doRepresentante(item.chave))))} />}
 
       <h3 className="bi-secao-titulo">Caixa</h3>
+      <h4 className="bi-subtitulo">Títulos com vencimento no período</h4>
+      <div className="bi-kpis">
+        <StatTile label="Previsão de recebimento" valor={moeda(soma(titulosPeriodo, (x) => n(x.valor)))}
+          onClick={() => abrir("Previsão de recebimento", COL_TITULOS, linhasTitulos(titulosPeriodo))} />
+        <StatTile label="Recebido" valor={moeda(recebidoPeriodo)} destaque
+          onClick={() => abrir("Recebido (títulos do período)", COL_TITULOS, linhasTitulos(titulosPeriodo.filter((x) => n(x.valor) - n(x.valor_saldo) > 0)), "recebido")} />
+        <StatTile label="Vencido em aberto" valor={moeda(soma(vencidoPeriodo, (x) => n(x.valor_saldo)))}
+          onClick={() => abrir("Vencido em aberto (títulos do período)", COL_TITULOS, linhasTitulos(vencidoPeriodo), "saldo")} />
+        <StatTile label="A vencer" valor={moeda(soma(aVencerPeriodo, (x) => n(x.valor_saldo)))}
+          onClick={() => abrir("A vencer (títulos do período)", COL_TITULOS, linhasTitulos(aVencerPeriodo), "saldo")} />
+      </div>
+      <p className="bi-comparativo">
+        Previsão = recebido + vencido + a vencer, considerando os títulos que vencem de {dataBR(inicio)} a {dataBR(fim)} (posição em {dataBR(referencia)}).
+        {" "}Entradas de caixa no período, inclusive de títulos de outros meses:{" "}
+        <button type="button" className="bi-link" onClick={() => abrir("Entradas de caixa (liquidações no período)", COL_TITULOS, linhasTitulos(periodo.r))}>{moeda(entradasCaixa)}</button>.
+      </p>
+
+      <h4 className="bi-subtitulo">Carteira vencida</h4>
       <div className="bi-recorte">
-        <span>Títulos vencidos</span>
+        <span>Vencimento</span>
         <div className="bi-atalhos" role="group" aria-label="Recorte dos títulos vencidos">
           {RECORTES_VENCIDOS.map(([t, r]) => (
             <button key={t} type="button" className={recorteVencidos === t ? "ativo" : ""} onClick={() => setRecorteVencidos(t)}>{r}</button>
           ))}
         </div>
+        <button type="button" className="bi-link bi-recorte-total" onClick={() => abrir(`Carteira vencida · ${rotuloRecorte}`, COL_TITULOS, linhasTitulos(vencidos), "saldo", `Posição em ${dataBR(referencia)}`)}>
+          {moeda(soma(vencidos, (x) => n(x.valor_saldo)))} em {vencidos.length} título(s)
+        </button>
         <small>{inicioVencidos ? `Vencimento de ${dataBR(inicioVencidos)} até ${dataBR(referencia)}` : `Todo o histórico até ${dataBR(referencia)}`}</small>
       </div>
       <div className="bi-aviso-pendente">
         Em validação: o saldo dos títulos vem do CIGAM (R01 com saldo em aberto). Títulos baixados por outro meio,
-        fora do CIGAM, ainda aparecem como vencidos. Use o recorte acima para olhar só o período controlado.
-      </div>
-      <div className="bi-kpis">
-        <StatTile label="Previsão de recebimento" valor={moeda(soma(periodo.pc, (x) => n(x.valor)))} />
-        <StatTile label="Recebido" valor={moeda(soma(periodo.r, (x) => n(x.valor)))} destaque />
-        <StatTile label={`Vencido em aberto · ${rotuloRecorte}`} valor={moeda(soma(vencidos, (x) => n(x.valor_saldo)))} />
-        <StatTile label="A vencer" valor={moeda(soma(aVencer, (x) => n(x.valor_saldo)))} />
+        fora do CIGAM, ainda aparecem como vencidos. Use o recorte para olhar só o período controlado.
       </div>
       <div className="bi-graficos-grid">
-        <BarChart titulo={`Vencidos ${rotuloRecorte} por faixa de atraso · posição em ${dataBR(referencia)}`} itens={faixas} formatarValor={moeda} />
+        <BarChart titulo={`Vencidos ${rotuloRecorte} por faixa de atraso · posição em ${dataBR(referencia)}`} itens={faixas} formatarValor={moeda}
+          onSelecionarItem={(f) => abrir(`Vencidos ${rotuloRecorte} · ${f.rotulo}`, COL_TITULOS, linhasTitulos(vencidos.filter((x) => { const d = diasEntre(x.data_vencimento, referencia); return d >= f.de && d <= f.ate; })), "saldo", `Posição em ${dataBR(referencia)}`)} />
         <div className="bi-chart-card">
           <div className="bi-chart-cabecalho"><h3>Maiores saldos vencidos · {rotuloRecorte}</h3><span className="bi-contagem">{devedores.length} cliente(s)</span></div>
           {devedores.length ? <div className="bi-tabela-container"><table className="bi-tabela">
             <thead><tr><th>Cliente</th><th>Títulos</th><th>Vencido</th><th title="Maior atraso">Atraso máx.</th></tr></thead>
-            <tbody>{devedores.slice(0, 10).map((x) => <tr key={x.codigo}>
+            <tbody>{devedores.slice(0, 10).map((x) => <tr key={x.codigo} className="bi-linha-clicavel" tabIndex={0} title="Ver títulos"
+              onClick={() => abrir(`Vencidos ${rotuloRecorte} · ${x.nome}`, COL_TITULOS, linhasTitulos(vencidos.filter((t) => t.cd_empresa === x.codigo)), "saldo", `Posição em ${dataBR(referencia)}`)}
+              onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.click(); }}>
               <td className="bi-celula-nome" title={x.nome}>{x.nome}</td><td>{x.titulos}</td><td>{moeda(x.valor)}</td><td>{x.maiorAtraso} d</td>
             </tr>)}</tbody>
           </table></div> : <p className="bi-vazio">Nenhum título vencido.</p>}
@@ -541,7 +633,7 @@ export default function PainelBIFaturamento({ perfil }) {
         <div className="bi-chart-cabecalho">
           <h3>Pedidos, notas e devoluções do período</h3>
           <div className="bi-acoes-lista">
-            <span className="bi-contagem">{documentosFiltrados.length} documento(s) · {moeda(soma(documentosFiltrados, (d) => d.valor))}</span>
+            <span className="bi-contagem">{documentosFiltrados.length} documento(s){situacao !== "todas" && <> · {moeda(soma(documentosFiltrados, (d) => d.valor))}</>}</span>
             <button type="button" className="bi-botao-tabela" onClick={exportarExcel} disabled={!documentosFiltrados.length}><FileSpreadsheet size={13} /> Exportar Excel</button>
           </div>
         </div>
@@ -574,5 +666,6 @@ export default function PainelBIFaturamento({ perfil }) {
         </button>}
       </div>
     </>}
+    {detalhe && <DetalheBI {...detalhe} onFechar={fecharDetalhe} />}
   </section>;
 }

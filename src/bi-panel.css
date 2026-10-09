@@ -14,15 +14,49 @@
 .bi-filtros input { min-width:150px; height:40px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#1f2f46; padding:0 10px; }
 .bi-ajuda-filtro { align-self:end; color:#526b86; font-size:12px; font-weight:700; padding-bottom:4px; }
 /* Painel BI - Faturamento: filtros e blocos para gestores */
-.bi-filtros.bi-filtros-fat { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
-.bi-grupo-filtro { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; min-width:0; margin:0; padding:10px 12px 12px; border:1px solid #dbe8f8; border-radius:10px; background:#fff; }
-.bi-grupo-filtro legend { padding:0 6px; color:#0057d8; font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
-.bi-grupo-filtro label { flex:0 1 auto; }
+.bi-filtros.bi-filtros-fat { display:grid; grid-template-columns:minmax(0,1fr); gap:0; padding:4px 16px; text-align:left; }
+.bi-linha-filtro { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 14px; padding:12px 0; border-bottom:1px solid #dbe8f8; }
+.bi-linha-filtro > .bi-linha-rotulo { flex:0 0 84px; align-self:center; color:#0057d8; font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+.bi-filtros-fat label { display:grid; gap:4px; text-align:left; color:#526b86; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
+.bi-filtros-fat input, .bi-filtros-fat select { min-width:0; width:100%; height:38px; text-transform:none; letter-spacing:0; }
+.bi-filtros-fat input[type=date] { width:150px; }
+.bi-filtros-fat .bi-ajuda-filtro { padding:10px 0; text-align:right; font-weight:600; }
+.bi-campo-cliente { width:260px; }
+.bi-campo-representante { width:300px; }
 .bi-recorte { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding:10px 12px; border:1px solid #dbe8f8; border-radius:10px; background:#f5f9ff; }
 .bi-recorte > span { color:#032b63; font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
 .bi-recorte .bi-atalhos { align-self:center; }
 .bi-recorte small { color:#526b86; font-size:12px; font-weight:700; }
 .bi-selo-devolucao { color:#8a1c1c; background:#fdecea; }
+/* Cards, barras e linhas clicáveis abrem o detalhe */
+.bi-stat-tile.clicavel { cursor:pointer; transition:box-shadow .15s ease, border-color .15s ease; }
+.bi-stat-tile.clicavel:hover, .bi-stat-tile.clicavel:focus-visible { border-color:#0057d8; box-shadow:0 4px 14px rgba(0,87,216,.14); outline:none; }
+.bi-stat-ver { color:#0057d8; font-size:11px; font-style:normal; font-weight:800; opacity:0; transition:opacity .15s ease; }
+.bi-stat-tile.clicavel:hover .bi-stat-ver, .bi-stat-tile.clicavel:focus-visible .bi-stat-ver { opacity:1; }
+.bi-stat-tile.destaque .bi-stat-ver { color:#fff; }
+.bi-barh-linha.clicavel { cursor:pointer; }
+.bi-linha-clicavel { cursor:pointer; }
+.bi-linha-clicavel:hover td, .bi-linha-clicavel:focus-visible td { background:#eaf2fb; }
+.bi-link { padding:0; border:0; background:none; color:#0057d8; font:inherit; font-weight:800; text-decoration:underline; cursor:pointer; }
+.bi-link:hover { background:none; color:#003f9e; }
+.bi-recorte-total { font-size:13px; }
+/* Janela de detalhe */
+.bi-detalhe-fundo { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:24px; background:rgba(3,22,50,.45); }
+.bi-detalhe-janela { display:grid; grid-template-rows:auto minmax(0,1fr); width:min(1100px,100%); max-height:min(80vh,820px); padding:20px; border-radius:16px; background:#fff; box-shadow:0 20px 60px rgba(3,22,50,.35); text-align:left; }
+.bi-detalhe-topo { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }
+.bi-detalhe-topo h3 { margin:0 0 4px; color:#032b63; font-size:17px; }
+.bi-detalhe-topo p { margin:0; color:#526b86; font-size:12px; font-weight:700; }
+.bi-detalhe-topo p strong { color:#032b63; }
+.bi-detalhe-acoes { display:flex; align-items:center; gap:8px; }
+.bi-detalhe-acoes .bi-botao-tabela { display:inline-flex; align-items:center; gap:5px; }
+.bi-detalhe-fechar { display:grid; place-items:center; width:34px; height:34px; padding:0; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#032b63; }
+.bi-detalhe-fechar:hover { background:#eaf2fb; }
+.bi-detalhe-tabela { overflow:auto; }
+.bi-detalhe-tabela thead th { position:sticky; top:0; z-index:1; }
+.bi-detalhe-tabela td { max-width:280px; overflow:hidden; text-overflow:ellipsis; }
+.bi-tabela th.num, .bi-tabela td.num { text-align:right; }
+.bi-th-ordenar { display:inline-flex; align-items:center; gap:3px; padding:0; border:0; background:none; color:inherit; font:inherit; text-transform:inherit; cursor:pointer; }
+.bi-th-ordenar:hover { background:none; color:#0057d8; }
 /* O hover global de button (#123f70) deixava estes controles escuros e ilegíveis. */
 .bi-documento-resumo:hover, .bi-documento-resumo:focus-visible { background:#f5f9ff; }
 .bi-atalhos button:hover { background:#eaf2fb; }
@@ -147,8 +181,13 @@
 
 @media (max-width:700px) {
   .bi-filtros.bi-filtros-fat { grid-template-columns:minmax(0,1fr); }
-  .bi-grupo-filtro label, .bi-grupo-filtro .bi-limpar { flex:1 1 100%; }
-  .bi-grupo-filtro select, .bi-grupo-filtro input { width:100%; min-width:0; }
+  .bi-linha-filtro > .bi-linha-rotulo { flex-basis:100%; }
+  .bi-linha-filtro label, .bi-linha-filtro .bi-limpar, .bi-campo-cliente, .bi-campo-representante { flex:1 1 100%; width:auto; }
+  .bi-filtros-fat input[type=date] { width:100%; }
+  .bi-filtros-fat .bi-ajuda-filtro { text-align:left; }
+  .bi-detalhe-fundo { padding:8px; }
+  .bi-detalhe-janela { max-height:92vh; padding:14px; }
+  .bi-detalhe-topo { flex-direction:column; }
   .bi-filtros-fat input { width:100%; min-width:0; }
   .bi-acoes-lista { flex-direction:column; align-items:flex-end; gap:6px; }
   .bi-topo { flex-direction:column; }

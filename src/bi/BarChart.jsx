@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { calcularTicksEixo, numeroEixo } from "./chartUtils.js";
 
-function BarChart({ titulo, itens, orientacao = "horizontal", formatarValor = (v) => v, corPadrao, valoresInteiros }) {
+// onSelecionarItem é opcional: quando informado, clicar numa barra horizontal chama-o com o item.
+function BarChart({ titulo, itens, orientacao = "horizontal", formatarValor = (v) => v, corPadrao, valoresInteiros, onSelecionarItem }) {
   const [hoverIndice, setHoverIndice] = useState(null);
   const [modoTabela, setModoTabela] = useState(false);
 
@@ -63,9 +64,12 @@ function BarChart({ titulo, itens, orientacao = "horizontal", formatarValor = (v
           <div className="bi-barh-linhas">
             {itens.map((item, indice) => (
               <div
-                className={`bi-barh-linha${hoverIndice === indice ? " ativo" : ""}`}
+                className={`bi-barh-linha${hoverIndice === indice ? " ativo" : ""}${onSelecionarItem ? " clicavel" : ""}`}
                 key={item.rotulo}
                 tabIndex={0}
+                role={onSelecionarItem ? "button" : undefined}
+                onClick={onSelecionarItem ? () => onSelecionarItem(item) : undefined}
+                onKeyDown={onSelecionarItem ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelecionarItem(item); } } : undefined}
                 onMouseEnter={() => setHoverIndice(indice)}
                 onMouseLeave={() => setHoverIndice(null)}
                 onFocus={() => setHoverIndice(indice)}
