@@ -41,8 +41,17 @@ function contarPor(linhas, campo, limite, chaveDe) {
     g.grafias.set(bruto, (g.grafias.get(bruto) || 0) + 1);
     grupos.set(chave, g);
   }
-  const itens = [...grupos.values()]
-    .map((g) => ({ rotulo: [...g.grafias.entries()].sort((a, b) => b[1] - a[1])[0][0], valor: g.valor }))
+  // Com chaveDe (ex.: domínio do e-mail), a mesma empresa pode cair em grupos diferentes
+  // (suzano.com.br e e-mail pessoal com "Suzano"); grupos com o mesmo nome exibido se juntam.
+  const porNome = new Map();
+  for (const g of grupos.values()) {
+    const rotulo = [...g.grafias.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const k = normalizar(rotulo);
+    const atual = porNome.get(k) || { rotulo, valor: 0 };
+    atual.valor += g.valor;
+    porNome.set(k, atual);
+  }
+  const itens = [...porNome.values()]
     .sort((a, b) => b.valor - a.valor || a.rotulo.localeCompare(b.rotulo));
   return limite ? itens.slice(0, limite) : itens;
 }
