@@ -1168,11 +1168,14 @@ No grupo **Gestão e Análise**, o submenu **Painel BI** reúne **Comissões** e
 
 ### Filtros
 
-- **Período**: atalhos **Mês atual**, **Mês anterior**, **Trimestre** e **Ano** (pegam o período inteiro, para a previsão aparecer completa), ou datas livres em **De/Até**. Clicar num mês do gráfico anual também seleciona aquele mês.
+Os filtros ficam em dois blocos:
+
+- **Período**: atalhos **Mês atual**, **Mês anterior**, **Trimestre**, **Semestre** e **Ano** (pegam o período inteiro, para a previsão aparecer completa), ou datas livres em **De/Até**. Clicar num mês do gráfico anual também seleciona aquele mês.
+- **Recortes**: cliente, representante e situação na lista (detalhados abaixo). **Limpar recortes** volta tudo.
 - **Cliente**: digite parte do nome ou o código.
 - **Representante**: representante do pedido (para pedidos) e da nota fiscal (para notas). "Sem representante" é a venda sem representante (código 000000). Para contas a receber, vale o representante da nota do título.
-- **Situação**: filtra a lista de pedidos e notas (Em negociação, Aguardando aprovação, Carteira aprovada, Faturado, Não previsto, Suspenso/cancelado).
-- Cliente e representante valem para todo o painel: cards, gráficos, rankings, contas a receber e lista. **Limpar filtros** volta tudo.
+- **Situação na lista**: filtra a lista de documentos (Em negociação, Aguardando aprovação, Carteira aprovada, Faturado, Não previsto, Devolução, Suspenso/cancelado).
+- Cliente e representante valem para todo o painel: cards, gráficos, rankings, contas a receber e lista.
 - Abaixo dos filtros aparece **"Dados do CIGAM sincronizados em ..."**, a data da última carga do `MWFaturamentoSync`. Os números refletem o CIGAM naquele momento.
 
 ### Comercial
@@ -1188,24 +1191,27 @@ O controle do item de pedido no CIGAM define a etapa:
 | Suspenso/cancelado | 85, 90, 95 | Não |
 
 - **Previsão de faturamento**: itens de pedido com data de previsão no período, em todas as etapas menos suspenso/cancelado. Os cards de **Previsão por etapa** mostram quanto dela já foi faturado, quanto está aprovado, aguardando aprovação ou em negociação.
-- **Total faturado**: notas de saída do período. Logo abaixo, a comparação com o período anterior e com o mesmo período do ano anterior. A comparação vai só até hoje nos dois lados: em 09/10, compara 01 a 09/10 com 01 a 09/09.
+- **Faturado bruto**: notas de saída do período.
+- **Devoluções**: notas de devolução de venda do período (entrada com CFOP 1201, 2201 ou 3201, mesma regra do MWComissoes), pela data da devolução.
+- **Faturado líquido** = bruto − devoluções. É o número principal. Logo abaixo, a comparação com o período anterior e com o mesmo período do ano anterior, ambos no líquido. A comparação vai só até hoje nos dois lados: em 09/10, compara 01 a 09/10 com 01 a 09/09.
+- Notas e pedidos cancelados ou excluídos no CIGAM somem do painel no sync seguinte, porque ao cancelar uma nota o CIGAM apaga o movimento dela. Pedidos com controle 85, 90 ou 95 ficam fora da previsão.
 - **Atingimento da previsão**: quanto da previsão do período já está faturado (controle 50).
-- **Ticket médio por nota**: total faturado ÷ número de notas.
+- **Ticket médio por nota** (na linha abaixo dos cards): faturado bruto ÷ número de notas.
 - **Faturado não previsto**: nota sem pedido + item correspondente.
 - Só entram operações que faturam no CIGAM: remessa, retorno de conserto, demonstração, amostra grátis, ajuste de inventário e outras saídas sem faturamento ficam fora.
 
-Rankings: **Top 10 clientes por faturado**, **Top 10 clientes por carteira a faturar** (tudo o que está previsto e ainda não foi faturado) e **Faturado por representante** (some quando um representante está filtrado). Todos têm "Ver como tabela".
+Rankings: **Top 10 clientes por faturado líquido**, **Top 10 clientes por carteira a faturar** (tudo o que está previsto e ainda não foi faturado) e **Faturado líquido por representante** (some quando um representante está filtrado). Nos rankings, a devolução desconta do cliente e do representante da nota original. Todos têm "Ver como tabela".
 
 ### Caixa
 
 - **Previsão de recebimento**: títulos R01 com vencimento no período. **Recebido**: títulos liquidados no período. Não existem pagamentos parciais.
-- **Vencido em aberto** e **A vencer**: posição na data final do filtro (ou hoje, se o filtro termina no futuro). Não dependem do período.
-- **Vencidos por faixa de atraso** (1–30, 31–60, 61–90, mais de 90 dias) e **Maiores saldos vencidos** por cliente.
+- **Títulos vencidos**: escolha o recorte pelo vencimento: **Do mês**, **Do trimestre**, **Do semestre**, **Do ano** ou **Todos**. O padrão é **Do mês**, para o atraso antigo, de quando a baixa não era controlada no CIGAM, não dominar a leitura. O recorte vale para o card **Vencido em aberto**, para as **faixas de atraso** (1–30, 31–60, 61–90, mais de 90 dias), para os **Maiores saldos vencidos** e para a aba de vencidos do Excel.
+- **A vencer**: saldo em aberto com vencimento a partir da data de referência. A referência é a data final do filtro, ou hoje se o filtro termina no futuro.
 - **Em validação:** o saldo vem do CIGAM. Títulos baixados por outro meio, fora do CIGAM, ainda aparecem como vencidos.
 
-### Pedidos e notas do período
+### Pedidos, notas e devoluções do período
 
-Cada pedido aparece uma vez, com o número das notas que o faturaram. Clique para abrir os itens: controle de cada item e em qual nota (data e valor) ele foi faturado. Notas sem pedido (**Não previsto**) e notas de pedido previsto em outro período aparecem como documento próprio. A lista mostra 40 por vez (**Mostrar mais**). **Exportar Excel** gera duas abas: os itens da lista filtrada e os vencidos por cliente.
+Cada pedido aparece uma vez, com o número das notas que o faturaram. Clique para abrir os itens: controle de cada item e em qual nota (data e valor) ele foi faturado. Notas sem pedido (**Não previsto**) e notas de pedido previsto em outro período aparecem como documento próprio. Devoluções aparecem com valor negativo e o selo **Devolução da NF** (nota original). A lista mostra 40 por vez (**Mostrar mais**). **Exportar Excel** gera duas abas: os itens da lista filtrada e os vencidos por cliente.
 
 ## 25. App da feira Veste Phenix (atendimento sem login)
 

@@ -14,8 +14,21 @@
 .bi-filtros input { min-width:150px; height:40px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#1f2f46; padding:0 10px; }
 .bi-ajuda-filtro { align-self:end; color:#526b86; font-size:12px; font-weight:700; padding-bottom:4px; }
 /* Painel BI - Faturamento: filtros e blocos para gestores */
-.bi-filtros-fat { flex-wrap:wrap; align-items:flex-end; }
-.bi-filtros-fat .bi-ajuda-filtro { flex-basis:100%; padding-bottom:0; }
+.bi-filtros.bi-filtros-fat { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+.bi-grupo-filtro { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; min-width:0; margin:0; padding:10px 12px 12px; border:1px solid #dbe8f8; border-radius:10px; background:#fff; }
+.bi-grupo-filtro legend { padding:0 6px; color:#0057d8; font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+.bi-grupo-filtro label { flex:0 1 auto; }
+.bi-recorte { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding:10px 12px; border:1px solid #dbe8f8; border-radius:10px; background:#f5f9ff; }
+.bi-recorte > span { color:#032b63; font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+.bi-recorte .bi-atalhos { align-self:center; }
+.bi-recorte small { color:#526b86; font-size:12px; font-weight:700; }
+.bi-selo-devolucao { color:#8a1c1c; background:#fdecea; }
+/* O hover global de button (#123f70) deixava estes controles escuros e ilegíveis. */
+.bi-documento-resumo:hover, .bi-documento-resumo:focus-visible { background:#f5f9ff; }
+.bi-atalhos button:hover { background:#eaf2fb; }
+.bi-atalhos button.ativo:hover { background:#0047b3; }
+.bi-limpar:hover, .bi-mais:hover { background:#eaf2fb; }
+.bi-filtros-fat .bi-ajuda-filtro { padding-bottom:0; }
 .bi-atalhos { display:inline-flex; flex-wrap:wrap; gap:4px; padding:4px; border:1px solid #bfd5ee; border-radius:10px; background:#fff; align-self:flex-end; }
 .bi-atalhos button { padding:7px 12px; border-radius:7px; background:transparent; color:#31506f; font-size:12px; font-weight:800; }
 .bi-atalhos button.ativo { background:#0057d8; color:#fff; }
@@ -133,7 +146,9 @@
 }
 
 @media (max-width:700px) {
-  .bi-filtros-fat .bi-atalhos, .bi-filtros-fat .bi-limpar { grid-column:1 / -1; }
+  .bi-filtros.bi-filtros-fat { grid-template-columns:minmax(0,1fr); }
+  .bi-grupo-filtro label, .bi-grupo-filtro .bi-limpar { flex:1 1 100%; }
+  .bi-grupo-filtro select, .bi-grupo-filtro input { width:100%; min-width:0; }
   .bi-filtros-fat input { width:100%; min-width:0; }
   .bi-acoes-lista { flex-direction:column; align-items:flex-end; gap:6px; }
   .bi-topo { flex-direction:column; }
@@ -161,6 +176,7 @@
   body.modo-impressao-bi .bi-botao-tabela,
   body.modo-impressao-bi .bi-ranking-toggle,
   body.modo-impressao-bi .bi-mais,
+  body.modo-impressao-bi .bi-recorte .bi-atalhos,
   body.modo-impressao-bi .bi-tooltip { display:none !important; }
   body.modo-impressao-bi .bi-chart-card,
   body.modo-impressao-bi .bi-stat-tile { break-inside:avoid; box-shadow:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
