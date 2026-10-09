@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Printer } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import StatTile from "./bi/StatTile.jsx";
@@ -14,6 +14,27 @@ const dataBR = (v) => v ? new Date(`${v}T12:00:00`).toLocaleDateString("pt-BR") 
 const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const entre = (d, a, b) => d && d >= a && d <= b;
 const soma = (linhas, fn) => linhas.reduce((total, linha) => total + fn(linha), 0);
+const dataHoraBR = (v) => v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
+
+// O Supabase devolve no máximo 1000 linhas por requisição, mesmo com .limit() maior.
+// Pagina por id até esgotar, para os totais não ficarem truncados em silêncio.
+async function buscarTodas(montarConsulta) {
+  const pagina = 1000;
+  const linhas = [];
+  for (let de = 0; ; de += pagina) {
+    const { data, error } = await montarConsulta().order("id").range(de, de + pagina - 1);
+    if (error) return { data: null, error };
+    linhas.push(...(data || []));
+    if (!data || data.length < pagina) return { data: linhas, error: null };
+  }
+}
+
+// Vínculo pedido–nota: cliente + pedido + sequência do item do pedido.
+// A nota também tem sequencia_item, mas é a sequência dela própria; a do pedido
+// vem em sequencia_pedido_origem (ESMOVIME.SEQ_PEDIDO_O).
+const chave = (...partes) => partes.map((v) => String(v ?? "").trim()).join(":");
+const chaveItemPedido = (p) => chave(p.codigo_cliente, p.cd_pedido, p.sequencia_item);
+const chaveOrigemNota = (nota) => chave(nota.codigo_cliente, nota.pedido_origem, nota.sequencia_pedido_origem);
 
 export default function PainelBIFaturamento({ perfil }) {
   const [inicio, setInicio] = useState(inicioMes);
@@ -32,9 +53,9 @@ export default function PainelBIFaturamento({ perfil }) {
       setCarregando(true); setErro("");
       const ate = `${ano}-12-31`;
       const [p, no, f] = await Promise.all([
-        supabase.from("bi_pedidos_itens").select("*").limit(10000),
-        supabase.from("bi_notas_itens").select("*").lte("data_movimento", ate).limit(10000),
-        supabase.from("bi_lancamentos_financeiros").select("*").lte("data_vencimento", ate).limit(10000),
+        buscarTodas(() => supabase.from("bi_pedidos_itens").select("*")),
+        buscarTodas(() => supabase.from("bi_notas_itens").select("*").lte("data_movimento", ate)),
+        buscarTodas(() => supabase.from("bi_lancamentos_financeiros").select("*").lte("data_vencimento", ate)),
       ]);
       if (!ativo) return;
       if (p.error || no.error || f.error) {
@@ -49,17 +70,15 @@ export default function PainelBIFaturamento({ perfil }) {
     return () => { ativo = false; };
   }, [ano]);
 
-  const chavePedido = (x) => [x.codigo_cliente, x.cd_pedido || x.pedido_origem, x.sequencia_item ?? x.sequencia_pedido_origem]
-    .map((v) => String(v ?? "").trim()).join(":");
   const notasPorPedido = useMemo(() => notas.reduce((mapa, nota) => {
     if (nota.pedido_origem && nota.sequencia_pedido_origem != null) {
-      const chave = chavePedido(nota);
+      const chave = chaveOrigemNota(nota);
       mapa.set(chave, [...(mapa.get(chave) || []), nota]);
     }
     return mapa;
   }, new Map()), [notas]);
   const previstos = useMemo(() => pedidos.map((pedido) => {
-    const faturados = notasPorPedido.get(chavePedido(pedido)) || [];
+    const faturados = notasPorPedido.get(chaveItemPedido(pedido)) || [];
     const qtdFaturada = soma(faturados, (nota) => n(nota.quantidade));
     return {
       ...pedido,
@@ -73,9 +92,13 @@ export default function PainelBIFaturamento({ perfil }) {
   }), [pedidos, notasPorPedido]);
   // 0 = 1: houve nota faturada, porém não existe pedido/item correspondente.
   // A ausência de nota para um pedido é tratada acima como 1 = 0, nunca aqui.
-  const notasNaoPrevistas = useMemo(() => notas.filter((nota) => !nota.pedido_origem
+  const chavesPedidos = useMemo(() => new Set(pedidos.map(chaveItemPedido)), [pedidos]);
+  const naoPrevista = useCallback((nota) => !nota.pedido_origem
     || nota.sequencia_pedido_origem == null
-    || !pedidos.some((pedido) => chavePedido(pedido) === chavePedido(nota))), [notas, pedidos]);
+    || !chavesPedidos.has(chaveOrigemNota(nota)), [chavesPedidos]);
+  const notasNaoPrevistas = useMemo(() => notas.filter(naoPrevista), [notas, naoPrevista]);
+  const ultimaSincronizacao = useMemo(() => [...pedidos, ...notas, ...financeiro]
+    .reduce((maior, x) => (x.sincronizado_em > maior ? x.sincronizado_em : maior), ""), [pedidos, notas, financeiro]);
   const periodo = useMemo(() => ({
     p: previstos.filter((x) => entre(x.data_previsao, inicio, fim)),
     no: notas.filter((x) => entre(x.data_movimento, inicio, fim)),
@@ -125,13 +148,13 @@ export default function PainelBIFaturamento({ perfil }) {
   if (perfil?.tipo_perfil !== "admin") return null;
   return <section className="painel bi-painel">
     <div className="bi-topo"><div><span className="bi-sobretitulo">Área executiva</span><h2>Painel BI · Comercial e Caixa</h2><p>Previsão comercial, faturamento e caixa em competências distintas.</p></div><button type="button" className="bi-imprimir" onClick={() => window.print()}><Printer size={17} /> Imprimir painel</button></div>
-    <div className="bi-filtros"><label>De<input type="date" value={inicio} max={fim} onChange={(e) => setInicio(e.target.value)} /></label><label>Até<input type="date" value={fim} min={inicio} onChange={(e) => setFim(e.target.value)} /></label><span className="bi-ajuda-filtro">Clique em um mês do gráfico para detalhar o período.</span></div>
+    <div className="bi-filtros"><label>De<input type="date" value={inicio} max={fim} onChange={(e) => setInicio(e.target.value)} /></label><label>Até<input type="date" value={fim} min={inicio} onChange={(e) => setFim(e.target.value)} /></label><span className="bi-ajuda-filtro">Clique em um mês do gráfico para detalhar o período.</span>{ultimaSincronizacao && <span className="bi-ajuda-filtro">Dados do CIGAM sincronizados em {dataHoraBR(ultimaSincronizacao)}</span>}</div>
     {erro && <div className="bi-aviso">{erro}</div>}
     {carregando ? <p className="bi-vazio">Carregando...</p> : <>
       <h3 className="bi-secao-titulo">Comercial</h3><div className="bi-kpis"><StatTile label="Previsão de faturamento" valor={moeda(k.pf)} /><StatTile label="Total faturado" valor={moeda(k.fat)} destaque /><StatTile label="Previsão atingida (1 = 1)" valor={moeda(k.atingida)} /><StatTile label="Previsão pendente (1 = 0)" valor={moeda(k.pendente)} /><StatTile label="Faturado não previsto (0 = 1)" valor={moeda(k.naoPrevisto)} /></div>
       <h3 className="bi-secao-titulo">Caixa</h3><div className="bi-kpis"><StatTile label="Previsão de recebimento" valor={moeda(k.pr)} /><StatTile label="Recebido" valor={moeda(k.rec)} destaque /><StatTile label="Em atraso até o fim" valor={moeda(k.atr)} /></div>
       <div className="bi-graficos-grid"><LineChart titulo={`Comercial anual ${ano} · previsão × faturado`} onSelecionarPonto={selecionarMes} series={[{ nome: "Previsão", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pf })) }, { nome: "Faturado", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.fat })) }]} formatarValor={moeda} /><LineChart titulo={`Caixa anual ${ano} · previsto × recebido`} onSelecionarPonto={selecionarMes} series={[{ nome: "Previsto", cor: "#eb6834", pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pr })) }, { nome: "Recebido", cor: "#15803d", pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.rec })) }]} formatarValor={moeda} /></div>
-      <div className="bi-chart-card bi-detalhe-faturamento"><div className="bi-chart-cabecalho"><h3>Pedidos e notas do período</h3><span>{docs.length} documento(s)</span></div>{docs.map((d) => <div className="bi-documento" key={d.chave}><button type="button" className="bi-documento-resumo" onClick={() => alternar(d.chave)}>{abertos.has(d.chave) ? <ChevronDown size={17} /> : <ChevronRight size={17} />}<span><strong>{dataBR(d.data)} · {d.tipo === "P" ? `Pedido ${d.cd_pedido}` : `Nota ${d.nf}`}</strong><small>{d.nome_cliente || d.codigo_cliente || d.cd_empresa}</small></span><em className={d.tipo === "P" ? (d.itens.every((x) => x.atingido) ? "bi-selo-faturado" : "bi-selo-previsto") : "bi-selo-faturado"}>{d.tipo === "P" ? (d.itens.every((x) => x.atingido) ? "Atingido" : "Previsão") : (d.pedido_origem ? "Faturado" : "Não previsto")}</em><b>{moeda(d.valor)}</b></button>{abertos.has(d.chave) && <div className="bi-documento-expansao"><div className="bi-tabela-container"><table className="bi-tabela"><thead><tr><th>Item</th><th>Qtd.</th><th>Valor</th><th>Situação</th></tr></thead><tbody>{d.itens.map((x) => <tr key={x.id}><td>{x.codigo_material} · {x.descricao_item}</td><td>{n(x.quantidade).toLocaleString("pt-BR")}</td><td>{moeda(d.tipo === "P" ? x.valorPrevisto : x.valor_liquido)}</td><td>{d.tipo === "P" ? (x.atingido ? "Faturada (controle 50)" : `Pendente (controle ${x.controle_item ?? "—"})`) : (x.pedido_origem ? `Pedido ${x.pedido_origem}` : "Faturado sem pedido")}</td></tr>)}</tbody></table></div></div>}</div>)}</div>
+      <div className="bi-chart-card bi-detalhe-faturamento"><div className="bi-chart-cabecalho"><h3>Pedidos e notas do período</h3><span>{docs.length} documento(s)</span></div>{docs.map((d) => <div className="bi-documento" key={d.chave}><button type="button" className="bi-documento-resumo" onClick={() => alternar(d.chave)}>{abertos.has(d.chave) ? <ChevronDown size={17} /> : <ChevronRight size={17} />}<span><strong>{dataBR(d.data)} · {d.tipo === "P" ? `Pedido ${d.cd_pedido}` : `Nota ${d.nf}`}</strong><small>{d.nome_cliente || d.codigo_cliente || d.cd_empresa}</small></span><em className={d.tipo === "P" ? (d.itens.every((x) => x.atingido) ? "bi-selo-faturado" : "bi-selo-previsto") : "bi-selo-faturado"}>{d.tipo === "P" ? (d.itens.every((x) => x.atingido) ? "Atingido" : "Previsão") : (d.itens.every(naoPrevista) ? "Não previsto" : "Faturado")}</em><b>{moeda(d.valor)}</b></button>{abertos.has(d.chave) && <div className="bi-documento-expansao"><div className="bi-tabela-container"><table className="bi-tabela"><thead><tr><th>Item</th><th>Qtd.</th><th>Valor</th><th>Situação</th></tr></thead><tbody>{d.itens.map((x) => <tr key={x.id}><td>{x.codigo_material} · {x.descricao_item}</td><td>{n(x.quantidade).toLocaleString("pt-BR")}</td><td>{moeda(d.tipo === "P" ? x.valorPrevisto : x.valor_liquido)}</td><td>{d.tipo === "P" ? (x.atingido ? "Faturada (controle 50)" : `Pendente (controle ${x.controle_item ?? "—"})`) : (naoPrevista(x) ? "Faturado sem pedido" : `Pedido ${x.pedido_origem}`)}</td></tr>)}</tbody></table></div></div>}</div>)}</div>
     </>}
   </section>;
 }

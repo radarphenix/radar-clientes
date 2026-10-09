@@ -1172,6 +1172,8 @@ O painel separa duas competências. No **Comercial**, a previsão é o valor int
 
 No **Caixa**, previsão é título comercial R01 pelo vencimento, recebido é título R01 liquidado pela data de liquidação e atraso é o saldo com vencimento anterior ao final do filtro. Não há pagamentos parciais nesta operação. Os gráficos anuais seguem essas bases e um clique no mês detalha somente aquele mês. Em documentos, clique no pedido ou na nota para abrir os itens.
 
+Ao lado do filtro de datas aparece **"Dados do CIGAM sincronizados em ..."**: é a data da última carga do `MWFaturamentoSync`. Os valores do painel refletem o CIGAM naquele momento, não em tempo real. Se a data estiver antiga, rode a sincronização antes de analisar os números.
+
 ## 25. App da feira Veste Phenix (atendimento sem login)
 
 Endereco: `radarphenix.pages.dev/feira/veste-phenix` (pode ser instalado como
