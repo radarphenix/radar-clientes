@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Printer } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import StatTile from "./bi/StatTile.jsx";
 import LineChart from "./bi/LineChart.jsx";
 import BarChart from "./bi/BarChart.jsx";
+import DetalheBI from "./bi/DetalheBI.jsx";
+import { buscarTodas } from "./bi/buscarTodas.js";
 import { CATEGORICAL, SEQUENCIAL_ORDINAL } from "./bi/paletteBI.js";
 import "./bi-panel.css";
 
@@ -84,6 +86,8 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
   const [carregando, setCarregando] = useState(true);
   const [mensagemErro, setMensagemErro] = useState("");
   const [ordenarRankingPor, setOrdenarRankingPor] = useState("vendas");
+  const [detalhe, setDetalhe] = useState(null);
+  const fecharDetalhe = useCallback(() => setDetalhe(null), []);
 
   useEffect(() => {
     let ativo = true;
@@ -93,7 +97,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
       setMensagemErro("");
       const [retornoResumos, retornoLancamentos, retornoFaixas] = await Promise.all([
         supabase.from("comissoes_resumos_mensais").select("*"),
-        supabase.from("comissoes_lancamentos").select("*"),
+        buscarTodas(() => supabase.from("comissoes_lancamentos").select("*")),
         supabase.from("comissoes_faixas").select("*"),
       ]);
       if (!ativo) return;
@@ -198,6 +202,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
     });
     return [...porRepresentante.values()]
       .map((item) => ({
+        chave: item.codigo,
         rotulo: nomeRepresentante(item.codigo),
         valor: ordenarRankingPor === "vendas" ? item.vendas : item.comissao,
       }))
@@ -223,6 +228,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
     return [...contagem.entries()]
       .sort((a, b) => a[0] - b[0])
       .map(([valorMeta, quantidade], indice) => ({
+        chave: valorMeta,
         rotulo: valorMeta > 0 ? `A partir de ${moedaCompacta(valorMeta)}` : "Faixa inicial",
         valor: quantidade,
         cor: SEQUENCIAL_ORDINAL[Math.min(indice, SEQUENCIAL_ORDINAL.length - 1)],
@@ -276,10 +282,97 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
       const valor = lancamentos
         .filter((item) => item.lancamento_devolucao && String(item.data_emissao || "").startsWith(competencia))
         .reduce((total, item) => total + Math.abs(Number(item.valor_parcela || 0)), 0);
-      return { rotulo: `${MESES_ABREV[m - 1]}/${String(a).slice(2)}`, valor };
+      return { chave: competencia, rotulo: `${MESES_ABREV[m - 1]}/${String(a).slice(2)}`, valor };
     }),
     [janela, lancamentos],
   );
+
+  // ---- Detalhe ao clicar em cards e barras (mesma janela do BI de Faturamento) ----
+  const rotuloMes = `${MESES[mes - 1]} de ${ano}`;
+  const competenciaMes = `${ano}-${String(mes).padStart(2, "0")}`;
+  const faixaDoRepresentante = (item) => [...faixas]
+    .filter((f) => normalizarCodigo(f.codigo_representante) === normalizarCodigo(item.codigo_representante)
+      && Number(f.valor_meta || 0) <= Number(item.vendas_liquidas || 0))
+    .sort((a, b) => Number(b.valor_meta) - Number(a.valor_meta))[0];
+  const COL_REPRESENTANTES = [
+    { chave: "representante", rotulo: "Representante" }, { chave: "modalidade", rotulo: "Modalidade" },
+    { chave: "vendasBrutas", rotulo: "Vendas brutas", tipo: "moeda" }, { chave: "devolucoes", rotulo: "Devoluções", tipo: "moeda" },
+    { chave: "vendas", rotulo: "Vendas líquidas", tipo: "moeda" }, { chave: "percentual", rotulo: "% comissão", tipo: "numero" },
+    { chave: "comissao", rotulo: "Comissão prevista", tipo: "moeda" }, { chave: "custo", rotulo: "Custo (% vendas)", tipo: "numero" },
+    { chave: "retida", rotulo: "Retida", tipo: "moeda" },
+  ];
+  const linhasRepresentantes = (lista) => lista.map((item) => {
+    const vendas = Number(item.vendas_liquidas || 0);
+    const comissao = Number(item.comissao_prevista || 0);
+    return {
+      id: item.codigo_representante,
+      representante: nomeRepresentante(item.codigo_representante),
+      modalidade: item.modalidade === "V" ? "Variável" : item.modalidade === "F" ? "Fixa" : (item.modalidade || "—"),
+      vendasBrutas: Number(item.vendas_brutas || 0), devolucoes: Number(item.devolucoes || 0), vendas,
+      percentual: Number(item.percentual_comissao || 0), comissao,
+      custo: vendas ? Math.round((comissao * 10000) / vendas) / 100 : 0,
+      retida: Number(item.comissao_retida || 0),
+    };
+  }).sort((a, b) => b.vendas - a.vendas);
+  const COL_PARCELAS = [
+    { chave: "emissao", rotulo: "Emissão", tipo: "data" }, { chave: "nf", rotulo: "NF (parcela)" },
+    { chave: "cliente", rotulo: "Cliente" }, { chave: "representante", rotulo: "Representante" },
+    { chave: "vencimento", rotulo: "Vencimento", tipo: "data" }, { chave: "situacao", rotulo: "Situação do título" },
+    { chave: "parcela", rotulo: "Parcela", tipo: "moeda" }, { chave: "base", rotulo: "Base", tipo: "moeda" },
+    { chave: "percentual", rotulo: "%", tipo: "numero" }, { chave: "comissao", rotulo: "Comissão", tipo: "moeda" },
+    { chave: "pagar", rotulo: "Pagar" },
+  ];
+  const linhasParcelas = (lista, valorComissao = (item) => Number(item.valor_comissao || 0)) => lista.map((item) => ({
+    id: item.id,
+    emissao: item.data_emissao, nf: `${item.nota_fiscal}${item.numero_parcela ? ` (${item.numero_parcela})` : ""}`,
+    cliente: item.nome_cliente || item.codigo_cliente, representante: nomeRepresentante(item.codigo_representante),
+    vencimento: item.data_vencimento, situacao: item.lancamento_devolucao ? "Devolução" : (item.situacao_financeira || "—"),
+    parcela: Number(item.valor_parcela || 0), base: Number(item.valor_base_comissao || 0),
+    percentual: Number(item.percentual_comissao || 0), comissao: valorComissao(item),
+    pagar: item.considerar === false ? "Retida" : (item.pago ? "Paga" : "Sim"),
+  })).sort((a, b) => String(a.emissao).localeCompare(String(b.emissao)));
+  const abrir = (titulo, subtitulo, colunas, linhas, total) => setDetalhe({
+    titulo, subtitulo, colunas, linhas, total,
+    arquivo: `bi_comissoes_${titulo.normalize("NFD").replace(/[^A-Za-z0-9]+/g, "_").toLowerCase()}_${competenciaMes}`,
+  });
+  const repsDoMes = () => resumosDoMes.filter((item) => normalizarCodigo(item.codigo_representante) !== CODIGO_SEM_REPRESENTANTE || Number(item.vendas_liquidas || 0) > 0);
+  function detalheVendas() {
+    const linhas = linhasRepresentantes(repsDoMes());
+    const somaReps = linhas.reduce((t, l) => t + l.vendas, 0);
+    const repetida = Math.abs(somaReps - kpis.vendas) > 0.009;
+    abrir("Vendas líquidas por representante", `${rotuloMes}${repetida ? ` · notas com mais de um representante contam para cada um; o total da empresa (${moeda(kpis.vendas)}) desconta a repetição` : ""}`, COL_REPRESENTANTES, linhas, kpis.vendas);
+  }
+  const detalheComissao = (titulo) => abrir(titulo, rotuloMes, COL_REPRESENTANTES, linhasRepresentantes(repsDoMes()), kpis.comissao);
+  const detalheRepresentante = (item) => {
+    const doRep = lancamentos.filter((l) => normalizarCodigo(l.codigo_representante) === normalizarCodigo(item.chave)
+      && String(l.data_emissao || "").startsWith(competenciaMes));
+    abrir(`Notas de ${item.rotulo}`, `${rotuloMes} · parcelas das notas do mês; a comissão prevista do resumo inclui também valor fixo e ajustes de faixa`,
+      COL_PARCELAS, linhasParcelas(doRep), doRep.reduce((t, l) => t + Number(l.valor_comissao || 0), 0));
+  };
+  const detalheCliente = (item) => {
+    const inicio = `${competenciaMes}-01`;
+    const proximo = new Date(ano, mes, 1);
+    const fim = `${proximo.getFullYear()}-${String(proximo.getMonth() + 1).padStart(2, "0")}-01`;
+    const doCliente = lancamentos.filter((l) => {
+      const competencia = l.data_competencia_pagamento || l.data_vencimento;
+      return l.considerar !== false && competencia >= inicio && competencia < fim
+        && (l.nome_cliente || l.codigo_cliente || "Não identificado") === item.rotulo;
+    });
+    abrir(`Comissão · ${item.rotulo}`, `${rotuloMes} · pela competência de pagamento (liquidação, ou vencimento se ainda não pago)`,
+      COL_PARCELAS, linhasParcelas(doCliente), item.valor);
+  };
+  const detalheDevolucoes = (item) => {
+    const doMes = lancamentos.filter((l) => l.lancamento_devolucao && String(l.data_emissao || "").startsWith(item.chave));
+    abrir(`Devoluções · ${item.rotulo}`, "Parcelas de devolução pela data de emissão", COL_PARCELAS, linhasParcelas(doMes), item.valor);
+  };
+  const detalheFaixa = (item) => {
+    const naFaixa = resumosDoMes.filter((r) => r.modalidade === "V" && Number(faixaDoRepresentante(r)?.valor_meta ?? -1) === Number(item.chave));
+    const linhas = linhasRepresentantes(naFaixa);
+    abrir(`Faixa de meta · ${item.rotulo}`, rotuloMes, COL_REPRESENTANTES, linhas, linhas.reduce((t, l) => t + l.comissao, 0));
+  };
+  const detalheRetidas = () => abrir("Comissão retida", `${rotuloMes} · "Pagar" desmarcado no MWComissoes; invisível ao representante`,
+    COL_PARCELAS, linhasParcelas(retidas, (item) => item.comissaoRetida), totalRetido);
+  const selecionarMesSerie = (i) => { const alvo = janela[i]; if (alvo) { setAno(alvo.ano); setMes(alvo.mes); } };
 
   function imprimir() {
     document.body.classList.add("modo-impressao-bi");
@@ -321,6 +414,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
             ))}
           </select>
         </label>
+        <span className="bi-ajuda-filtro">Clique nos cards e nas barras para ver os representantes, notas e parcelas; num mês do gráfico para mudar o mês.</span>
       </div>
 
       {carregando ? (
@@ -331,12 +425,14 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
             <StatTile
               label="Vendas líquidas"
               valor={moeda(kpis.vendas)}
+              onClick={detalheVendas}
               delta={kpis.deltaVendas !== null ? `${percentual(Math.abs(kpis.deltaVendas))} vs mês anterior` : null}
               deltaFavoravel={kpis.deltaVendas >= 0}
             />
             <StatTile
               label="Comissão prevista"
               valor={moeda(kpis.comissao)}
+              onClick={() => detalheComissao("Comissão prevista por representante")}
               delta={kpis.deltaComissao !== null ? `${percentual(Math.abs(kpis.deltaComissao))} vs mês anterior` : null}
               deltaFavoravel={kpis.deltaComissao >= 0}
               destaque
@@ -344,21 +440,24 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
             <StatTile
               label="Custo de comissão"
               valor={percentual(kpis.custo)}
+              onClick={() => detalheComissao("Custo de comissão por representante")}
               delta={kpis.deltaCusto !== null ? `${percentual(Math.abs(kpis.deltaCusto))} vs mês anterior` : null}
               deltaFavoravel={kpis.deltaCusto <= 0}
             />
-            <StatTile label="Representantes ativos" valor={kpis.repsAtivos} />
-            <StatTile label={`Comissão retida (${retidas.length} parcela${retidas.length === 1 ? "" : "s"})`} valor={moeda(totalRetido)} />
+            <StatTile label="Representantes ativos" valor={kpis.repsAtivos} onClick={() => abrir("Representantes ativos", rotuloMes, COL_REPRESENTANTES, linhasRepresentantes(resumosDoMes.filter((item) => normalizarCodigo(item.codigo_representante) !== CODIGO_SEM_REPRESENTANTE)), kpis.comissao)} />
+            <StatTile label={`Comissão retida (${retidas.length} parcela${retidas.length === 1 ? "" : "s"})`} valor={moeda(totalRetido)} onClick={detalheRetidas} />
           </div>
 
           <div className="bi-graficos-grid">
             <LineChart
               titulo="Tendência de vendas líquidas (12 meses)"
+              onSelecionarPonto={selecionarMesSerie}
               series={[{ nome: "Vendas líquidas", cor: CATEGORICAL.vendas, pontos: serieVendas }]}
               formatarValor={moeda}
             />
             <LineChart
               titulo="Custo de comissão — % sobre vendas (12 meses)"
+              onSelecionarPonto={selecionarMesSerie}
               series={[{ nome: "Custo de comissão", cor: CATEGORICAL.comissao, pontos: serieCustoComissao }]}
               formatarValor={percentual}
             />
@@ -387,6 +486,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
               orientacao="horizontal"
               formatarValor={moeda}
               corPadrao={CATEGORICAL.vendas}
+              onSelecionarItem={detalheRepresentante}
             />
           </div>
 
@@ -397,6 +497,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
               orientacao="vertical"
               formatarValor={(v) => `${v} rep.${v === 1 ? "" : "s"}`}
               valoresInteiros
+              onSelecionarItem={detalheFaixa}
             />
             <BarChart
               titulo="Devoluções por mês (12 meses)"
@@ -404,6 +505,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
               orientacao="vertical"
               formatarValor={moeda}
               corPadrao={CATEGORICAL.vendas}
+              onSelecionarItem={detalheDevolucoes}
             />
           </div>
 
@@ -413,6 +515,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
             orientacao="horizontal"
             formatarValor={moeda}
             corPadrao={CATEGORICAL.vendas}
+            onSelecionarItem={detalheCliente}
           />
 
           {retidas.length > 0 && (
@@ -444,6 +547,7 @@ function PainelBI({ perfil, usuariosPerfis = [] }) {
           )}
         </>
       )}
+      {detalhe && <DetalheBI {...detalhe} onFechar={fecharDetalhe} />}
     </section>
   );
 }

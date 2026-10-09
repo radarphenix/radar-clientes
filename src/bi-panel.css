@@ -34,7 +34,7 @@
 .bi-stat-ver { color:#0057d8; font-size:11px; font-style:normal; font-weight:800; opacity:0; transition:opacity .15s ease; }
 .bi-stat-tile.clicavel:hover .bi-stat-ver, .bi-stat-tile.clicavel:focus-visible .bi-stat-ver { opacity:1; }
 .bi-stat-tile.destaque .bi-stat-ver { color:#fff; }
-.bi-barh-linha.clicavel { cursor:pointer; }
+.bi-barh-linha.clicavel, .bi-barv-coluna.clicavel { cursor:pointer; }
 .bi-linha-clicavel { cursor:pointer; }
 .bi-linha-clicavel:hover td, .bi-linha-clicavel:focus-visible td { background:#eaf2fb; }
 .bi-link { padding:0; border:0; background:none; color:#0057d8; font:inherit; font-weight:800; text-decoration:underline; cursor:pointer; }

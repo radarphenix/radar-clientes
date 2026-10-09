@@ -1158,6 +1158,18 @@ Um único filtro de **Mês/Ano** no topo, que atualiza todos os indicadores e gr
 
 Passar o mouse (ou navegar com Tab e as setas do teclado, nos gráficos de linha) sobre qualquer ponto ou barra mostra o valor exato numa caixinha. Todo gráfico tem um botão **Ver como tabela**, que troca o desenho por uma tabela com os mesmos números - útil para conferência ou para quem prefere números a gráfico.
 
+### Ver o detalhe de cada número (09/10/2026)
+
+Clicar num indicador ou numa barra abre uma janela com o que forma aquele número (mesma janela do Painel BI - Faturamento: ordena por coluna, **Exportar Excel**, fecha com Esc ou X):
+
+- **Vendas líquidas**, **Comissão prevista**, **Custo de comissão** e **Representantes ativos**: tabela por representante (modalidade, vendas brutas, devoluções, vendas líquidas, % de comissão, comissão prevista, custo em % das vendas, retida). O total da janela é o do indicador. Se uma nota tiver mais de um representante, ela conta para cada um, e a janela avisa que o total da empresa desconta a repetição.
+- **Comissão retida**: as parcelas com "Pagar" desmarcado.
+- **Barra do ranking**: as parcelas das notas do representante no mês. A comissão prevista do resumo inclui também valor fixo e ajustes de faixa, por isso pode ser maior que a soma das parcelas.
+- **Barra da faixa de meta**: os representantes daquela faixa.
+- **Barra de devoluções**: as parcelas de devolução daquele mês.
+- **Barra do Top 10 clientes**: as parcelas do cliente que formam o valor da barra.
+- Clicar num mês dos gráficos de tendência muda o filtro para aquele mês.
+
 ### Impressão
 
 Botão **Imprimir painel** no topo gera uma versão para impressão/PDF só com os indicadores e gráficos, sem o menu nem os filtros.

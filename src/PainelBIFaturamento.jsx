@@ -6,6 +6,7 @@ import StatTile from "./bi/StatTile.jsx";
 import LineChart from "./bi/LineChart.jsx";
 import BarChart from "./bi/BarChart.jsx";
 import DetalheBI from "./bi/DetalheBI.jsx";
+import { buscarTodas } from "./bi/buscarTodas.js";
 import { CATEGORICAL, SEQUENCIAL_ORDINAL } from "./bi/paletteBI.js";
 import "./bi-panel.css";
 
@@ -51,19 +52,6 @@ const etapaDoControle = (controle) => {
   return "carteira";
 };
 const PREVISTAS = new Set(["negociacao", "pendente", "carteira", "faturado"]);
-
-// O Supabase devolve no máximo 1000 linhas por requisição, mesmo com .limit() maior.
-// Pagina por id até esgotar, para os totais não ficarem truncados em silêncio.
-async function buscarTodas(montarConsulta) {
-  const pagina = 1000;
-  const linhas = [];
-  for (let de = 0; ; de += pagina) {
-    const { data, error } = await montarConsulta().order("id").range(de, de + pagina - 1);
-    if (error) return { data: null, error };
-    linhas.push(...(data || []));
-    if (!data || data.length < pagina) return { data: linhas, error: null };
-  }
-}
 
 // Vínculo pedido–nota: cliente + pedido + sequência do item do pedido.
 // A nota também tem sequencia_item, mas é a sequência dela própria; a do pedido
