@@ -171,6 +171,8 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
 - Agrupamentos:
   - **Empresa**: pelo domínio do e-mail corporativo. "Fernandez" e "Fernandez Indústria de
     Papel" entram juntas. Quem usou e-mail pessoal (gmail, hotmail…) entra pelo nome digitado.
+    Desde 09/10 (`4b1b3a5`), grupos com o mesmo nome exibido também se juntam (a Suzano aparecia
+    2 vezes, com 10 e 3, por domínios diferentes): o total da feira caiu de 40 para **27 empresas**.
   - **Cidade**: ignora maiúsculas, acentos e a UF digitada junto ("Amparo-SP" = "Amparo").
 - **Imprimir / PDF**: o botão põe a classe `modo-impressao-estat` no `body`, e o CSS de
   impressão em `promocao.css` esconde todo o resto do Radar (`:has(.estat-feira)`). O resultado
@@ -278,6 +280,14 @@ Todos os scripts ficam em `scripts/`, leem o token de `.env.supabase.local` e nu
     WhatsApp para +55 47 99265-5341 (HTTP 201).
   - O contador só existe desde a tarde do dia 1 (`79b98d3`), por isso "Inscrições concluídas"
     no contador (39) é menor que o total de inscrições (56).
+
+- **2026-10-08 (3º dia de feira)** e fechamento, apurados em 09/10:
+  - 24 inscrições de 9 empresas no dia; **total da feira: 80 inscrições de 27 empresas**
+    (69 clientes, 11 prospects, 7 deles no 3º dia), pico às 15h nos três dias, 114 acessos pelo
+    link/QR (59% viraram inscrição; o contador só existe desde a tarde do dia 1).
+  - 1º cadastro de produtos: Cartones Peru (Formadora, Feltro e Feltro com emenda).
+  - Relatório para a diretoria: `00_Governanca/DocumentacaoPhenix/Relatorios/Feira_Phenix_30_anos_2026-10-06_a_08.pdf`
+    (fonte em `fonte_feira_2026-10-08/`).
 
 ### Retomada (2026-10-08)
 
