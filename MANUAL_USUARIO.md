@@ -1181,20 +1181,20 @@ O controle do item de pedido no CIGAM define a etapa:
 
 | Etapa | Controles | Entra na previsão? |
 | --- | --- | --- |
-| Em negociação | 10 Prospect/contato, 20 Orçamento | Não (aparece à parte, abaixo dos cards) |
+| Em negociação | 10 Prospect/contato, 20 Orçamento | Sim |
 | Aguardando aprovação | 15 Pendente | Sim |
 | Carteira aprovada | 30 Aprovado, 34/35/36 Produção, 38 Liberado p/ faturamento, 40 Faturado parcial | Sim |
 | Faturado | 50 | Sim |
 | Suspenso/cancelado | 85, 90, 95 | Não |
 
-- **Previsão de faturamento**: itens de pedido com data de previsão no período, nas etapas que entram na previsão.
+- **Previsão de faturamento**: itens de pedido com data de previsão no período, em todas as etapas menos suspenso/cancelado. Os cards de **Previsão por etapa** mostram quanto dela já foi faturado, quanto está aprovado, aguardando aprovação ou em negociação.
 - **Total faturado**: notas de saída do período. Logo abaixo, a comparação com o período anterior e com o mesmo período do ano anterior. A comparação vai só até hoje nos dois lados: em 09/10, compara 01 a 09/10 com 01 a 09/09.
 - **Atingimento da previsão**: quanto da previsão do período já está faturado (controle 50).
 - **Ticket médio por nota**: total faturado ÷ número de notas.
 - **Faturado não previsto**: nota sem pedido + item correspondente.
 - Só entram operações que faturam no CIGAM: remessa, retorno de conserto, demonstração, amostra grátis, ajuste de inventário e outras saídas sem faturamento ficam fora.
 
-Rankings: **Top 10 clientes por faturado**, **Top 10 clientes por carteira a faturar** (aguardando aprovação + carteira aprovada) e **Faturado por representante** (some quando um representante está filtrado). Todos têm "Ver como tabela".
+Rankings: **Top 10 clientes por faturado**, **Top 10 clientes por carteira a faturar** (tudo o que está previsto e ainda não foi faturado) e **Faturado por representante** (some quando um representante está filtrado). Todos têm "Ver como tabela".
 
 ### Caixa
 

@@ -20,6 +20,10 @@
 .bi-atalhos button { padding:7px 12px; border-radius:7px; background:transparent; color:#31506f; font-size:12px; font-weight:800; }
 .bi-atalhos button.ativo { background:#0057d8; color:#fff; }
 .bi-limpar { height:40px; padding:0 14px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#0057d8; font-size:12px; font-weight:800; }
+.bi-kpis.bi-kpis-5 { grid-template-columns:repeat(5, minmax(0, 1fr)); gap:12px; }
+.bi-kpis-5 .bi-stat-tile { padding:16px 14px; }
+.bi-kpis-5 .bi-stat-tile strong { font-size:19px; }
+.bi-subtitulo { margin:0 0 -8px; color:#526b86; font-size:12px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
 .bi-comparativo { margin:-6px 0 0; color:#526b86; font-size:12px; line-height:1.6; }
 .bi-comparativo strong { color:#163a63; }
 .bi-comparativo em { font-style:normal; font-weight:800; }
@@ -121,7 +125,7 @@
 .bi-barv-rotulos span { flex:1; min-width:0; overflow:hidden; color:#64748b; font-size:10px; font-weight:700; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
 
 @media (max-width:1300px) {
-  .bi-kpis { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .bi-kpis, .bi-kpis.bi-kpis-5 { grid-template-columns:repeat(2, minmax(0,1fr)); }
 }
 
 @media (max-width:1024px) {
@@ -136,7 +140,7 @@
   .bi-imprimir { width:100%; justify-content:center; }
   .bi-filtros { display:grid; grid-template-columns:1fr 1fr; }
   .bi-filtros select { width:100%; min-width:0; }
-  .bi-kpis { grid-template-columns:1fr; }
+  .bi-kpis, .bi-kpis.bi-kpis-5 { grid-template-columns:1fr; }
   .bi-barh-overlay { grid-template-columns:96px 1fr 76px; }
   .bi-barh-linha { grid-template-columns:96px 1fr 76px; }
   .bi-documento-resumo { grid-template-columns:auto minmax(0,1fr) auto; gap:8px; }

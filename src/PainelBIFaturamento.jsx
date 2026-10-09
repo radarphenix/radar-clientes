@@ -31,7 +31,8 @@ const CONTROLES = {
   38: "Liberado p/ faturamento", 40: "Faturado parcial", 50: "Faturado",
   85: "Suspenso", 90: "Cancelado", 95: "Baixado",
 };
-// Etapas para o gestor. Negociação (prospect/orçamento) e suspenso/cancelado não são previsão.
+// Etapas para o gestor. Tudo entra na previsão, menos suspenso/cancelado (85/90/95).
+// Orçamento e prospect fazem parte da previsão (decisão do usuário em 09/10/2026).
 const ETAPAS = {
   negociacao: { rotulo: "Em negociação", ordem: 0 },
   pendente: { rotulo: "Aguardando aprovação", ordem: 1 },
@@ -48,7 +49,7 @@ const etapaDoControle = (controle) => {
   if (c >= 85) return "fora";
   return "carteira";
 };
-const PREVISTAS = new Set(["pendente", "carteira", "faturado"]);
+const PREVISTAS = new Set(["negociacao", "pendente", "carteira", "faturado"]);
 
 // O Supabase devolve no máximo 1000 linhas por requisição, mesmo com .limit() maior.
 // Pagina por id até esgotar, para os totais não ficarem truncados em silêncio.
@@ -285,7 +286,7 @@ export default function PainelBIFaturamento({ perfil }) {
 
   const rotuloCliente = (x) => x.nome_cliente || x.codigo_cliente;
   const rankingFaturado = agruparTop(periodo.no, (x) => x.codigo_cliente, rotuloCliente, (x) => n(x.valor_liquido));
-  const rankingCarteira = agruparTop(periodo.p.filter((x) => x.etapa === "pendente" || x.etapa === "carteira"), (x) => x.codigo_cliente, rotuloCliente, (x) => x.valor);
+  const rankingCarteira = agruparTop(periodo.p.filter((x) => PREVISTAS.has(x.etapa) && x.etapa !== "faturado"), (x) => x.codigo_cliente, rotuloCliente, (x) => x.valor);
   const rankingRepresentantes = agruparTop(periodo.no, (x) => x.codigo_representante || SEM_REPRESENTANTE,
     (x) => nomeRepresentante(x.codigo_representante || SEM_REPRESENTANTE), (x) => n(x.valor_liquido), 12);
 
@@ -420,16 +421,17 @@ export default function PainelBIFaturamento({ perfil }) {
         {" · "}Mesmo período do ano anterior: <strong>{comparacao.anoAnterior > 0 ? moeda(comparacao.anoAnterior) : "sem dados"}</strong>
         {deltaAno !== null && <em className={deltaAno >= 0 ? "bi-delta-bom" : "bi-delta-ruim"}> {deltaAno >= 0 ? "+" : "−"}{pct(Math.abs(deltaAno))}</em>}
       </p>}
-      <div className="bi-kpis">
-        <StatTile label="Faturado do previsto (controle 50)" valor={moeda(atingida)} />
+      <h4 className="bi-subtitulo">Previsão por etapa · faturado sem pedido</h4>
+      <div className="bi-kpis bi-kpis-5">
+        <StatTile label="Faturado (controle 50)" valor={moeda(atingida)} />
         <StatTile label="Carteira aprovada (30 a 40)" valor={moeda(porEtapa("carteira"))} />
         <StatTile label="Aguardando aprovação (15)" valor={moeda(porEtapa("pendente"))} />
+        <StatTile label="Em negociação (10 e 20)" valor={moeda(porEtapa("negociacao"))} />
         <StatTile label="Faturado não previsto" valor={moeda(naoPrevistoValor)} />
       </div>
-      <p className="bi-comparativo">
-        Fora da previsão: <strong>{moeda(porEtapa("negociacao"))}</strong> em negociação (prospect e orçamento, controles 10 e 20)
-        {porEtapa("fora") > 0 && <> e <strong>{moeda(porEtapa("fora"))}</strong> suspenso/cancelado</>}.
-      </p>
+      {porEtapa("fora") > 0 && <p className="bi-comparativo">
+        Fora da previsão: <strong>{moeda(porEtapa("fora"))}</strong> suspenso/cancelado (controles 85, 90 e 95).
+      </p>}
 
       <div className="bi-graficos-grid">
         <LineChart titulo={`Comercial anual ${ano} · previsão × faturado`} onSelecionarPonto={selecionarMes} series={[
