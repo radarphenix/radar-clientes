@@ -1,5 +1,7 @@
 # Views CIGAM — Painel BI de Faturamento
 
+> **Rascunho antigo, não usado pelo sync.** As views em produção são `CIGAM.EX_MW_VW_RADAR_FATURAMENTO_*`, em `01_Desktop/MWFaturamentoSync/MWFaturamentoSync/Sql/Oracle/001_ex_mw_vw_radar_faturamento.sql` (cópia para instalar em `Publicar/Sql/Oracle/`). Não instale os arquivos desta pasta.
+
 O sincronizador deve consultar exclusivamente estas views, nunca as tabelas operacionais diretamente.
 
 - `VW_RADAR_BI_PEDIDOS`: previsão por item; une `FAPEDIDO` a `FAITEMPE` por `CD_PEDIDO`.

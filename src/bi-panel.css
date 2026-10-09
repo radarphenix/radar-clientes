@@ -13,6 +13,27 @@
 .bi-filtros select { min-width:150px; height:40px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#1f2f46; padding:0 10px; }
 .bi-filtros input { min-width:150px; height:40px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#1f2f46; padding:0 10px; }
 .bi-ajuda-filtro { align-self:end; color:#526b86; font-size:12px; font-weight:700; padding-bottom:4px; }
+/* Painel BI - Faturamento: filtros e blocos para gestores */
+.bi-filtros-fat { flex-wrap:wrap; align-items:flex-end; }
+.bi-filtros-fat .bi-ajuda-filtro { flex-basis:100%; padding-bottom:0; }
+.bi-atalhos { display:inline-flex; flex-wrap:wrap; gap:4px; padding:4px; border:1px solid #bfd5ee; border-radius:10px; background:#fff; align-self:flex-end; }
+.bi-atalhos button { padding:7px 12px; border-radius:7px; background:transparent; color:#31506f; font-size:12px; font-weight:800; }
+.bi-atalhos button.ativo { background:#0057d8; color:#fff; }
+.bi-limpar { height:40px; padding:0 14px; border:1px solid #bfd5ee; border-radius:8px; background:#fff; color:#0057d8; font-size:12px; font-weight:800; }
+.bi-comparativo { margin:-6px 0 0; color:#526b86; font-size:12px; line-height:1.6; }
+.bi-comparativo strong { color:#163a63; }
+.bi-comparativo em { font-style:normal; font-weight:800; }
+.bi-contagem { color:#64748b; font-size:12px; font-weight:700; }
+.bi-acoes-lista { display:flex; align-items:center; gap:12px; }
+.bi-acoes-lista .bi-botao-tabela { display:inline-flex; align-items:center; gap:5px; }
+.bi-mais { width:100%; margin-top:8px; padding:10px; border:1px dashed #bfd5ee; border-radius:8px; background:#f5f9ff; color:#0057d8; font-size:12px; font-weight:800; }
+.bi-celula-nome { max-width:170px; overflow:hidden; text-overflow:ellipsis; }
+.bi-notas-do-pedido { color:#64748b; font-weight:700; }
+.bi-selo-negociacao { color:#475569; background:#eef2f6; }
+.bi-selo-pendente { color:#93410d; background:#fff0e5; }
+.bi-selo-carteira { color:#0b4aa8; background:#e6effd; }
+.bi-selo-naoPrevisto { color:#7a2e8a; background:#f6e9fa; }
+.bi-selo-fora { color:#8a1c1c; background:#fbe9e9; }
 .bi-secao-titulo { margin:4px 0 -8px; color:#032b63; font-size:15px; font-weight:900; }
 .bi-detalhe-faturamento > .bi-chart-cabecalho span { color:#64748b; font-size:12px; font-weight:700; }
 .bi-documento { border-top:1px solid #e2e8f0; }
@@ -108,6 +129,9 @@
 }
 
 @media (max-width:700px) {
+  .bi-filtros-fat .bi-atalhos, .bi-filtros-fat .bi-limpar { grid-column:1 / -1; }
+  .bi-filtros-fat input { width:100%; min-width:0; }
+  .bi-acoes-lista { flex-direction:column; align-items:flex-end; gap:6px; }
   .bi-topo { flex-direction:column; }
   .bi-imprimir { width:100%; justify-content:center; }
   .bi-filtros { display:grid; grid-template-columns:1fr 1fr; }
@@ -132,6 +156,7 @@
   body.modo-impressao-bi .bi-filtros,
   body.modo-impressao-bi .bi-botao-tabela,
   body.modo-impressao-bi .bi-ranking-toggle,
+  body.modo-impressao-bi .bi-mais,
   body.modo-impressao-bi .bi-tooltip { display:none !important; }
   body.modo-impressao-bi .bi-chart-card,
   body.modo-impressao-bi .bi-stat-tile { break-inside:avoid; box-shadow:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; }

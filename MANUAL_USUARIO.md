@@ -1166,13 +1166,46 @@ Botão **Imprimir painel** no topo gera uma versão para impressão/PDF só com 
 
 No grupo **Gestão e Análise**, o submenu **Painel BI** reúne **Comissões** e **Faturamento**. A visão de Faturamento é exclusiva de administradores.
 
-### Atualização da leitura executiva
+### Filtros
 
-O painel separa duas competências. No **Comercial**, a previsão é o valor integral do item de pedido na data planejada, mesmo quando o item já foi faturado. A regra operacional de atingimento é o **controle 50** do item no CIGAM: pedido existente com controle 50 é `1 = 1` (previsto e faturado); pedido existente em outro controle comercial é `1 = 0` (previsto e pendente). A nota que não encontra pedido + item correspondente é `0 = 1` (faturado não previsto). O vínculo cliente + pedido + item faz essa última conferência documental. A coluna “Total Faturado” do relatório operacional de pedidos não serve para definir a situação: ela pode exibir o valor do pedido ainda em orçamento ou pendente; o painel usa o controle do item.
+- **Período**: atalhos **Mês atual**, **Mês anterior**, **Trimestre** e **Ano** (pegam o período inteiro, para a previsão aparecer completa), ou datas livres em **De/Até**. Clicar num mês do gráfico anual também seleciona aquele mês.
+- **Cliente**: digite parte do nome ou o código.
+- **Representante**: representante do pedido (para pedidos) e da nota fiscal (para notas). "Sem representante" é a venda sem representante (código 000000). Para contas a receber, vale o representante da nota do título.
+- **Situação**: filtra a lista de pedidos e notas (Em negociação, Aguardando aprovação, Carteira aprovada, Faturado, Não previsto, Suspenso/cancelado).
+- Cliente e representante valem para todo o painel: cards, gráficos, rankings, contas a receber e lista. **Limpar filtros** volta tudo.
+- Abaixo dos filtros aparece **"Dados do CIGAM sincronizados em ..."**, a data da última carga do `MWFaturamentoSync`. Os números refletem o CIGAM naquele momento.
 
-No **Caixa**, previsão é título comercial R01 pelo vencimento, recebido é título R01 liquidado pela data de liquidação e atraso é o saldo com vencimento anterior ao final do filtro. Não há pagamentos parciais nesta operação. Os gráficos anuais seguem essas bases e um clique no mês detalha somente aquele mês. Em documentos, clique no pedido ou na nota para abrir os itens.
+### Comercial
 
-Ao lado do filtro de datas aparece **"Dados do CIGAM sincronizados em ..."**: é a data da última carga do `MWFaturamentoSync`. Os valores do painel refletem o CIGAM naquele momento, não em tempo real. Se a data estiver antiga, rode a sincronização antes de analisar os números.
+O controle do item de pedido no CIGAM define a etapa:
+
+| Etapa | Controles | Entra na previsão? |
+| --- | --- | --- |
+| Em negociação | 10 Prospect/contato, 20 Orçamento | Não (aparece à parte, abaixo dos cards) |
+| Aguardando aprovação | 15 Pendente | Sim |
+| Carteira aprovada | 30 Aprovado, 34/35/36 Produção, 38 Liberado p/ faturamento, 40 Faturado parcial | Sim |
+| Faturado | 50 | Sim |
+| Suspenso/cancelado | 85, 90, 95 | Não |
+
+- **Previsão de faturamento**: itens de pedido com data de previsão no período, nas etapas que entram na previsão.
+- **Total faturado**: notas de saída do período. Logo abaixo, a comparação com o período anterior e com o mesmo período do ano anterior. A comparação vai só até hoje nos dois lados: em 09/10, compara 01 a 09/10 com 01 a 09/09.
+- **Atingimento da previsão**: quanto da previsão do período já está faturado (controle 50).
+- **Ticket médio por nota**: total faturado ÷ número de notas.
+- **Faturado não previsto**: nota sem pedido + item correspondente.
+- Só entram operações que faturam no CIGAM: remessa, retorno de conserto, demonstração, amostra grátis, ajuste de inventário e outras saídas sem faturamento ficam fora.
+
+Rankings: **Top 10 clientes por faturado**, **Top 10 clientes por carteira a faturar** (aguardando aprovação + carteira aprovada) e **Faturado por representante** (some quando um representante está filtrado). Todos têm "Ver como tabela".
+
+### Caixa
+
+- **Previsão de recebimento**: títulos R01 com vencimento no período. **Recebido**: títulos liquidados no período. Não existem pagamentos parciais.
+- **Vencido em aberto** e **A vencer**: posição na data final do filtro (ou hoje, se o filtro termina no futuro). Não dependem do período.
+- **Vencidos por faixa de atraso** (1–30, 31–60, 61–90, mais de 90 dias) e **Maiores saldos vencidos** por cliente.
+- **Em validação:** o saldo vem do CIGAM. Títulos baixados por outro meio, fora do CIGAM, ainda aparecem como vencidos.
+
+### Pedidos e notas do período
+
+Cada pedido aparece uma vez, com o número das notas que o faturaram. Clique para abrir os itens: controle de cada item e em qual nota (data e valor) ele foi faturado. Notas sem pedido (**Não previsto**) e notas de pedido previsto em outro período aparecem como documento próprio. A lista mostra 40 por vez (**Mostrar mais**). **Exportar Excel** gera duas abas: os itens da lista filtrada e os vencidos por cliente.
 
 ## 25. App da feira Veste Phenix (atendimento sem login)
 
