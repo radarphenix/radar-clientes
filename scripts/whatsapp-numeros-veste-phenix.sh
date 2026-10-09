@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # Envia por WhatsApp (WAHA da VM, mesmo número do MW_Aniversarios) os 10 números da sorte de UM
 # participante da Veste Phenix cujo e-mail de confirmação foi recusado (ex.: filtro de spam da empresa).
-# Uso: bash scripts/whatsapp-numeros-veste-phenix.sh email@participante.com [--endereco] [--enviar]
+# Uso: bash scripts/whatsapp-numeros-veste-phenix.sh email@participante.com [--endereco|--confirmar] [--enviar]
 # Sem --enviar só mostra a mensagem e o telefone (prévia). Lê o banco em transação somente leitura.
 # --endereco: o servidor da empresa não reconheceu o endereço (ex.: 550 5.4.1) — a mensagem pede o
 # e-mail correto. Sem ele, o texto fala de filtro de spam.
+# --confirmar: o e-mail não voltou, mas parece ter erro de digitação (ex.: não bate com o nome) — a
+# mensagem só pede para a pessoa confirmar se o endereço está certo.
 set -euo pipefail
 EMAIL=$(printf '%s' "${1:-}" | tr 'A-Z' 'a-z' | tr -d " '\"\\;")
 [[ "$EMAIL" =~ ^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$ ]] || { echo "Informe um e-mail válido."; exit 1; }
 ENVIAR=""; export MOTIVO="spam"
-for a in "${@:2}"; do case "$a" in --enviar) ENVIAR="--enviar";; --endereco) MOTIVO="endereco";; *) echo "Opção desconhecida: $a"; exit 1;; esac; done
+for a in "${@:2}"; do case "$a" in --enviar) ENVIAR="--enviar";; --endereco) MOTIVO="endereco";; --confirmar) MOTIVO="confirmar";; *) echo "Opção desconhecida: $a"; exit 1;; esac; done
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$RAIZ"
 T=$(grep -E '^SUPABASE_ACCESS_TOKEN=' .env.supabase.local | head -1 | cut -d= -f2- | tr -d '\r" ')
@@ -30,14 +32,16 @@ const fs=require("fs");const t=fs.readFileSync(process.argv[1],"utf8");const j=J
 const r=j.rows||[];if(r.length!==1){console.error(`Esperava 1 inscrição válida, achei ${r.length}.`);process.exit(1)}
 const p=r[0];const nome=String(p.nome_completo).trim().split(/\s+/)[0];
 const ns=p.numeros_sorte.map(n=>String(n).padStart(5,"0")).sort();
-const endereco=process.env.MOTIVO==="endereco";
+const endereco=process.env.MOTIVO==="endereco";const confirmar=process.env.MOTIVO==="confirmar";
 const texto=[`Olá, *${nome}*! Tudo bem? 😊`,"",
-endereco?`Aqui é da *Phenix*. Recebemos sua inscrição na promoção *Veste Phenix 30 anos* e tentamos enviar a confirmação para o e-mail informado, *${p.email}*, mas tivemos um retorno do servidor de e-mail informando que a mensagem não pôde ser entregue.`
+confirmar?`Aqui é da *Phenix*. Recebemos sua inscrição na promoção *Veste Phenix 30 anos* e enviamos a confirmação para o e-mail informado, *${p.email}*. Na conferência dos cadastros, ficamos na dúvida se esse endereço está correto.`
+:endereco?`Aqui é da *Phenix*. Recebemos sua inscrição na promoção *Veste Phenix 30 anos* e tentamos enviar a confirmação para o e-mail informado, *${p.email}*, mas tivemos um retorno do servidor de e-mail informando que a mensagem não pôde ser entregue.`
 :`Aqui é da *Phenix*. Recebemos sua inscrição na promoção *Veste Phenix 30 anos* e enviamos a confirmação para *${p.email}*, mas o filtro de spam do seu e-mail recusou nossa mensagem.`,"",
 "Sua inscrição está *confirmada* ✅ e estes são os seus *10 números da sorte*:","",
 `*${ns.slice(0,5).join(" · ")}*`,`*${ns.slice(5).join(" · ")}*`,"",
 "🎯 O sorteio será pela *Loteria Federal de 04/11/2026*.","📄 Regulamento: https://radarphenix.pages.dev/regulamento.pdf","",
 ...(endereco?["📧 Se puder, *confirme por aqui o seu e-mail*, para atualizarmos seu cadastro.",""]:[]),
+...(confirmar?["📧 Pode nos *confirmar por aqui se esse é mesmo o seu e-mail*? Se tiver algum erro, é só mandar o endereço certo que atualizamos seu cadastro.",""]:[]),
 "Guarde esta mensagem. Qualquer dúvida, é só responder aqui ou escrever para phenix@phenixonline.com.br.","",
 "Boa sorte! 🍀","*Phenix • Tecendo Facilidades*"].join("\n");
 const d=String(p.telefone).replace(/\D/g,"");const numero=d.startsWith("55")&&d.length>11?d:"55"+d;
