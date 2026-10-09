@@ -37,6 +37,11 @@
 .promo-publica .checks input{width:18px;flex-shrink:0;margin:1px 8px 0 0}
 .promo-publica .checks label>span{flex:1;min-width:0;text-align:left}
 .promo-publica .checks a{color:#0e5886}
+/* Data de nascimento: aparece embaixo do "18 anos ou mais", com o visual dos outros campos (não de checkbox). */
+/* Recuo = borda + padding do .check-item + checkbox + margem: fica alinhado ao texto "Declaro...". */
+.promo-publica .checks .nascimento{margin:6px 0 10px 34px}
+.promo-publica .checks .nascimento label{display:grid;justify-items:start;gap:4px;font-weight:700;text-align:left}
+.promo-publica .checks .nascimento input{width:100%;max-width:200px;margin:0}
 
 .promo-publica button{width:100%;border:0;border-radius:10px;background:linear-gradient(90deg,#397f9e,#8ed7e8);color:#041b35;padding:15px;font:800 15px Montserrat;cursor:pointer}
 .promo-publica button:disabled{opacity:.55}

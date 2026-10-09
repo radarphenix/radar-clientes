@@ -183,6 +183,12 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   if(!b.maior_18||!b.aceite_regulamento||!b.aceite_privacidade)return json({ok:false,mensagem:'Aceites obrigatórios não confirmados.'},400);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email||'')))return json({ok:false,mensagem:'E-mail inválido.'},400);
   // Domínio terminando em letras e sem erros comuns de digitação (ex.: "suzano.comb.r", ".con").
   {const em=String(b.email).trim();if(!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i.test(em)||/\.(con|cmo|cpm|comb|vom|xom|om|cm)(\.[a-z]{1,2})?$|\.com\.b$|\.b\.r$/i.test(em))return json({ok:false,mensagem:'Confira o e-mail: o final parece digitado errado (ex.: .com.br, .com).'},400)}
+  // Data de nascimento: opcional (mensagens de aniversário). Se vier, tem de ser data real e de quem tem 18+.
+  let dataNascimento:string|null=null;
+  if(b.data_nascimento){const s=String(b.data_nascimento);const[a,m,d]=s.split('-').map(Number);const t=new Date(Date.UTC(a,m-1,d));const h=new Date();
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(s)||a<1900||t.getUTCDate()!==d||t.getUTCMonth()!==m-1)return json({ok:false,mensagem:'Data de nascimento inválida.'},400);
+   if(h.getUTCFullYear()-a-((h.getUTCMonth()+1<m||(h.getUTCMonth()+1===m&&h.getUTCDate()<d))?1:0)<18)return json({ok:false,mensagem:'Pela data de nascimento informada, você ainda não tem 18 anos.'},400);
+   dataNascimento=s}
   if(!cpfValido(cpf))return json({ok:false,mensagem:'CPF inválido.'},400);if(cnpj&&!cnpjValido(cnpj))return json({ok:false,mensagem:'CNPJ inválido.'},400);
   if(!UFS.has(String(b.uf||'').toUpperCase())||!SEGMENTOS.has(String(b.segmento||'')))return json({ok:false,mensagem:'Selecione o estado e o segmento da lista.'},400);
   if(!await dentroDoLimite(db,`cpf:${cpf}`,5,3600))return json({ok:false,mensagem:'Muitas tentativas para este CPF. Aguarde uma hora e tente novamente.'},429);
@@ -193,6 +199,8 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   if(error){if(error.code==='23505')return json({ok:false,mensagem:'Este CPF já possui uma inscrição e números da sorte.'},409);console.error(error);return json({ok:false,mensagem:'Não foi possível concluir a inscrição agora.'},500)}
   if(!linhas?.length)throw new Error('Inscrição não retornou números da sorte.');
   const inscricaoId=linhas[0].inscricao_id;const numeros=linhas.map((l:{numero_sorte:number})=>l.numero_sorte);
+  // Gravada à parte para não mexer na RPC de inscrição; se falhar, a inscrição continua valendo.
+  if(dataNascimento){const{error:eNasc}=await db.from('promocao_veste_phenix_30_anos').update({data_nascimento:dataNascimento}).eq('id',inscricaoId);if(eNasc)console.error('data_nascimento',eNasc)}
   EdgeRuntime.waitUntil(enviarConfirmacao(db,{id:inscricaoId,numeros_sorte:numeros,nome_completo:payload.p_nome_completo,email:payload.p_email},modoTeste));
   return json({ok:true,numeros_sorte:numeros},201)
  }catch(e){console.error(e);return json({ok:false,mensagem:'Não foi possível concluir a inscrição agora.'},500)}});
