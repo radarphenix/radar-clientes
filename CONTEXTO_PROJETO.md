@@ -1,5 +1,12 @@
 # CONTEXTO_PROJETO
 
+## BI com IPI e nota cancelada no resumo de comissoes (2026-10-13)
+
+- **BI Faturamento com IPI**: notas e devolucoes passam a valer `QUANTIDADE x PR_UNITARIO + VL_IPI`, a mesma base do MWComissoes e da comissao (antes `PR_TOTAL_ITEM`, sem IPI; NF 10482: 11.100,00 x 11.460,75). A previsao (pedidos) tambem passou a ter IPI (`FAITEMPE.VL_IPI`, conferido em producao). Mudanca so na view Oracle do `MWFaturamentoSync`. Pedido de exportacao (ex.: 000330) esta em moeda estrangeira e a nota em reais, entao a previsao de exportacao fica subestimada. Decisao do usuario (13/10/2026): nao mexer agora, so acompanhar.
+- **Card "Faturado de previsao de outros periodos"** (pedido do usuario, 13/10/2026), na fileira "Previsao por etapa", agora com 6 cards (`.bi-kpis-6` em `bi-panel.css`): soma as notas do periodo cujo item de pedido tem `data_previsao` fora do periodo. A previsao e' buscada em todos os pedidos, sem filtro. O detalhe tem a coluna "Previsao do pedido". Outubro/2026: 39.848,72 (NF 10483, pedido 000279 previsto em 20/08). Sem isso, previsto ja faturado (144.747,69) x faturado bruto (201.393,67) parecia erro. A diferenca = esse card + o cambio da exportacao 000330 (16.797,26). Validado com Playwright (desktop e 390px).
+- **Resumo de comissoes contava nota cancelada**: `EX_MW_COMISSAO_NF` nunca apaga uma nota ja gravada. O desktop filtra a nota morta (GFLANCAM + ESMOVIME com CFOP de venda + NF-e autorizada), mas a view `EX_MW_VW_RADAR_COMISSOES_RES` nao filtrava. Outubro/2026: Radar 219.856,26 x desktop 201.393,67 (NF 10472 cancelada, 18.462,59). A view do `MWComissoesSync` recebeu os mesmos filtros.
+- Implantado em 13/10/2026 (views no GO-Global + syncs das 08:31/08:33). Conferido no Supabase: outubro/2026 com 201.393,67 no resumo de comissoes **e** no faturado do BI (os dois agora batem), e a NF 10482 e o pedido 000339 com 11.460,75.
+
 ## Regra final de comissoes revisadas (2026-08-27)
 
 O Radar nao exibe nem agrega notas ainda nao revisadas no MWComissoes. Vendas, metas, faixas, comissao prevista e Painel BI usam apenas notas cujas parcelas estejam todas revisadas. Os banners que informavam valores pendentes de revisao foram removidos para nao comunicar ao representante valores internos que ainda podem ser descartados.

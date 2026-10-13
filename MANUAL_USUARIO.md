@@ -1206,14 +1206,15 @@ O controle do item de pedido no CIGAM define a etapa:
 | Faturado | 50 | Sim |
 | Suspenso/cancelado | 85, 90, 95 | Não |
 
-- **Previsão de faturamento**: itens de pedido com data de previsão no período, em todas as etapas menos suspenso/cancelado. Os cards de **Previsão por etapa** mostram quanto dela já foi faturado (**Previsto já faturado**, controle 50), quanto está aprovado, aguardando aprovação ou em negociação. A soma dos quatro é igual à previsão.
+- **Previsão de faturamento**: itens de pedido (valor com IPI) com data de previsão no período, em todas as etapas menos suspenso/cancelado. Os cards de **Previsão por etapa** mostram quanto dela já foi faturado (**Previsto já faturado**, controle 50), quanto está aprovado, aguardando aprovação ou em negociação. A soma dos quatro é igual à previsão.
 - **Previsto já faturado** e **Faturado bruto** são números diferentes. O primeiro é o valor dos pedidos **previstos no período** que já estão no controle 50. O segundo é o valor das **notas emitidas no período**, que inclui notas sem pedido e notas de pedidos previstos em outros meses.
-- **Faturado bruto**: notas de saída do período.
-- **Devoluções**: notas de devolução de venda do período (entrada com CFOP 1201, 2201 ou 3201, mesma regra do MWComissoes), pela data da devolução.
+- **Faturado bruto**: notas de saída do período, pelo total da nota com IPI (o mesmo valor do CIGAM, dos títulos a receber e da base de comissão).
+- **Devoluções**: notas de devolução de venda do período (entrada com CFOP 1201, 2201 ou 3201, mesma regra do MWComissoes), com IPI, pela data da devolução.
 - **Faturado líquido** = bruto − devoluções. É o número principal. Logo abaixo, a comparação com o período anterior e com o mesmo período do ano anterior, ambos no líquido. A comparação vai só até hoje nos dois lados: em 09/10, compara 01 a 09/10 com 01 a 09/09.
 - Notas e pedidos cancelados ou excluídos no CIGAM somem do painel no sync seguinte, porque ao cancelar uma nota o CIGAM apaga o movimento dela. Pedidos com controle 85, 90 ou 95 ficam fora da previsão.
 - **Atingimento da previsão**: quanto da previsão do período já está faturado (controle 50).
 - **Ticket médio por nota** (na linha abaixo dos cards): faturado bruto ÷ número de notas.
+- **Faturado de previsão de outros períodos**: nota emitida no período cujo pedido estava previsto para outro período, seja atrasado (ex.: previsto em agosto, faturado em outubro) ou adiantado. Ao clicar, a lista mostra a **previsão do pedido** de cada nota. Essa nota não entra no **Previsto já faturado** do período, que conta o pedido pela data de previsão.
 - **Faturado não previsto**: nota sem pedido + item correspondente.
 - Só entram operações que faturam no CIGAM: remessa, retorno de conserto, demonstração, amostra grátis, ajuste de inventário e outras saídas sem faturamento ficam fora.
 

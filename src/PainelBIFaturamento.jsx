@@ -216,6 +216,8 @@ export default function PainelBIFaturamento({ perfil }) {
   const naoPrevista = useCallback((nota) => !nota.pedido_origem
     || nota.sequencia_pedido_origem == null
     || !chavesPedidos.has(chaveOrigemNota(nota)), [chavesPedidos]);
+  // Previsão do item de pedido de cada nota, também sobre todos os pedidos (mesmo motivo acima).
+  const previsaoPorItem = useMemo(() => new Map(pedidos.map((p) => [chaveItemPedido(p), p.data_previsao])), [pedidos]);
   const notasPorPedido = useMemo(() => notas.reduce((mapa, nota) => {
     if (!naoPrevista(nota)) {
       const k = chaveOrigemNota(nota);
@@ -250,6 +252,11 @@ export default function PainelBIFaturamento({ perfil }) {
   const atingida = porEtapa("faturado");
   const notasDistintas = new Set(periodo.no.map(chaveNotaFinanceiro)).size;
   const naoPrevistoValor = soma(periodo.no.filter(naoPrevista), (x) => n(x.valor_liquido));
+  // Nota do período cujo pedido estava previsto para outro período (atrasado ou adiantado):
+  // não entra no "Previsto já faturado" deste período nem no "não previsto".
+  const previstaEmOutroPeriodo = (nota) => !naoPrevista(nota) && !entre(previsaoPorItem.get(chaveOrigemNota(nota)), inicio, fim);
+  const notasOutroPeriodo = periodo.no.filter(previstaEmOutroPeriodo);
+  const outroPeriodoValor = soma(notasOutroPeriodo, (x) => n(x.valor_liquido));
 
   const comparacao = useMemo(() => {
     const per = periodosComparacao(inicio, fim);
@@ -377,6 +384,7 @@ export default function PainelBIFaturamento({ perfil }) {
     { chave: "cliente", rotulo: "Cliente" }, { chave: "representante", rotulo: "Representante" },
     { chave: "pedido", rotulo: "Pedido(s)" }, { chave: "valor", rotulo: "Valor", tipo: "moeda" },
   ];
+  const COL_NOTAS_OUTRO_PERIODO = [...COL_NOTAS.slice(0, 5), { chave: "previsao", rotulo: "Previsão do pedido" }, COL_NOTAS[5]];
   const COL_PEDIDOS = [
     { chave: "data", rotulo: "Previsão", tipo: "data" }, { chave: "pedido", rotulo: "Pedido" },
     { chave: "cliente", rotulo: "Cliente" }, { chave: "representante", rotulo: "Representante" },
@@ -393,18 +401,21 @@ export default function PainelBIFaturamento({ perfil }) {
     const mapa = new Map();
     notasLista.forEach((x) => {
       const k = `N|${x.nf}|${x.serie}|${x.cd_empresa}`;
-      const l = mapa.get(k) || { id: k, data: x.data_movimento, documento: `NF ${x.nf}`, cliente: x.nome_cliente || x.codigo_cliente, representante: nomeRep(x.codigo_representante), pedidos: new Set(), valor: 0 };
+      const l = mapa.get(k) || { id: k, data: x.data_movimento, documento: `NF ${x.nf}`, cliente: x.nome_cliente || x.codigo_cliente, representante: nomeRep(x.codigo_representante), pedidos: new Set(), previsoes: new Set(), valor: 0 };
       l.valor += n(x.valor_liquido);
       if (x.pedido_origem) l.pedidos.add(x.pedido_origem);
+      const prev = previsaoPorItem.get(chaveOrigemNota(x));
+      if (prev) l.previsoes.add(prev);
       mapa.set(k, l);
     });
     devLista.forEach((x) => {
       const k = `D|${x.nf}|${x.serie}|${x.codigo_cliente}`;
-      const l = mapa.get(k) || { id: k, data: x.data_movimento, documento: `Devolução ${x.nf}${x.nota_origem ? ` (da NF ${x.nota_origem})` : ""}`, cliente: x.nome_cliente || x.codigo_cliente, representante: nomeRep(x.codigo_representante), pedidos: new Set(), valor: 0 };
+      const l = mapa.get(k) || { id: k, data: x.data_movimento, documento: `Devolução ${x.nf}${x.nota_origem ? ` (da NF ${x.nota_origem})` : ""}`, cliente: x.nome_cliente || x.codigo_cliente, representante: nomeRep(x.codigo_representante), pedidos: new Set(), previsoes: new Set(), valor: 0 };
       l.valor -= n(x.valor_liquido);
       mapa.set(k, l);
     });
-    return [...mapa.values()].map(({ pedidos: ped, ...l }) => ({ ...l, pedido: [...ped].join(", ") || "—" }))
+    return [...mapa.values()].map(({ pedidos: ped, previsoes, ...l }) => ({ ...l, pedido: [...ped].join(", ") || "—",
+      previsao: [...previsoes].sort().map(dataBR).join(", ") || "—" }))
       .sort((a, b) => String(b.data).localeCompare(String(a.data)));
   }
   const linhasPedidos = (itens) => itens.map((x) => ({
@@ -534,12 +545,13 @@ export default function PainelBIFaturamento({ perfil }) {
         {" · "}Mesmo período do ano anterior: <strong>{comparacao.anoAnterior > 0 ? moeda(comparacao.anoAnterior) : "sem dados"}</strong>
         {deltaAno !== null && <em className={deltaAno >= 0 ? "bi-delta-bom" : "bi-delta-ruim"}> {deltaAno >= 0 ? "+" : "−"}{pct(Math.abs(deltaAno))}</em>}
       </p>}
-      <h4 className="bi-subtitulo">Previsão por etapa · faturado sem pedido</h4>
-      <div className="bi-kpis bi-kpis-5">
+      <h4 className="bi-subtitulo">Previsão por etapa · faturado fora da previsão do período</h4>
+      <div className="bi-kpis bi-kpis-6">
         <StatTile label="Previsto já faturado (controle 50)" valor={moeda(atingida)} onClick={() => detalheEtapa("faturado", "Previsão já faturada (controle 50)")} />
         <StatTile label="Carteira aprovada (30 a 40)" valor={moeda(porEtapa("carteira"))} onClick={() => detalheEtapa("carteira", "Carteira aprovada")} />
         <StatTile label="Aguardando aprovação (15)" valor={moeda(porEtapa("pendente"))} onClick={() => detalheEtapa("pendente", "Aguardando aprovação")} />
         <StatTile label="Em negociação (10 e 20)" valor={moeda(porEtapa("negociacao"))} onClick={() => detalheEtapa("negociacao", "Em negociação")} />
+        <StatTile label="Faturado de previsão de outros períodos" valor={moeda(outroPeriodoValor)} onClick={() => abrir("Faturado de previsão de outros períodos", COL_NOTAS_OUTRO_PERIODO, linhasNotas(notasOutroPeriodo))} />
         <StatTile label="Faturado não previsto" valor={moeda(naoPrevistoValor)} onClick={() => abrir("Faturado não previsto", COL_NOTAS, linhasNotas(periodo.no.filter(naoPrevista)))} />
       </div>
       {porEtapa("fora") > 0 && <p className="bi-comparativo">
