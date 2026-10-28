@@ -32,3 +32,6 @@ supabase/.temp/
 
 # Credenciais de teste locais (nunca versionar - conta real no Supabase)
 CREDENCIAIS_TESTE_LOCAL.md
+
+# Config pessoal do Claude Code (não versionar)
+.claude/settings.local.json
