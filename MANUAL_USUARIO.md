@@ -28,6 +28,15 @@ O formulário público Veste Phenix aceita até 60 envios por minuto a partir da
 - Acessa operacao normal.
 - Visualiza somente clientes vinculados ao seu codigo de representante.
 
+4. qualidade (em teste no Radar interno, nao publicado)
+
+- Entra direto em Qualidade > Inspecoes; o menu mostra so Qualidade e Conta.
+- Nao ve clientes, rotas, comissoes nem paineis.
+
+Desde 27/10/2026 (Radar interno) os perfis acima sao apenas o **padrao**: cada menu e uma permissao,
+e o admin pode liberar ou bloquear um menu para uma pessoa especifica na tela **Administracao > Acessos**
+(ver secao 26).
+
 ## 3. Tela de Login
 
 Tela: Login inicial e fluxo de recuperacao de senha.
@@ -1279,3 +1288,45 @@ estande da feira.
 
 Os cadastros podem ser consultados pelos administradores no Radar (secao
 15.6).
+
+## 26. Acessos e Inspecoes de Qualidade (status: Radar interno, nao publicado)
+
+### Administracao > Acessos (somente quem tem a permissao Administracao)
+
+1. **Padrao por perfil:** uma linha por menu e uma coluna por perfil (Admin, Tecnico, Representante,
+   Qualidade). Marcar ou desmarcar muda o acesso de todos daquele perfil. No celular as colunas
+   aparecem abreviadas (Adm., Tec., Rep., Qual.).
+2. **Excecoes por pessoa:** escolher a pessoa e, em cada menu, "Seguir o perfil", "Liberar" ou
+   "Bloquear". Substitui a marca "piloto de comissoes" e o ajuste de Amostras por grupo.
+3. **Ultimas mudancas:** quem mudou, quando e o que.
+
+O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
+
+### Qualidade > Inspecoes
+
+- **Lista:** um cartao por inspecao (faixa laranja = rascunho, verde = finalizada, vermelha = alguem
+  editando). Busca por cliente, codigo, NF, produto ou numero e filtros Todas / Rascunho / Finalizadas /
+  Em edicao. "Nova inspecao" cria e ja abre.
+- **Inspecao aberta:** cabecalho com cliente, numero, revisao e situacao; atalhos para as secoes
+  (Identificacao, Tecnicas, Saida, Detalhamento, Conclusao), que no computador acompanham a rolagem.
+  "Inspecoes" (seta no topo) volta para a lista.
+- **Saida:** ligar "A Phenix forneceu esta tela" so quando a tela saiu da Phenix; o Fabricante vira
+  "Phenix" sozinho e a saida vai primeiro no relatorio.
+- **Detalhamento:** cada item e um cartao; os vazios ficam recolhidos (toque para abrir) e nao saem no
+  relatorio. Fotos no proprio item; tocar numa foto abre ampliada para legenda, ordem, mover de item ou
+  tirar do relatorio. "Adicionar item" traz os titulos padrao e sugeridos.
+- **Fotos:** no celular, botao Camera; no computador, "Adicionar fotos", arrastar arquivos para o item
+  ou "Do celular" (QR Code: o celular tira as fotos e elas aparecem no computador; fechar invalida o codigo).
+- **Salvar:** e automatico, alguns segundos depois de cada alteracao (barra de baixo mostra "Salvo as ...").
+  Quem abre primeiro edita; os outros veem quem esta editando e acompanham ao vivo.
+- **Finalizar** bloqueia a edicao; **Reabrir** (aprovador) libera e a proxima alteracao abre nova revisao.
+- **Cliente:** digite parte do nome ou o codigo e escolha na lista do cadastro: Cliente e Codigo cliente
+  se preenchem sozinhos.
+- **Cabecalho da inspecao:** PDF, Word, E-mail (so finalizada), Historico (PDF/Word de qualquer revisao e
+  "O que mudou") e Exportar (arquivo para o programa desktop).
+- **Corrigir texto:** na descricao de cada item e na conclusao; mostra as correcoes para marcar/desmarcar.
+- **Lista > Mais:** enviar varias inspecoes por e-mail, importar do programa desktop (escolher a pasta das
+  inspecoes ou um .zip) e, para aprovadores, os Tipos de detalhamento (itens padrao de toda inspecao nova
+  e os outros que aparecem em "Adicionar item").
+- **Lixeira** (aprovador): filtro na lista; Restaurar devolve a inspecao.
+- **Voltar:** o botao/gesto de voltar do navegador ou do celular volta da inspecao para a lista.

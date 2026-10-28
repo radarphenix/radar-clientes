@@ -69,7 +69,7 @@ function montarEvento(item: {
   rotaNome: string;
   tecnicoNome: string;
   clienteNome: string;
-  clienteEndereco: string;
+  clienteCidade: string;
 }) {
   const uid = `rota-cliente-${item.id}@radar-clientes`;
   const label = statusLegivel(item.status, item.visitado);
@@ -88,8 +88,9 @@ function montarEvento(item: {
   const description = escaparTextoIcs(
     `Rota: ${item.rotaNome || "-"}\nTecnico responsavel: ${item.tecnicoNome || "-"}\nStatus: ${label}${linhaMotivo}`,
   );
-  const location = item.clienteEndereco
-    ? `LOCATION:${escaparTextoIcs(item.clienteEndereco)}\r\n`
+  // So a cidade no evento: feed publico por URL, nao expor endereco completo do cliente.
+  const location = item.clienteCidade
+    ? `LOCATION:${escaparTextoIcs(item.clienteCidade)}\r\n`
     : "";
 
   const [ano, mes, dia] = item.data_prevista_visita.split("-").map(Number);
@@ -230,12 +231,12 @@ Deno.serve(async (req) => {
   }
 
   const clienteIds = Array.from(new Set(itens.map((item) => item.cliente_id)));
-  let clientePorId = new Map<number, { cliente: string; endereco_completo: string }>();
+  let clientePorId = new Map<number, { cliente: string; cidade: string }>();
 
   if (clienteIds.length > 0) {
     const { data: clientes, error: clientesError } = await supabaseAdmin
       .from("clientes")
-      .select("id, cliente, endereco_completo")
+      .select("id, cliente, cidade")
       .in("id", clienteIds);
 
     if (clientesError) {
@@ -246,7 +247,7 @@ Deno.serve(async (req) => {
     clientePorId = new Map(
       (clientes || []).map((cliente) => [
         cliente.id,
-        { cliente: cliente.cliente, endereco_completo: cliente.endereco_completo },
+        { cliente: cliente.cliente, cidade: cliente.cidade },
       ]),
     );
   }
@@ -269,7 +270,7 @@ Deno.serve(async (req) => {
         rotaNome: rota?.nome || "",
         tecnicoNome,
         clienteNome: cliente?.cliente || "",
-        clienteEndereco: cliente?.endereco_completo || "",
+        clienteCidade: cliente?.cidade || "",
       });
     })
     .join("");

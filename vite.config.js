@@ -2,7 +2,20 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath } from 'node:url'
+import { networkInterfaces } from 'node:os'
 
+// Inspeção de Qualidade (menu do Radar): em desenvolvimento, o QR Code do celular usa o IP da rede
+// no lugar de localhost (o celular não alcança o localhost do computador).
+const PORTA_DEV = 5173
+function ipDaRede() {
+  const virtual = /vEthernet|Hyper-V|WSL|VirtualBox|VMware|Loopback|Tailscale/i
+  for (const [nome, lista] of Object.entries(networkInterfaces())) {
+    if (virtual.test(nome)) continue
+    const ip = lista?.find((i) => i.family === 'IPv4' && !i.internal)
+    if (ip) return ip.address
+  }
+  return ''
+}
 const MANIFESTO_RADAR = /<link rel="manifest" href="\/manifest\.webmanifest"[^>]*>\s*/g
 
 // O vite-plugin-pwa injeta o manifesto do Radar em todas as páginas; a página da
@@ -20,7 +33,12 @@ const manifestoSoDoRadar = {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  define: {
+    __INSPECAO_LAN_URL__: JSON.stringify(command === 'serve' && ipDaRede() ? `http://${ipDaRede()}:${PORTA_DEV}` : ''),
+  },
+  // host: o celular do QR Code precisa alcançar o servidor de desenvolvimento pela rede
+  server: { port: PORTA_DEV, host: true },
   build: {
     rollupOptions: {
       input: {
@@ -85,4 +103,4 @@ export default defineConfig({
     }),
     manifestoSoDoRadar,
   ],
-})
+}))

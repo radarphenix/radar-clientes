@@ -102,7 +102,23 @@ Deno.serve(async (req) => {
 
   const nome = String(body.nome || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
-  const senhaProvisoria = String(body.senha_provisoria || "").trim();
+  // Senha provisória forte e aleatória; o usuário define a própria pelo link do e-mail.
+  const gerarSenhaForte = () => {
+    const grupos = ["abcdefghijkmnpqrstuvwxyz", "ABCDEFGHJKLMNPQRSTUVWXYZ", "23456789", "!@#$%&*?-_"];
+    const todos = grupos.join("");
+    const buf = new Uint32Array(16);
+    crypto.getRandomValues(buf);
+    const chars = grupos.map((g, i) => g[buf[i] % g.length]);
+    for (let i = grupos.length; i < buf.length; i++) chars.push(todos[buf[i] % todos.length]);
+    const ord = new Uint32Array(chars.length);
+    crypto.getRandomValues(ord);
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = ord[i] % (i + 1);
+      [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    return chars.join("");
+  };
+  const senhaProvisoria = gerarSenhaForte();
   const tipoPerfil = String(body.tipo_perfil || "representante").trim();
   const tiposPerfilValidos = new Set(["admin", "tecnico", "representante"]);
   const codigoRepresentanteRaw = String(body.codigo_representante || "")
@@ -115,8 +131,8 @@ Deno.serve(async (req) => {
   const ativo = body.ativo !== false;
   const logAcessoAtivo = body.log_acesso_ativo === true;
 
-  if (!nome || !email || senhaProvisoria.length < 6) {
-    return jsonResponse({ error: "Nome, e-mail e senha provisoria sao obrigatorios." }, 400);
+  if (!nome || !email) {
+    return jsonResponse({ error: "Nome e e-mail sao obrigatorios." }, 400);
   }
 
   if (!emailValido(email)) {

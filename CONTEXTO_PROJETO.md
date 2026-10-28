@@ -1,5 +1,34 @@
 # CONTEXTO_PROJETO
 
+## Inspecao de Qualidade + acessos por menu (2026-10-27/28) - RETOMAR AQUI
+
+**Situacao: Radar interno.** Branch `inspecao-qualidade`, **nada commitado** (pedido do usuario: nao
+publicar no oficial). Roda com `npm run dev` (porta 5173, `host: true` para o QR do celular).
+
+- **Acessos por menu (modelo Galie) - JA ATIVO NO BANCO DE PRODUCAO**: catalogo `radar_permissoes`
+  (19 codigos), padrao por perfil, excecoes por pessoa, historico; `radar_pode()` nas 58 regras RLS;
+  perfil novo `qualidade`. Padroes = acesso anterior, conferido linha a linha (fotografia antes/depois
+  identica para admin, tecnico e representante reais). O Radar publicado segue funcionando (compatibilidade
+  com `configuracoes_grupos.permite_menu_amostras` e `perfis.piloto_comissoes` dentro de `radar_pode`).
+  Tela Administracao > Acessos so no branch. Volta: `.codex-backups/20261027_212752_inspecao_qualidade_inicio/VOLTA_regras_rls_antes_permissoes.sql`.
+  Detalhes: `ACESSOS_RADAR.md`.
+- **Inspecao de Qualidade** (irma do desktop MWInspecaoQualidade): menu Qualidade > Inspecoes, pagina
+  lazy. Tela web redesenhada (cartoes, pagina por inspecao, secoes, cabecalho fixo, Radar compacto no
+  celular), cliente do cadastro, PDF/Word, e-mail, historico/o que mudou, corrigir texto, importar/
+  exportar desktop, lixeira, tipos de detalhamento, QR Code do celular. Detalhes e testes:
+  `INSPECAO_QUALIDADE.md`.
+- **Banco**: migrations `20261027220000_inspecao_qualidade`, `20261027230000_radar_permissoes_por_menu`,
+  `20261028000000_inspecao_tipos_e_clientes` aplicadas por `supabase db query -f` (FORA do historico de
+  migrations, para nao quebrar o deploy da main). Idempotentes; ao oficializar, renomear para a data do
+  merge se a main tiver migrations mais novas.
+- **Funcoes publicadas**: `inspecao-arquivos`, `inspecao-celular`, `inspecao-email` (a `inspecao-usuarios`
+  foi criada e removida).
+- **Pendencias (28/10)**: 1) usuario autorizar o Google Drive (`.env.google-drive.local`, passo a passo no
+  `INSPECAO_QUALIDADE.md`) e testar fotos; 2) importar a pasta real do desktop (maquina `producaophenix`
+  estava desligada); 3) decidir se busca de cliente e tipos vao ao desktop (regra irma); 4) oficializar.
+- **Regra do usuario**: toda tela testada em desktop (1920), notebook (1366) e celular (390) com prints e
+  navegacao conferida. Testes Playwright usados ficaram no scratchpad da sessao (nao versionados).
+
 ## BI com IPI e nota cancelada no resumo de comissoes (2026-10-13)
 
 - **BI Faturamento com IPI**: notas e devolucoes passam a valer `QUANTIDADE x PR_UNITARIO + VL_IPI`, a mesma base do MWComissoes e da comissao (antes `PR_TOTAL_ITEM`, sem IPI; NF 10482: 11.100,00 x 11.460,75). A previsao (pedidos) tambem passou a ter IPI (`FAITEMPE.VL_IPI`, conferido em producao). Mudanca so na view Oracle do `MWFaturamentoSync`. Pedido de exportacao (ex.: 000330) esta em moeda estrangeira e a nota em reais, entao a previsao de exportacao fica subestimada. Decisao do usuario (13/10/2026): nao mexer agora, so acompanhar.

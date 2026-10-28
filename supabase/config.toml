@@ -28,6 +28,12 @@ verify_jwt = false
 import_map = "./functions/agenda-geral-ics/deno.json"
 entrypoint = "./functions/agenda-geral-ics/index.ts"
 
+[functions.inspecao-arquivos]
+verify_jwt = true
+[functions.inspecao-celular]
+verify_jwt = false
+[functions.inspecao-email]
+verify_jwt = true
 [functions.cadastrar-produto-feira]
 enabled = true
 verify_jwt = false

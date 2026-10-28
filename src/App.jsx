@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase, supabaseUrl } from "./supabaseClient";
 import "./app-global.css";
@@ -69,7 +69,13 @@ import {
   ChevronRight,
   Briefcase,
   CircleUserRound,
+  ClipboardCheck,
+  ShieldCheck,
 } from "lucide-react";
+
+// Páginas carregadas só quando abertas: não pesam no Radar de quem não usa.
+const PaginaInspecao = lazy(() => import("./inspecao/PaginaInspecao.jsx"));
+const AcessosRadar = lazy(() => import("./AcessosRadar.jsx"));
 
 function detectarLinkRecuperacao() {
   return (
@@ -95,6 +101,8 @@ const TELAS_PERSISTIDAS = new Set([
   "clientesEmPauta",
   "painelBI",
   "painelBIFaturamento",
+  "inspecao",
+  "acessos",
 ]);
 
 const FILTROS_PESQUISA_ROTAS_INICIAIS = {
@@ -615,9 +623,15 @@ function App() {
     comercial: true,
     rotas: true,
     gestaoAnalise: true,
+    qualidade: true,
     conta: true,
     administracao: true,
   });
+  // Acessos por menu (catálogo radar_permissoes): o que esta pessoa pode abrir.
+  const [permissoes, setPermissoes] = useState(() => new Set());
+  const pode = (codigo) => permissoes.has(codigo);
+  // Tela de entrada: Meu Dia; quem não tem (ex.: perfil Qualidade) entra na primeira tela que pode.
+  const telaInicial = pode("meu_dia") ? "home" : pode("inspecao.ver") ? "inspecao" : "alterarSenha";
   function alternarGrupoMenu(grupo) {
     setGruposMenuAbertos((atual) => ({ ...atual, [grupo]: !atual[grupo] }));
   }
@@ -803,7 +817,7 @@ function App() {
           !estaEmRecuperacao &&
           !window.localStorage.getItem(TELA_ATUAL_STORAGE_KEY)
         ) {
-          setTelaAtual("home");
+          setTelaAtual(telaInicial);
           setRotaSelecionada(null);
           setClientesDaRota([]);
           setBuscaClienteRota("");
@@ -833,7 +847,7 @@ function App() {
         window.localStorage.removeItem(ROTA_SELECIONADA_STORAGE_KEY);
 
         if (!estaEmRecuperacao) {
-          setTelaAtual("home");
+          setTelaAtual(telaInicial);
         }
       }
     });
@@ -905,7 +919,7 @@ function App() {
       ignorarProximoHistoricoRef.current = true;
       ultimaTelaHistoricoRef.current = "home";
       navegacoesInternasRef.current = 0;
-      setTelaAtual("home");
+      setTelaAtual(telaInicial);
       window.history.pushState(
         { radarClientes: true, tela: "home" },
         "",
@@ -1082,9 +1096,20 @@ function App() {
 
     alert("Enviamos um e-mail com as instruções para alterar sua senha.");
   }
+  // Senha forte: mínimo 8, com maiúscula, minúscula, número e caractere especial.
+  const REGRA_SENHA =
+    "A senha deve ter no mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.";
+  const senhaFraca = (s) =>
+    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(s);
+
   async function salvarNovaSenha() {
     if (!novaSenha.trim()) {
       alert("Informe a nova senha.");
+      return;
+    }
+
+    if (senhaFraca(novaSenha.trim())) {
+      alert(REGRA_SENHA);
       return;
     }
 
@@ -1133,8 +1158,8 @@ function App() {
       return;
     }
 
-    if (senhaNova.length < 6) {
-      alert("A nova senha deve ter pelo menos 6 caracteres.");
+    if (senhaFraca(senhaNova)) {
+      alert(REGRA_SENHA);
       return;
     }
 
@@ -1317,7 +1342,7 @@ function App() {
 
     setNomeNovaRota("");
 
-    setTelaAtual("home");
+    setTelaAtual(telaInicial);
     window.localStorage.removeItem(TELA_ATUAL_STORAGE_KEY);
     window.localStorage.removeItem(ROTA_SELECIONADA_STORAGE_KEY);
 
@@ -1370,14 +1395,25 @@ function App() {
       .eq("user_id", userId)
       .maybeSingle();
 
+    const { data: codigos } = await supabase.rpc("radar_minhas_permissoes");
+    const minhas = new Set(codigos || []);
+
     setMensagemLogin("");
+    setPermissoes(minhas);
     setPerfil({ ...data, calendario_token: tokenAgenda?.calendario_token || null });
     setUsuarioResponsavelRota(userId);
+    if (!minhas.has("meu_dia")) setTelaAtual(minhas.has("inspecao.ver") ? "inspecao" : "alterarSenha");
     await carregarConfiguracoesWhatsAppGrupos(data);
     await carregarConfiguracoesAmostrasGrupos(data);
     await carregarUsuariosPerfis();
-    await carregarClientes(data);
-    await carregarPautaPorCliente();
+    // sem nenhum menu comercial (ex.: perfil Qualidade) não carrega clientes nem pauta
+    const comercial = ["meu_dia", "clientes", "proximos", "rotas", "clientes_em_pauta", "pesquisa_rotas", "dashboard"].some((c) => minhas.has(c));
+    if (comercial) {
+      await carregarClientes(data);
+      await carregarPautaPorCliente();
+    } else {
+      setCarregando(false);
+    }
     return true;
   }
 
@@ -3229,7 +3265,7 @@ function App() {
       return;
     }
 
-    setTelaAtual("home");
+    setTelaAtual(telaInicial);
   }
 
   function fecharModalVisita() {
@@ -4887,14 +4923,6 @@ function App() {
       return;
     }
 
-    if (
-      !usuarioPerfilForm.user_id.trim() &&
-      usuarioPerfilForm.senha_provisoria.trim().length < 6
-    ) {
-      alert("Informe uma senha provisória com pelo menos 6 caracteres.");
-      return;
-    }
-
     const payload = {
       nome: usuarioPerfilForm.nome.trim(),
       email: emailNormalizado,
@@ -4935,10 +4963,7 @@ function App() {
         const { data, error } = await supabase.functions.invoke(
           "criar-usuario",
           {
-            body: {
-              ...payload,
-              senha_provisoria: usuarioPerfilForm.senha_provisoria.trim(),
-            },
+            body: payload,
           },
         );
 
@@ -5058,14 +5083,17 @@ function App() {
     );
   }
 
+  // telas de trabalho com muitos dados (Inspeções): cabeçalho compacto e menu sempre à mão
+  const telaCompacta = telaAtual === "inspecao";
+
   return (
-    <div className="app">
+    <div className={`app${telaCompacta ? " tela-inspecao" : ""}`}>
       <header className="home-topo">
         <div className="home-topo-overlay">
           <button
             type="button"
             className="home-logo-phenix"
-            onClick={() => setTelaAtual("home")}
+            onClick={() => setTelaAtual(telaInicial)}
             aria-label="Voltar para a página inicial"
             title="Voltar para o início"
           >
@@ -5083,7 +5111,7 @@ function App() {
               <span>{nomeUsuarioTopo}</span>
               <small>{perfil?.tipo_perfil}</small>
             </div>
-            {telaAtual === "home" && (
+            {(telaAtual === telaInicial || telaCompacta) && (
               <button
                 type="button"
                 className="home-botao-menu-mobile"
@@ -5096,11 +5124,11 @@ function App() {
               </button>
             )}
 
-            {telaAtual !== "home" && (
+            {telaAtual !== "home" && !telaCompacta && (
               <button
                 type="button"
                 className="home-botao-menu"
-                onClick={() => setTelaAtual("home")}
+                onClick={() => setTelaAtual(telaInicial)}
                 aria-label="Abrir menu"
               >
                 <Menu size={18} />
@@ -5133,12 +5161,14 @@ function App() {
         aria-label="Menu principal"
       >
         <nav className="desktop-sidebar-nav">
+          {(pode("meu_dia") || pode("clientes") || pode("proximos")) && (
           <MenuGrupo
             titulo="Comercial"
             icone={Briefcase}
             aberto={gruposMenuAbertos.comercial}
             onToggle={() => alternarGrupoMenu("comercial")}
           >
+            {pode("meu_dia") && (
             <button
               type="button"
               className={telaAtual === "home" ? "ativo" : ""}
@@ -5150,7 +5180,9 @@ function App() {
               <Menu size={20} />
               Meu Dia
             </button>
+            )}
 
+            {pode("clientes") && (
             <button
               type="button"
               className={telaAtual === "clientes" ? "ativo" : ""}
@@ -5162,7 +5194,9 @@ function App() {
               <Users size={20} />
               Clientes
             </button>
+            )}
 
+            {pode("proximos") && (
             <button
               type="button"
               className={telaAtual === "proximos" ? "ativo" : ""}
@@ -5174,14 +5208,18 @@ function App() {
               <MapPin size={20} />
               Próximos
             </button>
+            )}
           </MenuGrupo>
+          )}
 
+          {(pode("rotas") || pode("clientes_em_pauta") || pode("pesquisa_rotas")) && (
           <MenuGrupo
             titulo="Rotas"
             icone={Route}
             aberto={gruposMenuAbertos.rotas}
             onToggle={() => alternarGrupoMenu("rotas")}
           >
+            {pode("rotas") && (
             <button
               type="button"
               className={telaAtual === "rotas" ? "ativo" : ""}
@@ -5193,7 +5231,9 @@ function App() {
               <Route size={20} />
               Rotas
             </button>
+            )}
 
+            {pode("clientes_em_pauta") && (
             <button
               type="button"
               className={telaAtual === "clientesEmPauta" ? "ativo" : ""}
@@ -5205,7 +5245,9 @@ function App() {
               <Flag size={20} />
               Clientes em Pauta
             </button>
+            )}
 
+            {pode("pesquisa_rotas") && (
             <button
               type="button"
               className={telaAtual === "pesquisaRotas" ? "ativo" : ""}
@@ -5217,14 +5259,18 @@ function App() {
               <Search size={20} />
               Pesquisar rotas
             </button>
+            )}
           </MenuGrupo>
+          )}
 
+          {(pode("dashboard") || pode("bi_comissoes") || pode("bi_faturamento") || pode("comissoes") || pode("amostras")) && (
           <MenuGrupo
             titulo="Gestão e Análise"
             icone={BarChart3}
             aberto={gruposMenuAbertos.gestaoAnalise}
             onToggle={() => alternarGrupoMenu("gestaoAnalise")}
           >
+            {pode("dashboard") && (
             <button
               type="button"
               className={telaAtual === "dashboard" ? "ativo" : ""}
@@ -5238,21 +5284,25 @@ function App() {
               <BarChart3 size={20} />
               Dashboard
             </button>
+            )}
 
-            {perfil?.tipo_perfil === "admin" && (
+            {(pode("bi_comissoes") || pode("bi_faturamento")) && (
               <div className="menu-subgrupo">
                 <span>Painel BI</span>
+                {pode("bi_comissoes") && (
                 <button type="button" className={telaAtual === "painelBI" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBI"); setMenuMobileAberto(false); }}>
                   <LineChart size={18} /> Comissões
                 </button>
+                )}
+                {pode("bi_faturamento") && (
                 <button type="button" className={telaAtual === "painelBIFaturamento" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIFaturamento"); setMenuMobileAberto(false); }}>
                   <LineChart size={18} /> Faturamento
                 </button>
+                )}
               </div>
             )}
 
-            {(perfil?.tipo_perfil === "admin" ||
-              perfil?.piloto_comissoes === true) && (
+            {pode("comissoes") && (
               <button
                 type="button"
                 className={telaAtual === "comissoes" ? "ativo" : ""}
@@ -5266,7 +5316,7 @@ function App() {
               </button>
             )}
 
-            {permiteMenuAmostrasGrupoAtual && (
+            {pode("amostras") && (
               <button
                 type="button"
                 className={telaAtual === "amostras" ? "ativo" : ""}
@@ -5280,6 +5330,28 @@ function App() {
               </button>
             )}
           </MenuGrupo>
+          )}
+
+          {pode("inspecao.ver") && (
+            <MenuGrupo
+              titulo="Qualidade"
+              icone={ClipboardCheck}
+              aberto={gruposMenuAbertos.qualidade}
+              onToggle={() => alternarGrupoMenu("qualidade")}
+            >
+              <button
+                type="button"
+                className={telaAtual === "inspecao" ? "ativo" : ""}
+                onClick={() => {
+                  setTelaAtual("inspecao");
+                  setMenuMobileAberto(false);
+                }}
+              >
+                <ClipboardCheck size={20} />
+                Inspeções
+              </button>
+            </MenuGrupo>
+          )}
 
           <MenuGrupo
             titulo="Conta"
@@ -5300,13 +5372,14 @@ function App() {
             </button>
           </MenuGrupo>
 
-          {perfil?.tipo_perfil === "admin" && (
+          {(pode("promocao") || pode("administracao")) && (
             <MenuGrupo
               titulo="Administração"
               icone={Settings}
               aberto={gruposMenuAbertos.administracao}
               onToggle={() => alternarGrupoMenu("administracao")}
             >
+              {pode("promocao") && (
               <button
                 type="button"
                 className={telaAtual === "promocaoVestePhenix" ? "ativo" : ""}
@@ -5318,7 +5391,9 @@ function App() {
                 <Trophy size={20} />
                 Promoção 30 anos
               </button>
+              )}
 
+              {pode("administracao") && (
               <button
                 type="button"
                 className={telaAtual === "admin" ? "ativo" : ""}
@@ -5331,12 +5406,27 @@ function App() {
                 <Settings size={20} />
                 Administração
               </button>
+              )}
+
+              {pode("administracao") && (
+              <button
+                type="button"
+                className={telaAtual === "acessos" ? "ativo" : ""}
+                onClick={() => {
+                  setTelaAtual("acessos");
+                  setMenuMobileAberto(false);
+                }}
+              >
+                <ShieldCheck size={20} />
+                Acessos
+              </button>
+              )}
             </MenuGrupo>
           )}
         </nav>
       </aside>
 
-      {telaAtual !== "home" && (
+      {telaAtual !== telaInicial && !telaCompacta && telaAtual !== "acessos" && (
         <div className="navegacao-tela">
           <button
             type="button"
@@ -5349,7 +5439,19 @@ function App() {
         </div>
       )}
 
-      {telaAtual === "home" && (
+      {telaAtual === "inspecao" && pode("inspecao.ver") && (
+        <Suspense fallback={<div className="carregando-tela">Carregando Inspeções...</div>}>
+          <PaginaInspecao nome={perfil?.nome || session?.user?.email || ""} />
+        </Suspense>
+      )}
+
+      {telaAtual === "acessos" && pode("administracao") && (
+        <Suspense fallback={<div className="carregando-tela">Carregando Acessos...</div>}>
+          <AcessosRadar usuarios={usuariosPerfis} voltar={voltarTelaAnterior} />
+        </Suspense>
+      )}
+
+      {telaAtual === "home" && pode("meu_dia") && (
         <MeuDia
           nomeUsuario={
             usuarioMeuDiaId === "todos"
@@ -5376,7 +5478,7 @@ function App() {
         />
       )}
 
-      {perfil?.tipo_perfil === "admin" && telaAtual === "promocaoVestePhenix" && (
+      {pode("promocao") && telaAtual === "promocaoVestePhenix" && (
         <PromocaoVestePhenix />
       )}
 
@@ -5492,7 +5594,7 @@ function App() {
                   setSenhaAtualInterna("");
                   setNovaSenhaInterna("");
                   setConfirmarSenhaInterna("");
-                  setTelaAtual("home");
+                  setTelaAtual(telaInicial);
                 }}
               >
                 Cancelar
@@ -5502,7 +5604,7 @@ function App() {
         </section>
       )}
 
-      {perfil?.tipo_perfil === "admin" && telaAtual === "admin" && (
+      {pode("administracao") && telaAtual === "admin" && (
         <section className="painel-admin">
           <SecaoContexto
             icone={Settings}
@@ -5903,38 +6005,12 @@ function App() {
                 </div>
               ) : (
                 <div>
-                  <label>Senha provisória</label>
-                  <div className="campo-senha">
-                    <input
-                      type={mostrarSenhaProvisoria ? "text" : "password"}
-                      minLength={6}
-                      placeholder="Mínimo 6 caracteres"
-                      value={usuarioPerfilForm.senha_provisoria}
-                      onChange={(e) =>
-                        setUsuarioPerfilForm({
-                          ...usuarioPerfilForm,
-                          senha_provisoria: e.target.value,
-                        })
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMostrarSenhaProvisoria((valor) => !valor)
-                      }
-                      aria-label={
-                        mostrarSenhaProvisoria
-                          ? "Ocultar senha"
-                          : "Mostrar senha"
-                      }
-                    >
-                      {mostrarSenhaProvisoria ? (
-                        <EyeOff size={18} />
-                      ) : (
-                        <Eye size={18} />
-                      )}
-                    </button>
-                  </div>
+                  <label>Senha</label>
+                  <p style={{ fontSize: ".85rem", opacity: 0.75, margin: "4px 0 0" }}>
+                    O sistema gera uma senha provisória forte automaticamente e
+                    envia ao usuário um e-mail para ele definir a própria senha
+                    no primeiro acesso.
+                  </p>
                 </div>
               )}
 
@@ -5956,6 +6032,7 @@ function App() {
                   <option value="admin">Admin</option>
                   <option value="tecnico">Técnico</option>
                   <option value="representante">Representante</option>
+                  <option value="qualidade">Qualidade (só Inspeções)</option>
                 </select>
               </div>
 
@@ -6536,7 +6613,7 @@ function App() {
               descricao="Seu perfil nao possui acesso a esta area."
             />
 
-            <button type="button" onClick={() => setTelaAtual("home")}>
+            <button type="button" onClick={() => setTelaAtual(telaInicial)}>
               Voltar ao menu
             </button>
           </section>
@@ -7001,20 +7078,18 @@ function App() {
           />
         )}
 
-        {telaAtual === "comissoes" &&
-          (perfil?.tipo_perfil === "admin" ||
-            perfil?.piloto_comissoes === true) && (
+        {telaAtual === "comissoes" && pode("comissoes") && (
             <ComissoesRepresentante
               perfil={perfil}
               usuariosPerfis={usuariosPerfis}
             />
           )}
 
-        {perfil?.tipo_perfil === "admin" && telaAtual === "painelBI" && (
+        {pode("bi_comissoes") && telaAtual === "painelBI" && (
           <PainelBI perfil={perfil} usuariosPerfis={usuariosPerfis} />
         )}
 
-        {perfil?.tipo_perfil === "admin" && telaAtual === "painelBIFaturamento" && (
+        {pode("bi_faturamento") && telaAtual === "painelBIFaturamento" && (
           <PainelBIFaturamento perfil={perfil} />
         )}
 

@@ -1,0 +1,10 @@
+# Cabecalhos de seguranca (Cloudflare Pages). Aplicados no proximo deploy do Pages.
+# HSTS e hardening entram valendo; o CSP esta em Report-Only (so reporta no console
+# do navegador, nao bloqueia) ate confirmarmos que nenhuma origem legitima ficou de fora.
+/*
+  Strict-Transport-Security: max-age=15552000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(self), microphone=(), payment=()
+  Content-Security-Policy-Report-Only: default-src 'self'; connect-src 'self' https://ujrvncptcymootpyalpd.supabase.co wss://ujrvncptcymootpyalpd.supabase.co https://nominatim.openstreetmap.org; img-src 'self' data: blob: https://ujrvncptcymootpyalpd.supabase.co https://phenixonline.com.br; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'

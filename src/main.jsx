@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
@@ -25,6 +25,15 @@ const rota = window.location.pathname.replace(/\/+$/, '') || '/'
 const ehPromocao = rota === ROTA_PROMOCAO_VESTE_PHENIX
 const ehFeiraVestePhenix = rota === ROTA_FEIRA_VESTE_PHENIX
 const ehCadastroProdutos = rota === ROTA_CADASTRO_PRODUTOS
+// Página do celular do QR Code da Inspeção (sem login: o código da janela aberta no computador autoriza).
+const ROTA_INSPECAO_CELULAR = '/inspecao/celular'
+const ehInspecaoCelular = rota === ROTA_INSPECAO_CELULAR
+// eslint-disable-next-line react-refresh/only-export-components -- arquivo de entrada, não é recarregado a quente
+const InspecaoCelular = lazy(() => import('./inspecao/Celular.jsx'))
+if (ehInspecaoCelular) {
+  document.title = 'Fotos da Inspeção - Phenix'
+  document.querySelector('link[rel="manifest"]')?.remove()
+}
 
 function identidadeVestePhenix(titulo) {
   document.title = titulo
@@ -63,6 +72,7 @@ if (ehPromocao || ehFeiraVestePhenix) iniciarVerificacaoAtualizacao()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {ehPromocao ? <FormularioPromocao /> : ehFeiraVestePhenix ? <FeiraVestePhenix /> : ehCadastroProdutos ? <CadastroProdutosAvulso /> : <App />}
+    {ehInspecaoCelular ? <Suspense fallback={null}><InspecaoCelular /></Suspense>
+      : ehPromocao ? <FormularioPromocao /> : ehFeiraVestePhenix ? <FeiraVestePhenix /> : ehCadastroProdutos ? <CadastroProdutosAvulso /> : <App />}
   </StrictMode>,
 )
