@@ -20,7 +20,7 @@ export async function papelAtual() {
 // ------------------------------------------------------------------ lista
 export async function listar() {
   const { data, error } = await supabase.from('inspecoes')
-    .select('id, numero, cliente, cd_cliente, nota_fiscal, produto, data_inspecao, finalizado, revisao, enviado_email_em, editando_por, editando_nome, editando_ate, alterado_em')
+    .select('id, numero, cliente, cd_cliente, nota_fiscal, produto, dados_gerais, data_inspecao, finalizado, revisao, enviado_email_em, editando_por, editando_nome, editando_ate, alterado_em')
     .is('excluido_em', null).order('numero', { ascending: false })
   falhou(error)
   return data

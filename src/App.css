@@ -38,7 +38,9 @@ body {
 .conteudo,
 .painel-admin,
 .painel {
-  max-width: 1100px;
+  /* Ocupa melhor a largura entre o menu e a borda: enche no monitor grande,
+     mantém o notebook cheio, deixando só um respiro fino dos lados. */
+  max-width: min(2200px, 98%);
   margin: 0 auto 25px auto;
 }
 

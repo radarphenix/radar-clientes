@@ -69,6 +69,8 @@
 .iq-cartao-topo strong { font-size: 15px; color: var(--iq-titulo); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .iq-cartao-info { font-size: 13px; color: var(--iq-sec); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .iq-cartao-meta { font-size: 12px; color: var(--iq-fraco); }
+.iq-cartao-lote { align-self: flex-start; margin-top: 1px; padding: 2px 9px; border-radius: 999px; background: var(--iq-ambar-fundo); color: var(--iq-ambar); font-size: 12px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.iq-cartao.finalizada .iq-cartao-lote { background: var(--iq-verde-fundo); color: var(--iq-verde); }
 .iq-status { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; background: var(--iq-ambar-fundo); color: var(--iq-ambar); white-space: nowrap; }
 .iq-status.finalizada { background: var(--iq-verde-fundo); color: var(--iq-verde); }
 .iq-status.edicao { background: var(--iq-vermelho-fundo); color: var(--iq-vermelho); }

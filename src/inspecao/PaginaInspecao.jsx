@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ClipboardCheck, Plus, Search, Lock, Camera, Factory, Mail, FolderInput, ListPlus, Trash2, RotateCcw, MoreHorizontal } from 'lucide-react'
 import './inspecao.css'
 import { supabase, listar, criar, papelAtual, listarLixeira, restaurar } from './api'
-import { pode } from './modelo'
+import { pode, valor } from './modelo'
 import Editor from './Editor.jsx'
 import { JanelaEmail, JanelaImportar, JanelaSelecionarEmail, JanelaTipos } from './Janelas.jsx'
 
@@ -89,7 +89,7 @@ export default function PaginaInspecao({ nome }) {
     const f = busca.trim().toLowerCase()
     return (lista || []).filter((i) =>
       (filtro === 'todas' || situacao(i, eu, agora) === filtro) &&
-      (!f || [i.numero, i.cliente, i.cd_cliente, i.nota_fiscal, i.produto].join(' ').toLowerCase().includes(f)))
+      (!f || [i.numero, i.cliente, i.cd_cliente, i.nota_fiscal, i.produto, valor(i.dados_gerais, 'Lote')].join(' ').toLowerCase().includes(f)))
   }, [lista, busca, filtro, eu, agora])
 
   async function nova() {
@@ -142,7 +142,7 @@ export default function PaginaInspecao({ nome }) {
       <div className="iq-filtros">
         <label className="iq-busca">
           <Search size={18} aria-hidden="true" />
-          <input type="search" className="iq-busca-campo" placeholder="Buscar por cliente, código, NF, produto ou número" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          <input type="search" className="iq-busca-campo" placeholder="Buscar por cliente, código, NF, produto, lote ou número" value={busca} onChange={(e) => setBusca(e.target.value)} />
         </label>
         <div className="iq-chips" role="tablist">
           {FILTROS.map(([k, t]) => (
@@ -183,6 +183,7 @@ export default function PaginaInspecao({ nome }) {
         <div className="iq-cartoes">
           {visiveis.map((i) => {
             const s = situacao(i, eu, agora)
+            const lote = valor(i.dados_gerais, 'Lote')
             return (
               <button type="button" key={i.id} className={`iq-cartao ${s}`} onClick={() => abrir(i.id)}>
                 <span className="iq-cartao-faixa" aria-hidden="true" />
@@ -198,6 +199,7 @@ export default function PaginaInspecao({ nome }) {
                   <span className="iq-cartao-info">
                     {[i.cd_cliente && `Cód. ${i.cd_cliente}`, i.nota_fiscal && `NF ${i.nota_fiscal}`, i.produto].filter(Boolean).join(' · ') || 'Sem nota fiscal e produto'}
                   </span>
+                  <span className="iq-cartao-lote">Lote {lote || '—'}</span>
                   <span className="iq-cartao-meta">
                     Nº {i.numero}{i.data_inspecao ? ` · inspecionada em ${i.data_inspecao}` : ''}
                     {i.enviado_email_em ? ` · enviada por e-mail` : ''}
