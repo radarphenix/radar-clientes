@@ -117,10 +117,26 @@ própria conta do Radar), exportar `.zip`, voltar/avançar do navegador, tipos, 
 importar (inspeção de exemplo no formato do desktop: 12 itens e 1 revisão; as fotos falharam como
 esperado porque o Drive não está autorizado). Dados de teste apagados.
 
+## Parte 3 (28/10/2026, tarde)
+
+| Função | Onde | Observação |
+|---|---|---|
+| Lote no card | lista de inspeções | chip destacado na cor do status (verde = finalizada, âmbar = em edição), lido de `dados_gerais` (rótulo "Lote"). A query da lista (`api.js`) passou a trazer `dados_gerais`; sem coluna nova nem migração, vale para existentes e importadas. Pedido do usuário: "o lote é crucial e deve aparecer" |
+| Busca por lote | campo de busca da lista | o filtro passou a considerar o lote; placeholder atualizado |
+
+Irmão desktop: o "Lote" já existia lá (origem do dado); aqui só passou a ser exibido — nada a levar junto.
+
+**Importação real (28/10/2026):** rodada a importação da pasta real do desktop
+(`\\100.91.50.50\Inspecoes\Inspecoes`), subindo **só a inspeção nova** nº `20261028-165038`
+(cliente Fitesa, finalizada rev 00, 5 detalhamentos, **7 fotos** enviadas ao Google Drive, 1 revisão
+no histórico). Feita pela própria tela do Radar (Mais → Importar do programa desktop), com sessão de
+admin — nada de inserção direta no banco. Idempotente: número que já existe é pulado, então dá para
+apontar a pasta inteira que só as novas entram. Commits: `d1d9680` (Lote + busca + largura).
+
 ## Falta
 
 - [x] Google Drive autorizado (28/10/2026, projeto do Google "Em produção", segredos gravados) e fotos testadas: upload, celular pelo QR, foto ampliada (legenda/ordem/tirar), reabrir, PDF/Word/zip com fotos
-- [ ] Importar com fotos (junto com a pasta real do desktop)
-- [ ] Rodar o Importar com a pasta real do desktop (a máquina `producaophenix` estava desligada)
+- [x] Importar com fotos (junto com a pasta real do desktop) — nº 20261028-165038, 7 fotos ao Drive, sem avisos (28/10/2026)
+- [x] Rodar o Importar com a pasta real do desktop — pasta `\\100.91.50.50\Inspecoes\Inspecoes` (28/10/2026)
 - [ ] Desktop: busca de cliente e cadastro de tipos existem só no Radar (regra irmã: avaliar levar ao desktop ou aceitar a diferença)
 - [ ] Oficializar: histórico de migrations, merge na `main`, rota `/inspecao/celular` no Cloudflare
