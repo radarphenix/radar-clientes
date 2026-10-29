@@ -11,6 +11,7 @@ export default function Celular() {
   const [enviadas, setEnviadas] = useState([])
   const [concluido, setConcluido] = useState(false)
   const entrada = useRef(null)
+  const camera = useRef(null)
 
   useEffect(() => { sessaoCelular(token).then(setInfo).catch((e) => setErro(e.message)) }, [token])
 
@@ -43,9 +44,12 @@ export default function Celular() {
       {erro && <div className="iq-alerta">{erro}</div>}
       {info && (
         <>
-          <button className="iq-btn prim grande" disabled={enviando > 0} onClick={() => entrada.current.click()}>
-            {enviando > 0 ? `Enviando ${enviando}...` : '📷 Tirar foto / escolher fotos'}
+          {/* câmera em botão próprio: com "multiple" o Android/iPhone abre só a galeria */}
+          <button className="iq-btn prim grande" disabled={enviando > 0} onClick={() => camera.current.click()}>
+            {enviando > 0 ? `Enviando ${enviando}...` : '📷 Tirar foto'}
           </button>
+          <button className="iq-btn grande" disabled={enviando > 0} onClick={() => entrada.current.click()}>🖼️ Escolher da galeria</button>
+          <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { enviar(e.target.files); e.target.value = '' }} />
           <input ref={entrada} type="file" accept="image/*" multiple hidden onChange={(e) => { enviar(e.target.files); e.target.value = '' }} />
           {enviadas.length > 0 && (
             <>

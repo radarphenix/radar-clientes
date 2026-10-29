@@ -1335,7 +1335,8 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
   relatorio. Fotos no proprio item; tocar numa foto abre ampliada para legenda, ordem, mover de item ou
   tirar do relatorio. "Adicionar item" traz os titulos padrao e sugeridos.
 - **Fotos:** no celular, botao Camera; no computador, "Adicionar fotos", arrastar arquivos para o item
-  ou "Do celular" (QR Code: o celular tira as fotos e elas aparecem no computador; fechar invalida o codigo).
+  ou "Do celular" (QR Code: no celular, "Tirar foto" abre a camera e "Escolher da galeria" pega varias de uma vez; as fotos
+  aparecem no computador; fechar invalida o codigo).
 - **Salvar:** e automatico, alguns segundos depois de cada alteracao (barra de baixo mostra "Salvo as ...").
   Quem abre primeiro edita; os outros veem quem esta editando e acompanham ao vivo.
 - **Finalizar** bloqueia a edicao; **Reabrir** (aprovador) libera e a proxima alteracao abre nova revisao.
