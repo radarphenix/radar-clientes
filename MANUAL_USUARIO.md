@@ -648,7 +648,7 @@ Botoes:
 4. Editar (na lista)
 
 - Funcao: carregar dados do usuario no formulario. A tela sobe sozinha ate o formulario (com o
-  nome em destaque "Editando ...") e o card fica marcado; ao salvar ou limpar, volta para o card.
+  nome em destaque "Editando ...") e o card fica marcado; ao salvar ou clicar em **Cancelar edição** (descarta sem gravar), volta para o card.
 - Cada card mostra o **ultimo acesso** do usuario ("Nunca entrou" se ainda nao entrou) e quando a
   **senha foi definida** pela ultima vez (registrado a partir de 29/10/2026; antes aparece "—").
   Perfil sem conta de login aparece como "Sem login no Radar".
@@ -1341,8 +1341,15 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
 - **Finalizar** bloqueia a edicao; **Reabrir** (aprovador) libera e a proxima alteracao abre nova revisao.
 - **Cliente:** digite parte do nome ou o codigo e escolha na lista do cadastro: Cliente e Codigo cliente
   se preenchem sozinhos.
-- **Cabecalho da inspecao:** PDF, Word, E-mail (so finalizada), Historico (PDF/Word de qualquer revisao e
-  "O que mudou") e Exportar (arquivo para o programa desktop).
+- **Cabecalho da inspecao:** PDF, PDF interno, Word, E-mail (so finalizada), Historico (PDF/Word de qualquer
+  revisao e "O que mudou") e Exportar (arquivo para o programa desktop).
+- **Outros campos - Imprimir:** cada campo adicional tem a caixa "Imprimir". Marcado, sai no relatorio do
+  cliente; desmarcado, sai so no **PDF interno** (versao completa, com a faixa "VERSAO INTERNA - NAO ENVIAR AO
+  CLIENTE"). PDF, Word e E-mail sao sempre a versao do cliente. Campo novo vem desmarcado (marque o que o cliente
+  deve ver); os que ja existiam antes de 29/10/2026 tambem ficaram desmarcados. Na impressao, os campos
+  adicionais saem separados, no bloco "Informacoes adicionais" de cada secao.
+- **Impressao das informacoes tecnicas do recebimento:** em duas partes, "Informacoes do cliente"
+  (equipamento, medidas informadas, material) e "Medicoes internas (Phenix)" (medidas aferidas), mais "Informacoes adicionais".
 - **Corrigir texto:** na descricao de cada item e na conclusao; mostra as correcoes para marcar/desmarcar.
 - **Lista > Mais:** enviar varias inspecoes por e-mail, importar do programa desktop (escolher a pasta das
   inspecoes ou um .zip) e, para aprovadores, os Tipos de detalhamento (itens padrao de toda inspecao nova

@@ -6,7 +6,12 @@
 import { supabase, enviarFoto, urlFoto } from './api'
 import { colunasDeBusca } from './modelo'
 
-const campos = (l) => (l || []).map((c) => ({ rotulo: c.Rotulo ?? c.rotulo ?? '', valor: c.Valor ?? c.valor ?? '' }))
+// Imprimir: marca do campo adicional (sem ela = não imprimir); campo padrão não leva
+const campos = (l) => (l || []).map((c) => {
+  const imp = c.Imprimir ?? c.imprimir
+  return { rotulo: c.Rotulo ?? c.rotulo ?? '', valor: c.Valor ?? c.valor ?? '', ...(typeof imp === 'boolean' ? { imprimir: imp } : {}) }
+})
+const camposDesktop = (l) => (l || []).map((c) => ({ Rotulo: c.rotulo, Valor: c.valor, ...(typeof c.imprimir === 'boolean' ? { Imprimir: c.imprimir } : {}) }))
 const quando = (s) => (s && !String(s).startsWith('0001') ? new Date(s).toISOString() : null)
 
 /** Lê arquivos de uma pasta escolhida (input webkitdirectory) ou de .zip; devolve as inspeções achadas. */
@@ -105,9 +110,9 @@ export async function exportarZip(ins, dets, fotos, revisoes) {
     UltimaRevisaoGerada: i.ultima_revisao_gerada ?? -1, UltimaRevisaoFinalizada: i.ultima_revisao_finalizada ?? -1,
     Finalizado: !!i.finalizado, FinalizadoEm: i.finalizado_em, FinalizadoPor: i.finalizado_por || '',
     EnviadoEmailEm: i.enviado_email_em, EnviadoEmailRevisao: i.enviado_email_revisao ?? -1, Titulo: i.titulo,
-    DadosGerais: (i.dados_gerais || []).map((c) => ({ Rotulo: c.rotulo, Valor: c.valor })),
-    InformacoesTecnicas: (i.informacoes_tecnicas || []).map((c) => ({ Rotulo: c.rotulo, Valor: c.valor })),
-    InformacoesTecnicasSaida: (i.informacoes_tecnicas_saida || []).map((c) => ({ Rotulo: c.rotulo, Valor: c.valor })),
+    DadosGerais: camposDesktop(i.dados_gerais),
+    InformacoesTecnicas: camposDesktop(i.informacoes_tecnicas),
+    InformacoesTecnicasSaida: camposDesktop(i.informacoes_tecnicas_saida),
     Detalhamentos: detsDe.map((d) => ({ Titulo: d.titulo, Texto: d.texto, Fotos: (d.fotos || []).map((f) => ({ Arquivo: `${f.id}.jpg`, Legenda: f.legenda || '' })) })),
     Conclusao: i.conclusao, ElaboradoPor: i.elaborado_por, AprovadoPor: i.aprovado_por, Setor: i.setor,
   })

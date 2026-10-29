@@ -3,7 +3,8 @@
 // fotos duas por linha em moldura fixa, rodapé com assinaturas e "página X de Y".
 // Carregado só quando alguém gera um relatório (import dinâmico): não pesa na tela.
 import {
-  caixaAlta, caixaFotos, caixaFrase, ajustarFoto, detalhamentosParaImprimir, preenchidos, secoesRelatorio, FUNDO_MOLDURA,
+  caixaAlta, caixaFotos, caixaFrase, ajustarFoto, detalhamentosParaImprimir, camposRelatorio, dividirTecnicas, separarAdicionais, secoesRelatorio, FUNDO_MOLDURA,
+  CAMPOS_DADOS_GERAIS, CAMPOS_TECNICOS, CAMPOS_TECNICOS_SAIDA,
 } from './modelo'
 import { urlFoto } from './api'
 
@@ -26,8 +27,9 @@ const pad = (n) => String(n).padStart(2, '0')
 const dataHora = (iso) => { const d = new Date(iso); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}` }
 const linhas = (s) => (s || '').replace(/\r/g, '').split('\n').map((l) => l.trimEnd()).filter((l, i, a) => l || a.slice(0, i).some(Boolean))
 
-export function nomeArquivo(ins, ext) {
-  return `Relatorio_Inspecao_${ins.numero}_rev${pad(ins.revisao)}.${ext}`
+// interno = versão completa (com os campos adicionais "não imprimir"), só para uso da Phenix
+export function nomeArquivo(ins, ext, interno = false) {
+  return `Relatorio_Inspecao_${ins.numero}_rev${pad(ins.revisao)}${interno ? '_INTERNO' : ''}.${ext}`
 }
 
 async function imagem(url) {
@@ -39,7 +41,7 @@ async function imagem(url) {
 }
 
 /** Tudo que o relatório precisa, já com as regras aplicadas (igual ao desktop). */
-async function preparar(ins, dets, fotos) {
+async function preparar(ins, dets, fotos, interno) {
   const sec = secoesRelatorio(ins)
   const itens = detalhamentosParaImprimir(dets, fotos)
   const logo = await imagem('/inspecao/logo_phenix.png').catch(() => null)
@@ -53,9 +55,10 @@ async function preparar(ins, dets, fotos) {
   }
   return {
     sec, logo, itens: fotosItens,
-    saida: sec.saida ? preenchidos(ins.informacoes_tecnicas_saida) : [],
-    dados: preenchidos(ins.dados_gerais),
-    tecnicas: preenchidos(ins.informacoes_tecnicas),
+    interno,
+    saida: separarAdicionais(sec.saida ? camposRelatorio(ins.informacoes_tecnicas_saida, CAMPOS_TECNICOS_SAIDA, interno) : [], CAMPOS_TECNICOS_SAIDA),
+    dados: separarAdicionais(camposRelatorio(ins.dados_gerais, CAMPOS_DADOS_GERAIS, interno), CAMPOS_DADOS_GERAIS),
+    tecnicas: dividirTecnicas(camposRelatorio(ins.informacoes_tecnicas, CAMPOS_TECNICOS, interno)),
     conclusao: linhas(ins.conclusao),
   }
 }
@@ -64,9 +67,9 @@ async function preparar(ins, dets, fotos) {
 
 const FOTO_MIN = 0.6   // menor escala aceita para a linha de fotos caber no fim da página
 
-export async function gerarPdf(ins, dets, fotos) {
+export async function gerarPdf(ins, dets, fotos, { interno = false } = {}) {
   const { jsPDF } = await import('jspdf')
-  const r = await preparar(ins, dets, fotos)
+  const r = await preparar(ins, dets, fotos, interno)
   const pdf = new jsPDF({ unit: 'cm', format: 'a4' })
   pdf.setProperties({ title: `${ins.titulo} Nº ${ins.numero}`, author: ins.elaborado_por || '' })
   let y = PAG.topo
@@ -129,6 +132,13 @@ export async function gerarPdf(ins, dets, fotos) {
     fonte(11, true); cor(AZUL_ESCURO); pdf.text(titulo, PAG.esq, y + 0.35)
     pdf.setDrawColor(...AZUL); pdf.setLineWidth(pt(1)); pdf.line(PAG.esq, y + 0.5, PAG.esq + UTIL, y + 0.5)
     y += 0.5 + pt(6)
+  }
+
+  function subtitulo(t) {
+    garantir(1.2)
+    y += pt(8)
+    fonte(9.5, true); cor(AZUL); pdf.text(t.toUpperCase(), PAG.esq, y + 0.35)
+    y += 0.35 + pt(5)
   }
 
   function tabelaCampos(campos) {
@@ -205,10 +215,23 @@ export async function gerarPdf(ins, dets, fotos) {
   y += pt(18)
   fonte(16, true); cor(AZUL_ESCURO); pdf.text(ins.titulo || '', PAG.l / 2, y + 0.5, { align: 'center' })
   y += 0.5 + pt(4)
+  if (r.interno) {
+    y += pt(6)
+    fonte(9, true); pdf.setTextColor(0xb4, 0x23, 0x18)
+    pdf.text('VERSÃO INTERNA - USO EXCLUSIVO PHENIX - NÃO ENVIAR AO CLIENTE', PAG.l / 2, y + 0.3, { align: 'center' })
+    y += 0.3 + pt(4)
+  }
 
-  if (r.sec.saida) { secao(r.sec.saida); tabelaCampos(r.saida) }
-  if (r.dados.length) { secao(r.sec.dados); tabelaCampos(r.dados) }
-  if (r.tecnicas.length) { secao(r.sec.tecnicas); tabelaCampos(r.tecnicas) }
+  // cada seção: campos padrão (em blocos, se houver) e depois os adicionais num bloco próprio
+  const blocosPdf = (titulo, blocos) => {
+    const cheios = blocos.filter(([, l]) => l.length)
+    if (!cheios.length) return
+    secao(titulo)
+    cheios.forEach(([sub, l]) => { if (sub) subtitulo(sub); tabelaCampos(l) })
+  }
+  blocosPdf(r.sec.saida, [[null, r.saida.padrao], [r.sec.adicionais, r.saida.adicionais]])
+  blocosPdf(r.sec.dados, [[null, r.dados.padrao], [r.sec.adicionais, r.dados.adicionais]])
+  blocosPdf(r.sec.tecnicas, [[r.sec.tecCliente, r.tecnicas.cliente], [r.sec.tecInternas, r.tecnicas.internas], [r.sec.adicionais, r.tecnicas.adicionais]])
   if (r.itens.length) {
     secao(r.sec.detalhamento)
     r.itens.forEach((d, n) => {
@@ -230,9 +253,9 @@ export async function gerarPdf(ins, dets, fotos) {
 }
 
 // ======================================================================== Word
-export async function gerarWord(ins, dets, fotos) {
+export async function gerarWord(ins, dets, fotos, { interno = false } = {}) {
   const d = await import('docx')
-  const r = await preparar(ins, dets, fotos)
+  const r = await preparar(ins, dets, fotos, interno)
   const CM = 567                       // twips por cm
   const PX = 37.8                      // pixels (96 dpi) por cm, usado pelo ImageRun
   const run = (texto, cor, tam, negrito = false) => new d.TextRun({ text: texto || '', color: hex(cor), size: tam, bold: negrito, font: 'Arial' })
@@ -285,9 +308,11 @@ export async function gerarWord(ins, dets, fotos) {
       .map(([rot, val, l]) => celula([new d.Paragraph({ children: [run(rot, AZUL, 15, true)] }), new d.Paragraph({ children: [run(val, AZUL_ESCURO, 18)] })], l, { borders: todas(AZUL_BORDA, 6) })),
   })], [4.6, 4.2, 4.0, 4.8]))
   corpo.push(new d.Paragraph({ alignment: d.AlignmentType.CENTER, spacing: { before: 360, after: 80 }, children: [run(ins.titulo, AZUL_ESCURO, 32, true)] }))
+  if (r.interno) corpo.push(new d.Paragraph({ alignment: d.AlignmentType.CENTER, spacing: { after: 80 }, children: [run('VERSÃO INTERNA - USO EXCLUSIVO PHENIX - NÃO ENVIAR AO CLIENTE', [0xb4, 0x23, 0x18], 18, true)] }))
 
   const secao = (t) => corpo.push(new d.Paragraph({ keepNext: true, spacing: { before: 280, after: 120 },
     border: { bottom: { style: d.BorderStyle.SINGLE, size: 8, color: hex(AZUL), space: 2 } }, children: [run(t, AZUL_ESCURO, 22, true)] }))
+  const subtitulo = (t) => corpo.push(new d.Paragraph({ keepNext: true, spacing: { before: 160, after: 80 }, children: [run(t.toUpperCase(), AZUL, 19, true)] }))
   const texto = (l) => corpo.push(new d.Paragraph({ alignment: d.AlignmentType.JUSTIFIED, spacing: { after: 60 }, children: [run(l, TEXTO, 20)] }))
   const campos = (lista) => {
     const linhasT = []
@@ -330,9 +355,19 @@ export async function gerarWord(ins, dets, fotos) {
     }
   }
 
-  if (r.sec.saida) { secao(r.sec.saida); campos(r.saida) }
-  if (r.dados.length) { secao(r.sec.dados); campos(r.dados) }
-  if (r.tecnicas.length) { secao(r.sec.tecnicas); campos(r.tecnicas) }
+  const blocosWord = (titulo, blocos) => {
+    const cheios = blocos.filter(([, l]) => l.length)
+    if (!cheios.length) return
+    secao(titulo)
+    cheios.forEach(([sub, l], i) => {
+      if (sub) subtitulo(sub)
+      else if (i) corpo.push(new d.Paragraph({ children: [] }))   // sem parágrafo entre tabelas o Word funde
+      campos(l)
+    })
+  }
+  blocosWord(r.sec.saida, [[null, r.saida.padrao], [r.sec.adicionais, r.saida.adicionais]])
+  blocosWord(r.sec.dados, [[null, r.dados.padrao], [r.sec.adicionais, r.dados.adicionais]])
+  blocosWord(r.sec.tecnicas, [[r.sec.tecCliente, r.tecnicas.cliente], [r.sec.tecInternas, r.tecnicas.internas], [r.sec.adicionais, r.tecnicas.adicionais]])
   if (r.itens.length) {
     secao(r.sec.detalhamento)
     r.itens.forEach((it, n) => {

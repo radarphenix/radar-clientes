@@ -116,7 +116,7 @@
 .iq-raiz input:focus, .iq-raiz textarea:focus, .iq-raiz .iq-select:focus { border-color: var(--iq-azul); box-shadow: 0 0 0 3px rgba(0, 87, 216, .12); }
 .iq-raiz input[readonly], .iq-raiz textarea[readonly] { background: #f8fafc; color: var(--iq-sec); }
 .iq-raiz textarea { resize: vertical; line-height: 1.45; }
-.iq-extra { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+.iq-extra { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto auto; gap: 8px; margin-bottom: 8px; align-items: center; }
 .iq-assinaturas { margin-top: 12px; }
 
 .iq-interruptor { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--iq-sec); cursor: pointer; flex: 0 0 auto; }
@@ -237,6 +237,7 @@
   .iq-item-ordem { order: 5; width: 100%; justify-content: flex-end; }
   .iq-barra .so-computador-barra { display: none; }
   .iq-extra { grid-template-columns: 1fr 1fr auto; }
+  .iq-extra .iq-imprimir { grid-column: 1 / 3; }
   .iq-menu { position: fixed; left: 10px; right: 10px; bottom: 76px; min-width: 0; }
   .iq-foto-moldura { height: 110px; }
 }
@@ -334,3 +335,6 @@
 .iq-chip-email:hover { border-color: var(--iq-azul); background: var(--iq-azul-claro); }
 .iq-chip-email > span { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
 .iq-chip-email small { color: var(--iq-fraco); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.iq-imprimir { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #44566b; white-space: nowrap; cursor: pointer; }
+.iq-imprimir input { width: 16px; height: 16px; margin: 0; }

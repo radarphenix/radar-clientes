@@ -172,6 +172,31 @@ real 20261028-165038: 4 páginas (sem encolher seriam 6).
 - Testado em 1920/1366/390: abrir inspeção → menu → lista, sem erros; celular com Nova inspeção em cima e
   Checklist/Mais embaixo.
 
+## Parte 7 (29/10/2026): campos adicionais "Imprimir", PDF interno e recebimento dividido
+
+- **Imprimir:** cada campo de "Outros campos" (identificação, técnicas e saída) tem a caixa Imprimir. Gravado
+  no próprio item do jsonb (`{ rotulo, valor, imprimir }`; no desktop `Campo.Imprimir`, `bool?`). Regra
+  (`imprimeParaCliente` / `Inspecao.CamposRelatorio`): campo padrão sempre sai; adicional só com
+  `imprimir === true`. **Os existentes, sem a marca, ficam "não imprimir"** - por isso não houve migration nem
+  alteração nos `inspecao.json` do desktop. Campo novo nasce **desmarcado** (decisão do usuário).
+- **Adicionais em bloco próprio na impressão:** em cada seção (saída, dados gerais, técnicas) os adicionais saem
+  depois dos padrão, sob o subtítulo **Informações adicionais** (`separarAdicionais` / `Inspecao.SoAdicionais`);
+  na versão do cliente só os marcados, no PDF interno todos.
+- **Versão do cliente x interna:** PDF, Word e o e-mail (anexo e a tabela do corpo) são a versão do cliente,
+  sem os "não imprimir". **PDF interno** (cabeçalho da inspeção e Histórico no Radar; botão no rodapé do
+  desktop) sai completo, com a faixa vermelha "VERSÃO INTERNA - USO EXCLUSIVO PHENIX - NÃO ENVIAR AO CLIENTE" e
+  arquivo `..._INTERNO.pdf`. No desktop o PDF interno não conta como "revisão gerada". O Histórico do desktop
+  segue só com a versão do cliente.
+- **Recebimento dividido na impressão:** "Informações técnicas" ganhou subtítulos - **Informações do
+  cliente** (equipamento, medidas informadas, material) e **Medições internas (Phenix)**
+  (`MEDIDAS_AFERIDAS`). A saída continua com uma tabela só (só tem medidas da Phenix).
+- Importar/Exportar `.zip` (`troca.js`) leva a marca nos dois sentidos (`Imprimir` no formato do desktop).
+- Desktop irmão alterado na mesma entrega: `Inspecao.cs`, `PdfService`, `WordService`, `MainForm` (coluna
+  Imprimir na grade de outros campos, botão PDF interno, corpo do e-mail). Publicado em `Publicar` (falta o
+  `Atualizar.cmd`).
+- Testado: PDF do cliente x interno com campo antigo, desmarcado e marcado (só o marcado sai no do
+  cliente), Word gerado; tela em 1920/1366/390 sem erros nem rolagem lateral, voltar à lista ok.
+
 ## Falta
 
 - [x] Google Drive autorizado (28/10/2026, projeto do Google "Em produção", segredos gravados) e fotos testadas: upload, celular pelo QR, foto ampliada (legenda/ordem/tirar), reabrir, PDF/Word/zip com fotos

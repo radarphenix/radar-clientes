@@ -4,7 +4,7 @@ import {
   FolderInput, CheckCircle2, AlertTriangle, Search,
 } from 'lucide-react'
 import * as api from './api'
-import { valor } from './modelo'
+import { valor, camposRelatorio, CAMPOS_DADOS_GERAIS } from './modelo'
 
 export function Modal({ titulo, fechar, children, largo, icone: Icone }) {
   const fecharRef = useRef(fechar)
@@ -36,7 +36,7 @@ function corpoEmail(lista, mensagem) {
   const msg = mensagem.trim() ? `<p>${H(mensagem).replace(/\n/g, '<br>')}</p>` : ''
   if (lista.length === 1) {
     const i = lista[0]
-    const dados = (i.dados_gerais || []).filter((c) => (c.valor || '').trim())
+    const dados = camposRelatorio(i.dados_gerais, CAMPOS_DADOS_GERAIS)   // e-mail vai ao cliente: sem os "não imprimir"
     return `<div style="font-family:Segoe UI,Arial;color:#173b5f;font-size:14px">${msg}` +
       `<p>Segue em anexo inspeção do cliente <b>${H(Ou(valor(i.dados_gerais, 'Cliente')))}</b>, nota fiscal <b>${H(Ou(valor(i.dados_gerais, 'Nota fiscal')))}</b>, ` +
       `realizada em <b>${H(Ou(valor(i.dados_gerais, 'Data da inspeção')))}</b> (relatório Nº ${H(i.numero)}, revisão ${String(i.revisao).padStart(2, '0')}).</p>` +
@@ -195,8 +195,9 @@ export function JanelaHistorico({ ins, fechar }) {
       const dets = (r.detalhamentos || []).map((d, i) => ({ ...d, id: d.id || `rev${i}` }))
       const fotos = Object.fromEntries(dets.map((d) => [d.id, d.fotos || []]))
       const insRev = { ...ins, ...r, revisao: rev.revisao, alterado_em: r.alterado_em || rev.finalizado_em }
-      const blob = tipo === 'pdf' ? await rel.gerarPdf(insRev, dets, fotos) : await rel.gerarWord(insRev, dets, fotos)
-      rel.baixar(blob, rel.nomeArquivo(insRev, tipo === 'pdf' ? 'pdf' : 'docx'))
+      const interno = tipo === 'pdfint'
+      const blob = tipo === 'word' ? await rel.gerarWord(insRev, dets, fotos) : await rel.gerarPdf(insRev, dets, fotos, { interno })
+      rel.baixar(blob, rel.nomeArquivo(insRev, tipo === 'word' ? 'docx' : 'pdf', interno))
     } catch (e) { alert('Não foi possível gerar: ' + e.message) }
     setGerando('')
   }
@@ -231,6 +232,7 @@ export function JanelaHistorico({ ins, fechar }) {
                 <span className="iq-revisao-info"><b>Revisão {String(r.revisao).padStart(2, '0')}</b><small>Finalizada em {new Date(r.finalizado_em).toLocaleString('pt-BR')}{r.finalizado_por ? ` por ${r.finalizado_por}` : ''}</small></span>
                 <span className="iq-revisao-acoes">
                   <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar(r, 'pdf')}>{gerando === `${r.revisao}pdf` ? <Loader2 className="iq-gira" size={14} /> : <FileText size={15} />} PDF</button>
+                  <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar(r, 'pdfint')} title="Versão completa - uso interno">{gerando === `${r.revisao}pdfint` ? <Loader2 className="iq-gira" size={14} /> : <FileText size={15} />} PDF interno</button>
                   <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar(r, 'word')}>{gerando === `${r.revisao}word` ? <Loader2 className="iq-gira" size={14} /> : <FileDown size={15} />} Word</button>
                   <button type="button" className="iq-btn sec peq" disabled={!anterior} title={anterior ? 'Comparar com a revisão anterior' : 'É a primeira guardada'}
                     onClick={async () => { const { comparar } = await import('./comparador.js'); setComparando({ antes: anterior, depois: r, difs: comparar(anterior.retrato, r.retrato) }) }}>

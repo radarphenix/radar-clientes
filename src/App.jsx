@@ -6194,7 +6194,7 @@ function App() {
               </button>
 
               <button type="button" onClick={limparFormularioUsuarioPerfil}>
-                Limpar
+                {usuarioPerfilForm.user_id ? "Cancelar edição" : "Limpar"}
               </button>
 
               <button type="button" onClick={carregarUsuariosPerfis}>

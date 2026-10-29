@@ -80,6 +80,31 @@ export function novaInspecao(usuario) {
 export const preenchidos = (campos) =>
   (campos || []).filter((c) => (c.valor || '').trim() && (c.rotulo || '').trim())
 
+/** Campo adicional ("Outros campos") marcado para sair na versão do cliente. Campo padrão sempre sai;
+ *  adicional só com imprimir === true - nasce desmarcado; os antigos (sem a marca) também ficam "não imprimir". */
+export const imprimeParaCliente = (c, padrao) => padrao.includes(c.rotulo) || c.imprimir === true
+
+/** Campos preenchidos que vão ao relatório: o interno sai completo, o do cliente sem os "não imprimir". */
+export const camposRelatorio = (campos, padrao, interno = false) =>
+  preenchidos(campos).filter((c) => interno || imprimeParaCliente(c, padrao))
+
+/** Na impressão os campos adicionais saem num bloco próprio ("Informações adicionais"), depois dos padrão. */
+export const separarAdicionais = (campos, padrao) => ({
+  padrao: campos.filter((c) => padrao.includes(c.rotulo)),
+  adicionais: campos.filter((c) => !padrao.includes(c.rotulo)),
+})
+
+/** Recebimento na impressão: o que veio do cliente (equipamento, medidas informadas, material) separado das
+ *  medições feitas pela Phenix e dos adicionais. */
+export const dividirTecnicas = (campos) => {
+  const { padrao, adicionais } = separarAdicionais(campos, CAMPOS_TECNICOS)
+  return {
+    cliente: padrao.filter((c) => !MEDIDAS_AFERIDAS.includes(c.rotulo)),
+    internas: padrao.filter((c) => MEDIDAS_AFERIDAS.includes(c.rotulo)),
+    adicionais,
+  }
+}
+
 export const valor = (campos, rotulo) =>
   ((campos || []).find((c) => (c.rotulo || '').toLowerCase() === rotulo.toLowerCase())?.valor || '').trim()
 
@@ -122,6 +147,9 @@ export function secoesRelatorio(ins) {
     saida: s ? 'INFORMAÇÕES TÉCNICAS DE SAÍDA' : null,
     dados: 'DADOS GERAIS' + r,
     tecnicas: 'INFORMAÇÕES TÉCNICAS' + r,
+    tecCliente: 'Informações do cliente',
+    tecInternas: 'Medições internas (Phenix)',
+    adicionais: 'Informações adicionais',
     detalhamento: s ? 'DETALHAMENTO DO RECEBIMENTO' : 'DETALHAMENTO DA INSPEÇÃO',
     conclusao: 'CONCLUSÃO / PARECER',
   }

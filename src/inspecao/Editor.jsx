@@ -99,11 +99,16 @@ function Campos({ grupos, padrao, lista, mudar, leitura }) {
                 onChange={(e) => setExtras(extras.map((x, j) => (j === i ? { ...x, rotulo: e.target.value } : x)))} />
               <input placeholder="Valor" value={c.valor} readOnly={leitura} aria-label="Valor"
                 onChange={(e) => setExtras(extras.map((x, j) => (j === i ? { ...x, valor: e.target.value } : x)))} />
+              <label className="iq-imprimir" title="Desmarcado: só sai no PDF interno">
+                <input type="checkbox" checked={c.imprimir === true} disabled={leitura}
+                  onChange={(e) => setExtras(extras.map((x, j) => (j === i ? { ...x, imprimir: e.target.checked } : x)))} />
+                Imprimir
+              </label>
               {!leitura && <button type="button" className="iq-icone" title="Remover campo" onClick={() => setExtras(extras.filter((_, j) => j !== i))}><X size={16} /></button>}
             </div>
           ))}
-          {!leitura && <button type="button" className="iq-btn sec peq" onClick={() => setExtras([...extras, { rotulo: '', valor: '' }])}><Plus size={15} /> Campo</button>}
-          <p className="iq-dica">Só sai no relatório o que tiver valor.</p>
+          {!leitura && <button type="button" className="iq-btn sec peq" onClick={() => setExtras([...extras, { rotulo: '', valor: '', imprimir: false }])}><Plus size={15} /> Campo</button>}
+          <p className="iq-dica">Só sai no relatório o que tiver valor. Sem "Imprimir", o campo fica fora do PDF/Word do cliente e sai só no PDF interno.</p>
         </fieldset>
       )}
     </>
@@ -245,8 +250,10 @@ export default function Editor({ id, papel, nome, voltar }) {
         const { exportarZip } = await import('./troca.js')
         rel.baixar(await exportarZip(atual.ins, atual.dets, atual.fotos, await api.listarRevisoes(atual.ins.id)), `Inspecao_${atual.ins.numero}.zip`)
       } else {
-        const blob = tipo === 'pdf' ? await rel.gerarPdf(atual.ins, atual.dets, atual.fotos) : await rel.gerarWord(atual.ins, atual.dets, atual.fotos)
-        rel.baixar(blob, rel.nomeArquivo(atual.ins, tipo === 'pdf' ? 'pdf' : 'docx'))
+        // 'pdfint' = PDF interno (completo); PDF e Word são a versão do cliente
+        const interno = tipo === 'pdfint'
+        const blob = tipo === 'word' ? await rel.gerarWord(atual.ins, atual.dets, atual.fotos) : await rel.gerarPdf(atual.ins, atual.dets, atual.fotos, { interno })
+        rel.baixar(blob, rel.nomeArquivo(atual.ins, tipo === 'word' ? 'docx' : 'pdf', interno))
       }
     } catch (e) { setErro('Não foi possível gerar: ' + e.message) }
     setGerando('')
@@ -289,6 +296,7 @@ export default function Editor({ id, papel, nome, voltar }) {
         {erro && <div className="iq-alerta" onClick={() => setErro('')}>{erro}</div>}
         <div className="iq-acoes-cabecalho">
           <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('pdf')}>{gerando === 'pdf' ? <Loader2 className="iq-gira" size={15} /> : <FileText size={15} />} PDF</button>
+          <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('pdfint')} title="Versão completa, com os campos adicionais sem Imprimir - uso interno">{gerando === 'pdfint' ? <Loader2 className="iq-gira" size={15} /> : <FileText size={15} />} PDF interno</button>
           <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('word')}>{gerando === 'word' ? <Loader2 className="iq-gira" size={15} /> : <FileDown size={15} />} Word</button>
           {ins.finalizado && pode(papel, 'inspetor') && <button type="button" className="iq-btn sec peq" onClick={() => setJanela('email')}><Mail size={15} /> E-mail</button>}
           <button type="button" className="iq-btn sec peq" onClick={() => setJanela('historico')}><History size={15} /> Histórico</button>
