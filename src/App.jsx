@@ -71,6 +71,7 @@ import {
   CircleUserRound,
   ClipboardCheck,
   ShieldCheck,
+  LogIn,
 } from "lucide-react";
 
 // Páginas carregadas só quando abertas: não pesam no Radar de quem não usa.
@@ -122,6 +123,13 @@ function formatarDataISO(data) {
   const mes = String(data.getMonth() + 1).padStart(2, "0");
   const dia = String(data.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
+}
+
+// "29/10/2026 09:50" (datas da lista de usuários na Administração)
+function formatarDataHoraCurta(iso) {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
 }
 
 function calcularPeriodoPreset(preset) {
@@ -751,6 +759,9 @@ function App() {
   }, [session?.user?.id, perfil?.nome, perfil?.tipo_perfil]);
 
   const [usuariosPerfis, setUsuariosPerfis] = useState([]);
+  const formUsuarioRef = useRef(null);
+  const usuarioEditadoRef = useRef(null);
+  const [voltarParaUsuario, setVoltarParaUsuario] = useState(null);
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
   const [salvandoUsuario, setSalvandoUsuario] = useState(false);
   const [carregandoConfiguracoesWhatsApp, setCarregandoConfiguracoesWhatsApp] =
@@ -1133,6 +1144,9 @@ function App() {
       return;
     }
 
+    // data da senha para o admin (Administração -> Usuários); falha aqui não desfaz a troca
+    await supabase.rpc("radar_registrar_senha_definida");
+
     alert("Senha alterada com sucesso.");
 
     setModoRecuperacaoSenha(false);
@@ -1200,6 +1214,8 @@ function App() {
         alert(mensagemAmigavelAuth(error, "senha"));
         return;
       }
+
+      await supabase.rpc("radar_registrar_senha_definida");
 
       alert("Senha alterada com sucesso.");
 
@@ -4562,10 +4578,19 @@ function App() {
       (tokens || []).map((item) => [item.user_id, item.calendario_token]),
     );
 
+    // último acesso e senha definida: só volta para quem tem o menu Administração
+    const { data: datas } = await supabase.rpc("radar_usuarios_datas");
+    const datasPorUsuario = new Map((datas || []).map((item) => [item.user_id, item]));
+
     setUsuariosPerfis(
       (data || []).map((item) => ({
         ...item,
         calendario_token: tokenPorUsuario.get(item.user_id) || null,
+        ultimo_acesso: datasPorUsuario.get(item.user_id)?.ultimo_acesso || null,
+        senha_definida_em: datasPorUsuario.get(item.user_id)?.senha_definida_em || null,
+        // perfil sem conta de login (ex.: representante só para comissões): não há datas
+        datas_carregadas: datasPorUsuario.size > 0,
+        sem_login: datasPorUsuario.size > 0 && !datasPorUsuario.has(item.user_id),
       })),
     );
 
@@ -4885,7 +4910,32 @@ function App() {
     setCarregandoAmostrasHistorico(false);
   }
 
+  // Editar no fim da lista: o formulário fica no topo, então a tela sobe até ele (e foca o Nome);
+  // ao salvar ou limpar, volta para o card do usuário editado.
+  function editarUsuarioPerfil(dados) {
+    setUsuarioPerfilForm(dados);
+    usuarioEditadoRef.current = dados.user_id;
+    requestAnimationFrame(() => {
+      formUsuarioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      formUsuarioRef.current?.querySelector("input")?.focus({ preventScroll: true });
+    });
+  }
+
+  // depois de salvar a lista recarrega: espera ela voltar para rolar até o card
+  useEffect(() => {
+    if (!voltarParaUsuario || carregandoUsuarios) return;
+    const id = voltarParaUsuario;
+    setVoltarParaUsuario(null);
+    requestAnimationFrame(() =>
+      document.getElementById(`admin-usuario-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }),
+    );
+  }, [voltarParaUsuario, carregandoUsuarios]);
+
   function limparFormularioUsuarioPerfil() {
+    if (usuarioEditadoRef.current) {
+      setVoltarParaUsuario(usuarioEditadoRef.current);
+      usuarioEditadoRef.current = null;
+    }
     setUsuarioPerfilForm({
       nome: "",
       email: "",
@@ -5972,7 +6022,7 @@ function App() {
           )}
 
           {abaAdmin === "usuarios" && (
-          <div className="admin-bloco">
+          <div className="admin-bloco" ref={formUsuarioRef}>
             <div className="admin-bloco-topo">
               <div>
                 <h3>Usuários do sistema</h3>
@@ -5983,7 +6033,9 @@ function App() {
               </div>
 
               {usuarioPerfilForm.user_id && (
-                <span className="admin-modo-edicao">Editando perfil</span>
+                <span className="admin-modo-edicao">
+                  Editando {usuarioPerfilForm.nome || "perfil"}
+                </span>
               )}
             </div>
 
@@ -6231,10 +6283,37 @@ function App() {
                 <p>Nenhum usuário cadastrado.</p>
               ) : (
                 usuariosPerfis.map((usuario) => (
-                  <div className="admin-card-usuario" key={usuario.user_id}>
+                  <div
+                    className={`admin-card-usuario${usuarioPerfilForm.user_id === usuario.user_id ? " em-edicao" : ""}`}
+                    key={usuario.user_id}
+                    id={`admin-usuario-${usuario.user_id}`}
+                  >
                     <div>
                       <strong>{usuario.nome}</strong>
                       <span>{usuario.email}</span>
+                      {usuario.sem_login ? (
+                        <div className="admin-card-datas">
+                          <span title="Tem perfil no Radar, mas nenhuma conta de login">
+                            <LogIn size={13} />
+                            Sem login no Radar
+                          </span>
+                        </div>
+                      ) : usuario.datas_carregadas && (
+                        <div className="admin-card-datas">
+                          <span title="Última vez que entrou no Radar">
+                            <LogIn size={13} />
+                            {usuario.ultimo_acesso
+                              ? `Último acesso ${formatarDataHoraCurta(usuario.ultimo_acesso)}`
+                              : "Nunca entrou"}
+                          </span>
+                          <span title="Última vez que o usuário definiu a senha (registrado a partir de 29/10/2026)">
+                            <KeyRound size={13} />
+                            {usuario.senha_definida_em
+                              ? `Senha definida ${formatarDataHoraCurta(usuario.senha_definida_em)}`
+                              : "Senha definida —"}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -6274,7 +6353,7 @@ function App() {
                       <button
                         type="button"
                         onClick={() =>
-                          setUsuarioPerfilForm({
+                          editarUsuarioPerfil({
                             nome: usuario.nome || "",
                             email: usuario.email || "",
                             user_id: usuario.user_id || "",

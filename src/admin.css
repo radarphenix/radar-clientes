@@ -654,3 +654,27 @@
   }
 }
 
+
+/* Administração -> Usuários: datas por usuário e card em edição */
+.admin-card-usuario .admin-card-datas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+}
+
+.admin-card-usuario .admin-card-datas span {
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.admin-card-usuario.em-edicao {
+  border-color: #1f64ad;
+  box-shadow: 0 0 0 2px rgba(31, 100, 173, 0.18);
+}
+
+/* o "Editar" rola até o formulário; folga para o cabeçalho fixo */
+.admin-bloco {
+  scroll-margin-top: 110px;
+}

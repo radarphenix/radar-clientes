@@ -647,7 +647,11 @@ Botoes:
 
 4. Editar (na lista)
 
-- Funcao: carregar dados do usuario no formulario.
+- Funcao: carregar dados do usuario no formulario. A tela sobe sozinha ate o formulario (com o
+  nome em destaque "Editando ...") e o card fica marcado; ao salvar ou limpar, volta para o card.
+- Cada card mostra o **ultimo acesso** do usuario ("Nunca entrou" se ainda nao entrou) e quando a
+  **senha foi definida** pela ultima vez (registrado a partir de 29/10/2026; antes aparece "—").
+  Perfil sem conta de login aparece como "Sem login no Radar".
 - Trocar o e-mail e salvar troca tambem o e-mail de login (o usuario passa a entrar com o novo e o
   "Atualizar senha" vai para ele).
 

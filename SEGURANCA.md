@@ -102,6 +102,20 @@ Vale no **próximo deploy do Cloudflare Pages** (o dev local não serve `_header
   por conta própria (16 caracteres, 4 grupos garantidos, via `crypto`); o admin não digita
   mais senha. O onboarding segue **por e-mail** (link para o usuário definir a própria senha).
 
+### 4.5 Último acesso e última senha definida para o admin (2026-10-29)
+- Combinado em 28/10 junto com a 4.4 (no lugar de validade de senha, que não foi adotada).
+- **Administração → Usuários:** cada usuário mostra "Último acesso" (`auth.users.last_sign_in_at`)
+  e "Senha definida" (carimbo próprio `perfis.senha_definida_em`); perfil sem conta de login aparece
+  como "Sem login no Radar".
+- RPC `radar_usuarios_datas()` (security definer, só com `radar_pode('administracao')`) e
+  `radar_registrar_senha_definida()` (o próprio usuário carimba, chamada nas telas "definir nova senha"
+  do link do e-mail e "trocar senha"). Migration `20261029120000_usuarios_datas_acesso_senha.sql`.
+- **Limite:** o Supabase não guarda a data de troca de senha; o carimbo vale **a partir de 29/10/2026**
+  (antes disso aparece "—").
+- **E-mail de login:** salvar um usuário chama `alterar-email-usuario`, que alinha o e-mail do Auth com o
+  do cadastro (antes só o perfil mudava e o "Atualizar senha" ia para um endereço sem login); perfil sem
+  login é ignorado.
+
 ---
 
 ## 5. Evidência dos testes ao vivo

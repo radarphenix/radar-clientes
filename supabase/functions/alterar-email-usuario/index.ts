@@ -50,6 +50,13 @@ Deno.serve(async (req) => {
   if (!userId || !email) return jsonResponse({ error: "Usuario e e-mail sao obrigatorios." }, 400);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResponse({ error: "E-mail invalido." }, 400);
 
+  // perfil sem conta de login (ex.: representante só para comissões): não há login a alterar
+  const { data: contaLogin } = await supabaseAdmin.auth.admin.getUserById(userId);
+  if (!contaLogin?.user) return jsonResponse({ user_id: userId, email, sem_login: true });
+
+  // já está igual: nada a fazer no Auth (salvar o usuário chama esta função sempre)
+  if (String(contaLogin.user.email || "").toLowerCase() === email) return jsonResponse({ user_id: userId, email });
+
   // email_confirm: o admin já conferiu o endereço; sem isso o login ficaria esperando confirmação
   const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, { email, email_confirm: true });
   if (authError) {
