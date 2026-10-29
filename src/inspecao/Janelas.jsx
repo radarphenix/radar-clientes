@@ -38,14 +38,14 @@ function corpoEmail(lista, mensagem) {
     const i = lista[0]
     const dados = camposRelatorio(i.dados_gerais, CAMPOS_DADOS_GERAIS)   // e-mail vai ao cliente: sem os "não imprimir"
     return `<div style="font-family:Segoe UI,Arial;color:#173b5f;font-size:14px">${msg}` +
-      `<p>Segue em anexo inspeção do cliente <b>${H(Ou(valor(i.dados_gerais, 'Cliente')))}</b>, nota fiscal <b>${H(Ou(valor(i.dados_gerais, 'Nota fiscal')))}</b>, ` +
+      `<p>Segue em anexo inspeção do cliente <b>${H(Ou(valor(i.dados_gerais, 'Cliente')))}</b>, nota fiscal <b>${H(Ou(valor(i.dados_gerais, 'Nota fiscal')))}</b>, lote <b>${H(Ou(valor(i.dados_gerais, 'Lote')))}</b>, ` +
       `realizada em <b>${H(Ou(valor(i.dados_gerais, 'Data da inspeção')))}</b> (relatório Nº ${H(i.numero)}, revisão ${String(i.revisao).padStart(2, '0')}).</p>` +
       `<table style="border-collapse:collapse;font-size:13px">${dados.map((c) => `<tr><td style="padding:4px 12px 4px 0;color:#60758a">${H(c.rotulo)}</td><td style="padding:4px 0">${H(c.valor)}</td></tr>`).join('')}</table>` +
       `<p style="color:#60758a;font-size:12px">Finalizado por ${H(i.finalizado_por)}${i.finalizado_em ? ` em ${new Date(i.finalizado_em).toLocaleString('pt-BR')}` : ''}.</p></div>`
   }
   return `<div style="font-family:Segoe UI,Arial;color:#173b5f;font-size:14px">${msg}<p>Seguem em anexo ${lista.length} inspeção(ões):</p>` +
-    tabelaHtml(['Cliente', 'Código cliente', 'Nota fiscal', 'Data da inspeção', 'Relatório'],
-      lista.map((i) => [Ou(valor(i.dados_gerais, 'Cliente')), Ou(valor(i.dados_gerais, 'Código cliente')), Ou(valor(i.dados_gerais, 'Nota fiscal')),
+    tabelaHtml(['Cliente', 'Código cliente', 'Nota fiscal', 'Lote', 'Data da inspeção', 'Relatório'],
+      lista.map((i) => [Ou(valor(i.dados_gerais, 'Cliente')), Ou(valor(i.dados_gerais, 'Código cliente')), Ou(valor(i.dados_gerais, 'Nota fiscal')), Ou(valor(i.dados_gerais, 'Lote')),
         Ou(valor(i.dados_gerais, 'Data da inspeção')), `${i.numero} / rev ${String(i.revisao).padStart(2, '0')}`])) + '</div>'
 }
 

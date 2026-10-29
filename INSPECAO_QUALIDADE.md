@@ -190,6 +190,7 @@ real 20261028-165038: 4 páginas (sem encolher seriam 6).
 - **Recebimento dividido na impressão:** "Informações técnicas" ganhou subtítulos - **Informações do
   cliente** (equipamento, medidas informadas, material) e **Medições internas (Phenix)**
   (`MEDIDAS_AFERIDAS`). A saída continua com uma tabela só (só tem medidas da Phenix).
+- **Lote no e-mail:** a frase do corpo (uma inspeção) e a tabela (várias) mostram o Lote, no Radar e no desktop.
 - Importar/Exportar `.zip` (`troca.js`) leva a marca nos dois sentidos (`Imprimir` no formato do desktop).
 - Desktop irmão alterado na mesma entrega: `Inspecao.cs`, `PdfService`, `WordService`, `MainForm` (coluna
   Imprimir na grade de outros campos, botão PDF interno, corpo do e-mail). Publicado em `Publicar` (falta o
