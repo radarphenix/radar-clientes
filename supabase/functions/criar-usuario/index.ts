@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
   };
   const senhaProvisoria = gerarSenhaForte();
   const tipoPerfil = String(body.tipo_perfil || "representante").trim();
-  const tiposPerfilValidos = new Set(["admin", "tecnico", "representante"]);
+  const tiposPerfilValidos = new Set(["admin", "tecnico", "representante", "qualidade"]);
   const codigoRepresentanteRaw = String(body.codigo_representante || "")
     .replace(/\D/g, "")
     .trim();
