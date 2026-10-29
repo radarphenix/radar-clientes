@@ -71,6 +71,10 @@ Administracao, conforme o perfil). Ele fecha ao tocar fora do painel ou ao
 escolher uma opcao. No desktop o menu lateral permanece sempre visivel e o
 botao nao aparece.
 
+Os grupos do menu (Comercial, Rotas, Gestao e Analise, Qualidade, Conta e
+Administracao) abrem sempre retraidos; toque no nome do grupo para ver os
+itens e toque de novo para recolher.
+
 Regras:
 
 - O Meu Dia usa a data prevista registrada em cada cliente da rota.
@@ -1310,6 +1314,10 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
 - **Inspecao aberta:** cabecalho com cliente, numero, revisao e situacao; atalhos para as secoes
   (Identificacao, Tecnicas, Saida, Detalhamento, Conclusao), que no computador acompanham a rolagem.
   "Inspecoes" (seta no topo) volta para a lista.
+- **Tecnicas (recebimento):** as medidas ficam em dois grupos - **Medidas informadas** (o que veio do
+  cliente, da etiqueta ou da nota) e **Medidas aferidas (Phenix)** (o que foi medido aqui). Os dois
+  grupos tem CFM, Espessura, Gramatura, Largura, Comprimento e Largura da emenda. A saida tem so as
+  medidas da Phenix.
 - **Saida:** ligar "A Phenix forneceu esta tela" so quando a tela saiu da Phenix; o Fabricante vira
   "Phenix" sozinho e a saida vai primeiro no relatorio.
 - **Detalhamento:** cada item e um cartao; os vazios ficam recolhidos (toque para abrir) e nao saem no

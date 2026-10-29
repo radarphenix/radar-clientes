@@ -133,6 +133,32 @@ no histórico). Feita pela própria tela do Radar (Mais → Importar do programa
 admin — nada de inserção direta no banco. Idempotente: número que já existe é pulado, então dá para
 apontar a pasta inteira que só as novas entram. Commits: `d1d9680` (Lote + busca + largura).
 
+## Parte 4 (29/10/2026): medidas informadas x aferidas
+
+Recebimento com dois grupos de medidas: **Medidas informadas** (`CFM informado`, `Espessura informada`,
+`Gramatura informada`, `Largura informada`, `Comprimento informado`, `Largura da emenda informada`) e
+**Medidas aferidas (Phenix)**, que mantêm os rótulos antigos (`CFM`, `Espessura`, ...): inspeções gravadas
+e o formato do `inspecao.json` não mudam, sem migração. **`Largura da emenda`** virou campo padrão (já
+existia como "outro campo" com esse rótulo exato, que passa a cair no campo padrão). A saída usa
+`CAMPOS_TECNICOS_SAIDA` (só aferidas). Campo padrão preenchido numa inspeção antiga entra na ordem do
+padrão (o relatório segue a ordem da lista).
+
+Irmão desktop alterado na mesma entrega: `Inspecao.cs` (`CamposTecnicosPadrao` + `CamposTecnicosSaidaPadrao`)
+e `MainForm.cs` (cartão do recebimento com 6 linhas); publicado em `Publicar\MWInspecaoQualidade`
+(falta rodar `Atualizar.cmd` para levar à rede). No desktop os campos ficam numa grade única, sem os títulos
+dos grupos; os rótulos distinguem.
+
+## Parte 5 (29/10/2026): fotos do relatório padronizadas
+
+Antes: moldura deitada 8,2 × 6,2 (foto sozinha 13 × 9,5) e encolhimento até 60% no fim da página. Como
+63 de 89 fotos são em pé bem compridas (0,46) e 15 deitadas bem largas (2,17), os tamanhos variavam muito.
+Agora (escolha do usuário): **moldura única em pé 7,5 × 10 cm (3:4), duas por linha** (três deixaria foto de
+documento ilegível), linha incompleta centralizada, foto inteira sem corte e sobra cinza (`FUNDO_MOLDURA`),
+no PDF, sem espaço no fim da página, a **linha inteira encolhe junto até 60%** (molduras da linha seguem
+iguais); abaixo disso vai para a próxima. O Word não encolhe (quem pagina é o Word). `MOLDURA_FOTO` em
+`modelo.js` = `LayoutFotos.Moldura` no desktop (Word com uma tabela por linha). Conferido no PDF da inspeção
+real 20261028-165038: 4 páginas (sem encolher seriam 6).
+
 ## Falta
 
 - [x] Google Drive autorizado (28/10/2026, projeto do Google "Em produção", segredos gravados) e fotos testadas: upload, celular pelo QR, foto ampliada (legenda/ordem/tirar), reabrir, PDF/Word/zip com fotos

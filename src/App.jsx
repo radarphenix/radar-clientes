@@ -620,12 +620,12 @@ function App() {
   const ultimaTelaLogadaRef = useRef("");
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const [gruposMenuAbertos, setGruposMenuAbertos] = useState({
-    comercial: true,
-    rotas: true,
-    gestaoAnalise: true,
-    qualidade: true,
-    conta: true,
-    administracao: true,
+    comercial: false,
+    rotas: false,
+    gestaoAnalise: false,
+    qualidade: false,
+    conta: false,
+    administracao: false,
   });
   // Acessos por menu (catálogo radar_permissoes): o que esta pessoa pode abrir.
   const [permissoes, setPermissoes] = useState(() => new Set());

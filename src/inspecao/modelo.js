@@ -8,9 +8,22 @@ export const CAMPOS_DADOS_GERAIS = [
   'Metragem 1', 'Metragem 2', 'Metragem 3', 'Data de entrada', 'Data da inspeção', 'Local', 'Inspetor',
 ]
 
+/** Recebimento: medidas informadas (cliente, etiqueta, nota) e medidas aferidas pela Phenix.
+ *  As aferidas mantêm os rótulos antigos ("CFM", "Largura"...), então inspeções gravadas não mudam. */
+export const MEDIDAS_INFORMADAS = [
+  'CFM informado', 'Espessura informada', 'Gramatura informada', 'Largura informada',
+  'Comprimento informado', 'Largura da emenda informada',
+]
+export const MEDIDAS_AFERIDAS = ['CFM', 'Espessura', 'Gramatura', 'Largura', 'Comprimento', 'Largura da emenda']
+
 export const CAMPOS_TECNICOS = [
-  'Máquina', 'Fabricante', 'CFM', 'Espessura', 'Gramatura', 'Largura', 'Comprimento', 'Cor',
+  'Máquina', 'Fabricante', ...MEDIDAS_INFORMADAS, ...MEDIDAS_AFERIDAS, 'Cor',
   'Composição', 'Acabamento', 'Norma / Especificação',
+]
+
+/** Saída (tela fornecida pela Phenix): só as medidas da própria Phenix. */
+export const CAMPOS_TECNICOS_SAIDA = [
+  'Máquina', 'Fabricante', ...MEDIDAS_AFERIDAS, 'Cor', 'Composição', 'Acabamento', 'Norma / Especificação',
 ]
 
 /** Toda inspeção nova começa com estes itens; item sem descrição e sem foto não sai no relatório. */
@@ -46,7 +59,7 @@ export function novaInspecao(usuario) {
     titulo: TITULO_PADRAO,
     dados_gerais: dados,
     informacoes_tecnicas: campos(CAMPOS_TECNICOS),
-    informacoes_tecnicas_saida: campos(CAMPOS_TECNICOS),
+    informacoes_tecnicas_saida: campos(CAMPOS_TECNICOS_SAIDA),
     elaborado_por: usuario || '',
     setor: 'Qualidade',
     data_inspecao: dataBR(agora),
@@ -103,8 +116,12 @@ export function secoesRelatorio(ins) {
   }
 }
 
-/** Fotos: 1 = grande; 2 ou mais = no máximo duas por linha (LayoutFotos.cs). Medidas em cm. */
-export const caixaFotos = (qtd) => (qtd <= 1 ? { colunas: 1, larguraCm: 13, alturaCm: 9.5 } : { colunas: 2, larguraCm: 8.2, alturaCm: 6.2 })
+/** Fotos: moldura única em pé (3:4), sempre do mesmo tamanho, duas por linha (com três, foto de documento
+ *  fica ilegível); a foto entra inteira (sem corte) e a sobra fica cinza. Linha incompleta fica centralizada.
+ *  Igual ao LayoutFotos.cs do desktop. Medidas em cm. */
+export const MOLDURA_FOTO = { colunas: 2, larguraCm: 7.5, alturaCm: 10, espacoCm: 0.6 }
+export const FUNDO_MOLDURA = [0xf2, 0xf4, 0xf7]
+export const caixaFotos = () => MOLDURA_FOTO
 
 export function ajustarFoto(caixa, px, py) {
   const e = Math.min(caixa.larguraCm / px, caixa.alturaCm / py)

@@ -4,7 +4,7 @@ import {
   Trash2, Cloud, CloudOff, Loader2, Plus, X, FileText, FileDown, Mail, History, Archive, SpellCheck, Building2,
 } from 'lucide-react'
 import * as api from './api'
-import { CAMPOS_DADOS_GERAIS, CAMPOS_TECNICOS, completarFabricanteSaida, conteudo, pode, temSaida, FORNECEDOR_PHENIX } from './modelo'
+import { CAMPOS_DADOS_GERAIS, CAMPOS_TECNICOS, CAMPOS_TECNICOS_SAIDA, MEDIDAS_INFORMADAS, MEDIDAS_AFERIDAS, completarFabricanteSaida, conteudo, pode, temSaida, FORNECEDOR_PHENIX } from './modelo'
 import Detalhamentos from './Detalhamentos.jsx'
 import { JanelaCorrecao, JanelaEmail, JanelaHistorico } from './Janelas.jsx'
 
@@ -53,11 +53,15 @@ const GRUPOS_IDENT = [
   ['Produto', ['Produto', 'Código do produto', 'Lote', 'Metragem 1', 'Metragem 2', 'Metragem 3']],
   ['Inspeção', ['Local', 'Inspetor']],
 ]
+const GRUPO_EQUIPAMENTO = ['Equipamento', ['Máquina', 'Fabricante']]
+const GRUPO_MATERIAL = ['Material', ['Cor', 'Composição', 'Acabamento', 'Norma / Especificação']]
 const GRUPOS_TEC = [
-  ['Equipamento', ['Máquina', 'Fabricante']],
-  ['Medidas', ['CFM', 'Espessura', 'Gramatura', 'Largura', 'Comprimento']],
-  ['Material', ['Cor', 'Composição', 'Acabamento', 'Norma / Especificação']],
+  GRUPO_EQUIPAMENTO,
+  ['Medidas informadas (cliente, etiqueta ou nota)', MEDIDAS_INFORMADAS],
+  ['Medidas aferidas (Phenix)', MEDIDAS_AFERIDAS],
+  GRUPO_MATERIAL,
 ]
+const GRUPOS_TEC_SAIDA = [GRUPO_EQUIPAMENTO, ['Medidas', MEDIDAS_AFERIDAS], GRUPO_MATERIAL]
 const LARGO = new Set(['Cliente', 'Produto', 'Norma / Especificação', 'Composição'])
 const DATAS = new Set(['Data de entrada', 'Data da inspeção'])
 
@@ -70,7 +74,10 @@ function Campos({ grupos, padrao, lista, mudar, leitura }) {
   const valorDe = (r) => lista.find((c) => c.rotulo === r)?.valor || ''
   const extras = lista.filter((c) => !padrao.includes(c.rotulo))
   const setPadrao = (rotulo, valor) =>
-    mudar(lista.some((c) => c.rotulo === rotulo) ? lista.map((c) => (c.rotulo === rotulo ? { ...c, valor } : c)) : [...lista, { rotulo, valor }])
+    mudar(lista.some((c) => c.rotulo === rotulo)
+      ? lista.map((c) => (c.rotulo === rotulo ? { ...c, valor } : c))
+      // campo padrão novo numa inspeção antiga: entra na ordem do padrão (o relatório segue a lista)
+      : padrao.flatMap((p) => (p === rotulo ? [{ rotulo, valor }] : lista.filter((c) => c.rotulo === p))).concat(extras))
   const setExtras = (novos) => mudar([...lista.filter((c) => padrao.includes(c.rotulo)), ...novos])
   return (
     <>
@@ -324,7 +331,7 @@ export default function Editor({ id, papel, nome, voltar }) {
           </label>
         )}>
         {comSaida && (
-          <Campos grupos={GRUPOS_TEC} padrao={CAMPOS_TECNICOS} lista={ins.informacoes_tecnicas_saida} leitura={leitura}
+          <Campos grupos={GRUPOS_TEC_SAIDA} padrao={CAMPOS_TECNICOS_SAIDA} lista={ins.informacoes_tecnicas_saida} leitura={leitura}
             mudar={(v) => mudarIns({ informacoes_tecnicas_saida: completarFabricanteSaida({ informacoes_tecnicas_saida: v }) })} />
         )}
       </Secao>

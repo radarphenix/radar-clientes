@@ -3,7 +3,7 @@
 // fotos duas por linha em moldura fixa, rodapé com assinaturas e "página X de Y".
 // Carregado só quando alguém gera um relatório (import dinâmico): não pesa na tela.
 import {
-  caixaAlta, caixaFotos, caixaFrase, ajustarFoto, detalhamentosParaImprimir, preenchidos, secoesRelatorio,
+  caixaAlta, caixaFotos, caixaFrase, ajustarFoto, detalhamentosParaImprimir, preenchidos, secoesRelatorio, FUNDO_MOLDURA,
 } from './modelo'
 import { urlFoto } from './api'
 
@@ -61,7 +61,8 @@ async function preparar(ins, dets, fotos) {
 }
 
 // ======================================================================== PDF
-const FOTO_MIN = 0.6   // menor escala aceita para a foto caber no fim da página
+
+const FOTO_MIN = 0.6   // menor escala aceita para a linha de fotos caber no fim da página
 
 export async function gerarPdf(ins, dets, fotos) {
   const { jsPDF } = await import('jspdf')
@@ -171,30 +172,32 @@ export async function gerarPdf(ins, dets, fotos) {
   }
 
   function tabelaFotos(lista) {
-    const caixa = caixaFotos(lista.length)
-    const wCol = UTIL / caixa.colunas
+    const caixa = caixaFotos()
     for (let i = 0; i < lista.length; i += caixa.colunas) {
       const linha = lista.slice(i, i + caixa.colunas)
       const temLegenda = linha.some((f) => f.legenda)
       const extra = 0.3 + (temLegenda ? 0.6 : 0.2)
-      // a linha tem a altura da foto mais alta já encaixada (foto deitada não reserva a moldura inteira)
-      const hMax = Math.max(...linha.map((f) => ajustarFoto(caixa, f.w, f.h).a))
-      // sem espaço: encolhe até 60% para aproveitar o fim da página; abaixo disso, vai para a próxima
+      // sem espaço: a linha inteira encolhe junto (molduras da linha seguem iguais) até 60% para
+      // aproveitar o fim da página; abaixo disso, vai para a próxima
       let esc = 1
-      const livre = fundo - y - extra
-      if (hMax > livre) { if (livre >= hMax * FOTO_MIN) esc = livre / hMax; else novaPagina() }
-      const h = hMax * esc
+      const livre = fundo - y - 0.15 - extra
+      if (caixa.alturaCm > livre) { if (livre >= caixa.alturaCm * FOTO_MIN) esc = livre / caixa.alturaCm; else novaPagina() }
+      const mol = { ...caixa, larguraCm: caixa.larguraCm * esc, alturaCm: caixa.alturaCm * esc }
+      const h = mol.alturaCm
+      const passoLinha = mol.larguraCm + caixa.espacoCm
+      const x0 = PAG.esq + (UTIL - (linha.length * passoLinha - caixa.espacoCm)) / 2
       linha.forEach((f, k) => {
-        const aj = ajustarFoto(caixa, f.w, f.h)
-        const l = aj.l * esc, a = aj.a * esc
-        const cx = PAG.esq + k * wCol + wCol / 2
-        pdf.addImage(f.dataUrl, f.tipo.toUpperCase(), cx - l / 2, y + 0.15 + (h - a) / 2, l, a)
+        const x = x0 + k * passoLinha, yM = y + 0.15
+        pdf.setFillColor(...FUNDO_MOLDURA); pdf.setDrawColor(...AZUL_CLARO_BORDA); pdf.setLineWidth(0.02)
+        pdf.rect(x, yM, mol.larguraCm, h, 'FD')
+        const { l, a } = ajustarFoto(mol, f.w, f.h)
+        pdf.addImage(f.dataUrl, f.tipo.toUpperCase(), x + (mol.larguraCm - l) / 2, yM + (h - a) / 2, l, a)
         if (f.legenda) {
           fonte(8); cor(CINZA)
-          pdf.text(pdf.splitTextToSize(f.legenda, wCol - 0.4), cx, y + h + 0.6, { align: 'center' })
+          pdf.text(pdf.splitTextToSize(f.legenda, mol.larguraCm), x + mol.larguraCm / 2, yM + h + 0.45, { align: 'center' })
         }
       })
-      y += h + extra
+      y += 0.15 + h + extra
     }
   }
 
@@ -210,8 +213,7 @@ export async function gerarPdf(ins, dets, fotos) {
     secao(r.sec.detalhamento)
     r.itens.forEach((d, n) => {
       const nLinhas = d.texto.reduce((s, p) => s + pdf.splitTextToSize(p, UTIL).length, 0)
-      const caixa = caixaFotos(d.fotos.length)
-      const foto1 = d.fotos.length ? Math.max(...d.fotos.slice(0, caixa.colunas).map((f) => ajustarFoto(caixa, f.w, f.h).a)) * FOTO_MIN + 1 : 0
+      const foto1 = d.fotos.length ? caixaFotos().alturaCm * FOTO_MIN + 1 : 0
       garantir(1.2 + (nLinhas <= 4 ? nLinhas * 0.5 + foto1 : 0))
       y += pt(10)
       fonte(11, true); cor(AZUL); pdf.text(`${n + 1}. ${d.titulo}`.trim(), PAG.esq, y + 0.35)
@@ -302,28 +304,30 @@ export async function gerarWord(ins, dets, fotos) {
     corpo.push(tabela(linhasT, [3.35, 5.45, 3.35, 5.45]))
   }
   const fotosTabela = (lista) => {
-    const caixa = caixaFotos(lista.length)
-    const wCol = UTIL / caixa.colunas
-    const linhasT = []
+    const caixa = caixaFotos()
+    // uma tabela por linha: colunas [margem, foto, espaço, foto, margem] - a linha incompleta fica centralizada
     for (let i = 0; i < lista.length; i += caixa.colunas) {
       const linha = lista.slice(i, i + caixa.colunas)
-      const cel = (k, filho) => celula([filho], wCol, { borders: semBorda, verticalAlign: k })
-      const hMax = Math.max(...linha.map((f) => ajustarFoto(caixa, f.w, f.h).a))
-      linhasT.push(new d.TableRow({
-        cantSplit: true, height: { value: (hMax + 0.3) * CM, rule: d.HeightRule.EXACT },
-        children: Array.from({ length: caixa.colunas }, (_, k) => {
-          const f = linha[k]
-          if (!f) return cel(d.VerticalAlign.CENTER, new d.Paragraph({ children: [] }))
-          const { l, a } = ajustarFoto(caixa, f.w, f.h)
-          return cel(d.VerticalAlign.CENTER, new d.Paragraph({ keepNext: true, alignment: d.AlignmentType.CENTER, children: [new d.ImageRun({ data: f.dados, type: f.tipo, transformation: { width: l * PX, height: a * PX } })] }))
-        }),
-      }))
-      linhasT.push(new d.TableRow({
-        cantSplit: true,
-        children: Array.from({ length: caixa.colunas }, (_, k) => cel(d.VerticalAlign.TOP, new d.Paragraph({ alignment: d.AlignmentType.CENTER, spacing: { after: 100 }, children: [run(linha[k]?.legenda || '', CINZA, 16)] }))),
-      }))
+      const largs = []
+      linha.forEach((_, k) => { if (k) largs.push(caixa.espacoCm); largs.push(caixa.larguraCm) })
+      const sobra = (UTIL - largs.reduce((s, l) => s + l, 0)) / 2
+      largs.unshift(sobra); largs.push(sobra)
+      const vazia = (l) => celula([new d.Paragraph({ children: [] })], l, { borders: semBorda })
+      const montar = (foto) => largs.map((l, c) => {
+        const f = c % 2 === 1 ? linha[(c - 1) / 2] : null
+        if (!f) return vazia(l)
+        if (!foto) return celula([new d.Paragraph({ alignment: d.AlignmentType.CENTER, spacing: { after: 100 }, children: [run(f.legenda || '', CINZA, 16)] })], l, { borders: semBorda, verticalAlign: d.VerticalAlign.TOP })
+        const { l: lf, a } = ajustarFoto(caixa, f.w, f.h)
+        return celula([new d.Paragraph({ keepNext: true, alignment: d.AlignmentType.CENTER, children: [new d.ImageRun({ data: f.dados, type: f.tipo, transformation: { width: lf * PX, height: a * PX } })] })], l,
+          { borders: todas(AZUL_CLARO_BORDA), shading: { type: d.ShadingType.CLEAR, fill: hex(FUNDO_MOLDURA), color: 'auto' }, verticalAlign: d.VerticalAlign.CENTER, margins: { top: 0, bottom: 0, left: 0, right: 0 } })
+      })
+      corpo.push(tabela([
+        new d.TableRow({ cantSplit: true, height: { value: caixa.alturaCm * CM, rule: d.HeightRule.EXACT }, children: montar(true) }),
+        new d.TableRow({ cantSplit: true, children: montar(false) }),
+      ], largs, { borders: d.TableBorders.NONE }))
+      // parágrafo entre as tabelas: sem ele o Word funde tabelas vizinhas
+      corpo.push(new d.Paragraph({ spacing: { before: 0, after: 0 }, children: [run('', TEXTO, 8)] }))
     }
-    corpo.push(tabela(linhasT, Array(caixa.colunas).fill(wCol), { borders: d.TableBorders.NONE }))
   }
 
   if (r.sec.saida) { secao(r.sec.saida); campos(r.saida) }
