@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ClipboardCheck, Plus, Search, Lock, Camera, Factory, Mail, FolderInput, ListPlus, Trash2, RotateCcw, MoreHorizontal } from 'lucide-react'
+import { ClipboardCheck, ClipboardList, Plus, Search, Lock, Camera, Factory, Mail, FolderInput, ListPlus, Trash2, RotateCcw, MoreHorizontal } from 'lucide-react'
 import './inspecao.css'
-import { supabase, listar, criar, papelAtual, listarLixeira, restaurar } from './api'
+import { supabase, listar, criar, papelAtual, listarLixeira, restaurar, titulosDetalhamentoPadrao } from './api'
 import { pode, valor } from './modelo'
 import Editor from './Editor.jsx'
 import { JanelaEmail, JanelaImportar, JanelaSelecionarEmail, JanelaTipos } from './Janelas.jsx'
@@ -15,7 +15,7 @@ function situacao(i, eu, agora) {
 const ROTULO = { edicao: 'Em edição', finalizada: 'Finalizada', rascunho: 'Rascunho' }
 
 /** Menu Qualidade -> Inspeções. Lista em cartões; a inspeção abre como página própria. */
-export default function PaginaInspecao({ nome }) {
+export default function PaginaInspecao({ nome, irParaLista = 0 }) {
   const [papel, setPapel] = useState(undefined)
   const [lista, setLista] = useState(null)
   const [busca, setBusca] = useState('')
@@ -28,6 +28,7 @@ export default function PaginaInspecao({ nome }) {
   const [janela, setJanela] = useState(null)        // 'selecionar' | { email: itens } | 'importar' | 'tipos'
   const [mais, setMais] = useState(false)
   const [lixeira, setLixeira] = useState(null)
+  const [gerandoChecklist, setGerandoChecklist] = useState(false)
 
   useEffect(() => {
     if (!mais) return
@@ -64,6 +65,36 @@ export default function PaginaInspecao({ nome }) {
     return () => window.removeEventListener('popstate', aoVoltar)
   }, [])
   useEffect(() => { window.scrollTo({ top: 0 }) }, [atualId])
+
+  // clique no menu Inspeções (o Radar soma 1 em irParaLista): sempre volta para a lista (raiz)
+  useEffect(() => {
+    if (!irParaLista) return
+    const url = new URL(location.href)
+    if (url.searchParams.has('inspecao')) {
+      url.searchParams.delete('inspecao')
+      history.replaceState({ ...history.state, inspecaoAberta: false }, '', url)
+    }
+    setAtualId(null)
+  }, [irParaLista])
+
+  // checklist em branco para imprimir; a aba abre já no clique (depois do await o navegador bloquearia)
+  async function checklist() {
+    const aba = window.open('', '_blank')
+    setGerandoChecklist(true)
+    try {
+      const [{ gerarChecklist }, titulos] = await Promise.all([import('./checklist'), titulosDetalhamentoPadrao()])
+      const blob = await gerarChecklist(titulos)
+      if (aba) {
+        const url = URL.createObjectURL(blob)
+        aba.location.href = url
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+      } else {
+        const { baixar } = await import('./relatorio')
+        baixar(blob, 'Checklist_Inspecao.pdf')
+      }
+    } catch (e) { aba?.close(); setErro(e.message) }
+    setGerandoChecklist(false)
+  }
 
   function abrir(id) {
     const url = new URL(location.href)
@@ -116,6 +147,9 @@ export default function PaginaInspecao({ nome }) {
           </div>
         </div>
         <div className="iq-acoes-lista">
+          <button type="button" className="iq-btn sec" onClick={checklist} disabled={gerandoChecklist} title="Checklist em branco para imprimir e levar na conferência">
+            <ClipboardList size={18} /> {gerandoChecklist ? 'Gerando...' : 'Checklist'}
+          </button>
           {pode(papel, 'inspetor') && (
             <div className="iq-menu-ancora">
               <button type="button" className="iq-btn sec" onClick={() => setMais(!mais)} aria-expanded={mais}><MoreHorizontal size={18} /> Mais</button>

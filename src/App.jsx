@@ -338,6 +338,10 @@ function mensagemAmigavelCriacaoUsuario(erro) {
     return "Voce nao tem permissao para criar usuarios.";
   }
 
+  if (texto.includes("e-mail de login")) {
+    return mensagemOriginal;
+  }
+
   if (texto.includes("codigo do representante")) {
     return "Informe o codigo do representante para concluir o cadastro.";
   }
@@ -619,6 +623,8 @@ function App() {
   const canalPresencaRef = useRef(null);
   const ultimaTelaLogadaRef = useRef("");
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
+  // cada clique no menu Inspeções soma 1: a página volta para a lista (raiz), mesmo com uma inspeção aberta
+  const [irParaListaInspecoes, setIrParaListaInspecoes] = useState(0);
   const [gruposMenuAbertos, setGruposMenuAbertos] = useState({
     comercial: false,
     rotas: false,
@@ -4948,6 +4954,21 @@ function App() {
       let emailSenhaEnviado = false;
 
       if (usuarioPerfilForm.user_id.trim()) {
+        // sempre alinha o e-mail de login (Auth) com o do formulário: editar só o perfil deixava o
+        // login no endereço antigo e o "Atualizar senha" não chegava em lugar nenhum. Comparar com o
+        // perfil não basta (cadastros já desencontrados têm o perfil certo e o login errado).
+        const { data: dadosEmail, error: erroEmail } = await supabase.functions.invoke(
+          "alterar-email-usuario",
+          { body: { user_id: usuarioPerfilForm.user_id.trim(), email: emailNormalizado } },
+        );
+        if (erroEmail || dadosEmail?.error) {
+          let mensagem = dadosEmail?.error;
+          if (!mensagem && erroEmail?.context?.json) {
+            mensagem = (await erroEmail.context.json().catch(() => null))?.error;
+          }
+          throw new Error(mensagem || erroEmail?.message || "Nao foi possivel alterar o e-mail de login.");
+        }
+
         const { error } = await supabase.from("perfis").upsert(
           {
             ...payload,
@@ -5344,6 +5365,7 @@ function App() {
                 className={telaAtual === "inspecao" ? "ativo" : ""}
                 onClick={() => {
                   setTelaAtual("inspecao");
+                  setIrParaListaInspecoes((n) => n + 1);
                   setMenuMobileAberto(false);
                 }}
               >
@@ -5441,7 +5463,7 @@ function App() {
 
       {telaAtual === "inspecao" && pode("inspecao.ver") && (
         <Suspense fallback={<div className="carregando-tela">Carregando Inspeções...</div>}>
-          <PaginaInspecao nome={perfil?.nome || session?.user?.email || ""} />
+          <PaginaInspecao nome={perfil?.nome || session?.user?.email || ""} irParaLista={irParaListaInspecoes} />
         </Suspense>
       )}
 

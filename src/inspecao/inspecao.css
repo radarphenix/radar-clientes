@@ -264,8 +264,11 @@
   .iq-acoes-cabecalho::-webkit-scrollbar { display: none; }
   .iq-acoes-cabecalho .iq-dica { display: none; }
   .iq-secao { scroll-margin-top: 190px; }
-  .iq-acoes-lista { width: 100%; }
-  .iq-acoes-lista .iq-btn.prim { flex: 1; }
+  /* celular: "Nova inspeção" em cima, a linha toda; Checklist e Mais dividem a de baixo */
+  .iq-acoes-lista { width: 100%; flex-wrap: wrap; }
+  .iq-acoes-lista .iq-btn.prim { flex: 1 1 100%; order: -1; }
+  .iq-acoes-lista > .iq-btn.sec, .iq-acoes-lista > .iq-menu-ancora { flex: 1 1 0; }
+  .iq-acoes-lista > .iq-menu-ancora > .iq-btn { width: 100%; }
 }
 
 /* ---------------------------------------------------------------- elementos da parte 2 */

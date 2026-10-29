@@ -4,7 +4,7 @@ import {
   Trash2, Cloud, CloudOff, Loader2, Plus, X, FileText, FileDown, Mail, History, Archive, SpellCheck, Building2,
 } from 'lucide-react'
 import * as api from './api'
-import { CAMPOS_DADOS_GERAIS, CAMPOS_TECNICOS, CAMPOS_TECNICOS_SAIDA, MEDIDAS_INFORMADAS, MEDIDAS_AFERIDAS, completarFabricanteSaida, conteudo, pode, temSaida, FORNECEDOR_PHENIX } from './modelo'
+import { CAMPOS_DADOS_GERAIS, CAMPOS_TECNICOS, CAMPOS_TECNICOS_SAIDA, GRUPOS_TEC, GRUPOS_TEC_SAIDA, completarFabricanteSaida, conteudo, pode, temSaida, FORNECEDOR_PHENIX } from './modelo'
 import Detalhamentos from './Detalhamentos.jsx'
 import { JanelaCorrecao, JanelaEmail, JanelaHistorico } from './Janelas.jsx'
 
@@ -53,15 +53,6 @@ const GRUPOS_IDENT = [
   ['Produto', ['Produto', 'Código do produto', 'Lote', 'Metragem 1', 'Metragem 2', 'Metragem 3']],
   ['Inspeção', ['Local', 'Inspetor']],
 ]
-const GRUPO_EQUIPAMENTO = ['Equipamento', ['Máquina', 'Fabricante']]
-const GRUPO_MATERIAL = ['Material', ['Cor', 'Composição', 'Acabamento', 'Norma / Especificação']]
-const GRUPOS_TEC = [
-  GRUPO_EQUIPAMENTO,
-  ['Medidas informadas (cliente, etiqueta ou nota)', MEDIDAS_INFORMADAS],
-  ['Medidas aferidas (Phenix)', MEDIDAS_AFERIDAS],
-  GRUPO_MATERIAL,
-]
-const GRUPOS_TEC_SAIDA = [GRUPO_EQUIPAMENTO, ['Medidas', MEDIDAS_AFERIDAS], GRUPO_MATERIAL]
 const LARGO = new Set(['Cliente', 'Produto', 'Norma / Especificação', 'Composição'])
 const DATAS = new Set(['Data de entrada', 'Data da inspeção'])
 

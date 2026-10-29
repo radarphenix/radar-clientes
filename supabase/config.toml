@@ -30,6 +30,8 @@ entrypoint = "./functions/agenda-geral-ics/index.ts"
 
 [functions.inspecao-arquivos]
 verify_jwt = true
+[functions.alterar-email-usuario]
+verify_jwt = true
 [functions.inspecao-celular]
 verify_jwt = false
 [functions.inspecao-email]

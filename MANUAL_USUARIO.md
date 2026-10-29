@@ -648,6 +648,8 @@ Botoes:
 4. Editar (na lista)
 
 - Funcao: carregar dados do usuario no formulario.
+- Trocar o e-mail e salvar troca tambem o e-mail de login (o usuario passa a entrar com o novo e o
+  "Atualizar senha" vai para ele).
 
 5. Atualizar senha (na lista)
 
@@ -1310,7 +1312,12 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
 
 - **Lista:** um cartao por inspecao (faixa laranja = rascunho, verde = finalizada, vermelha = alguem
   editando). Busca por cliente, codigo, NF, produto ou numero e filtros Todas / Rascunho / Finalizadas /
-  Em edicao. "Nova inspecao" cria e ja abre.
+  Em edicao. "Nova inspecao" cria e ja abre. Clicar no menu Inspecoes sempre volta para esta lista,
+  mesmo com uma inspecao aberta (o que estava digitado e salvo antes de sair).
+- **Checklist (para imprimir):** botao "Checklist" na lista abre um PDF em branco para levar na
+  conferencia: identificacao, campos tecnicos nos mesmos grupos da tela (medidas informadas e aferidas)
+  e os itens de detalhamento na ordem padrao, cada um com OK / Nao conforme / N.A. / Foto e linhas para
+  anotar, mais conclusao e assinatura. Depois de conferir, lance os dados na inspecao do Radar.
 - **Inspecao aberta:** cabecalho com cliente, numero, revisao e situacao; atalhos para as secoes
   (Identificacao, Tecnicas, Saida, Detalhamento, Conclusao), que no computador acompanham a rolagem.
   "Inspecoes" (seta no topo) volta para a lista.

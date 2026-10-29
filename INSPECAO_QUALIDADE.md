@@ -159,6 +159,19 @@ iguais); abaixo disso vai para a próxima. O Word não encolhe (quem pagina é o
 `modelo.js` = `LayoutFotos.Moldura` no desktop (Word com uma tabela por linha). Conferido no PDF da inspeção
 real 20261028-165038: 4 páginas (sem encolher seriam 6).
 
+## Parte 6 (29/10/2026): checklist para impressão e menu volta à lista
+
+- **Checklist:** botão na lista (raiz), para todos com acesso. `checklist.js` (jsPDF, carregado só ao
+  gerar) monta um PDF em branco: identificação, `GRUPOS_TEC` (agora em `modelo.js`, mesmos grupos da tela)
+  e os itens em `titulosDetalhamentoPadrao()` (`api.js`, a mesma ordem com que a inspeção nova nasce:
+  tipos padrão do cadastro ou a lista fixa), cada um com OK / Não conforme / N.A. / Foto + linhas; outros
+  itens, conclusão e assinatura. Abre em nova aba (aberta no clique, senão o navegador bloqueia); sem aba,
+  baixa o arquivo. Só no Radar: o desktop não tem (avaliar se precisa).
+- **Menu Inspeções → lista:** o Radar soma 1 em `irParaLista` a cada clique; a página tira `?inspecao` da
+  barra e volta à lista. O Editor, ao desmontar, salva o pendente e libera a trava (nada se perde).
+- Testado em 1920/1366/390: abrir inspeção → menu → lista, sem erros; celular com Nova inspeção em cima e
+  Checklist/Mais embaixo.
+
 ## Falta
 
 - [x] Google Drive autorizado (28/10/2026, projeto do Google "Em produção", segredos gravados) e fotos testadas: upload, celular pelo QR, foto ampliada (legenda/ordem/tirar), reabrir, PDF/Word/zip com fotos

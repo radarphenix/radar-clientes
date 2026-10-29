@@ -26,13 +26,18 @@ export async function listar() {
   return data
 }
 
+/** Itens com que toda inspeção nova nasce, na ordem: os tipos marcados como padrão no cadastro
+ *  (sem cadastro: a lista fixa do desktop). Também é a ordem do checklist de conferência. */
+export async function titulosDetalhamentoPadrao() {
+  const tipos = await listarTipos().catch(() => [])
+  return tipos.length ? tipos.filter((t) => t.padrao && t.ativo).map((t) => t.nome) : TITULOS_PADRAO
+}
+
 /** Cria a inspeção com os 9 itens padrão. Se outro computador pegou o mesmo número no mesmo
  *  segundo, acrescenta -2, -3... (como CriarNova() do desktop). */
 export async function criar(nomeUsuario) {
   const base = novaInspecao(nomeUsuario)
-  // nasce com os tipos marcados como padrão no cadastro (sem cadastro: a lista fixa do desktop)
-  const tipos = await listarTipos().catch(() => [])
-  const titulosPadrao = tipos.length ? tipos.filter((t) => t.padrao && t.ativo).map((t) => t.nome) : TITULOS_PADRAO
+  const titulosPadrao = await titulosDetalhamentoPadrao()
   for (let n = 1; n < 20; n++) {
     const numero = n === 1 ? base.numero : `${base.numero}-${n}`
     const { data, error } = await supabase.from('inspecoes').insert({ ...base, numero, ...colunasDeBusca(base) }).select().single()

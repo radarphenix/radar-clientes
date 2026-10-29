@@ -26,6 +26,17 @@ export const CAMPOS_TECNICOS_SAIDA = [
   'Máquina', 'Fabricante', ...MEDIDAS_AFERIDAS, 'Cor', 'Composição', 'Acabamento', 'Norma / Especificação',
 ]
 
+/** Grupos dos campos técnicos na tela e no checklist de conferência (o relatório segue CAMPOS_TECNICOS). */
+const GRUPO_EQUIPAMENTO = ['Equipamento', ['Máquina', 'Fabricante']]
+const GRUPO_MATERIAL = ['Material', ['Cor', 'Composição', 'Acabamento', 'Norma / Especificação']]
+export const GRUPOS_TEC = [
+  GRUPO_EQUIPAMENTO,
+  ['Medidas informadas (cliente, etiqueta ou nota)', MEDIDAS_INFORMADAS],
+  ['Medidas aferidas (Phenix)', MEDIDAS_AFERIDAS],
+  GRUPO_MATERIAL,
+]
+export const GRUPOS_TEC_SAIDA = [GRUPO_EQUIPAMENTO, ['Medidas', MEDIDAS_AFERIDAS], GRUPO_MATERIAL]
+
 /** Toda inspeção nova começa com estes itens; item sem descrição e sem foto não sai no relatório. */
 export const TITULOS_PADRAO = [
   'Condições gerais', 'Embalagem', 'Lateral esquerda', 'Lateral direita', 'Superior', 'Inferior',
