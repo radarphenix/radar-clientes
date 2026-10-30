@@ -45,7 +45,6 @@ function Modal({ titulo, fechar, children, largo }) {
 /** "Do celular": QR Code que vale enquanto a janela está aberta; as fotos aparecem ao vivo. */
 function JanelaCelular({ ins, det, fotosDet, fechar }) {
   const [qr, setQr] = useState(null)
-  const [url, setUrl] = useState('')
   const [erro, setErro] = useState('')
   const token = useRef(null)
   useEffect(() => {
@@ -54,7 +53,6 @@ function JanelaCelular({ ins, det, fotosDet, fechar }) {
       token.current = t
       const u = `${enderecoBase()}/inspecao/celular?t=${t}`
       if (!vivo) return api.encerrarSessaoCelular(t)
-      setUrl(u)
       setQr(await QRCode.toDataURL(u, { margin: 1, width: 440 }))
     }).catch((e) => setErro(e.message))
     // fechar a janela encerra o código: endereço antigo responde "janela fechada"
@@ -68,12 +66,11 @@ function JanelaCelular({ ins, det, fotosDet, fechar }) {
         <div>
           <ol>
             <li>Aponte a câmera do celular para o código.</li>
-            <li>Toque em <b>Tirar foto / escolher fotos</b>.</li>
+            <li>Toque em <b>Tirar foto</b> ou <b>Escolher da galeria</b>.</li>
             <li>Cada foto aparece aqui assim que chega.</li>
           </ol>
           <div className="iq-ok">{fotosDet.length} foto(s) neste item</div>
           <div className="iq-qr-miniaturas">{fotosDet.slice(-6).map((f) => <span key={f.id}><FotoDrive id={f.id} /></span>)}</div>
-          <p className="iq-dica iq-quebra">{url}</p>
         </div>
       </div>
       <footer><button type="button" className="iq-btn prim" onClick={fechar}>Concluir</button></footer>
