@@ -1299,7 +1299,7 @@ estande da feira.
 Os cadastros podem ser consultados pelos administradores no Radar (secao
 15.6).
 
-## 26. Acessos e Inspecoes de Qualidade (status: Radar interno, nao publicado)
+## 26. Acessos e Inspecoes de Qualidade
 
 ### Administracao > Acessos (somente quem tem a permissao Administracao)
 
@@ -1315,8 +1315,10 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
 ### Qualidade > Inspecoes
 
 - **Lista:** um cartao por inspecao (faixa laranja = rascunho, verde = finalizada, vermelha = alguem
-  editando). Busca por cliente, codigo, NF, produto ou numero e filtros Todas / Rascunho / Finalizadas /
-  Em edicao. "Nova inspecao" cria e ja abre. Clicar no menu Inspecoes sempre volta para esta lista,
+  editando). Busca por cliente, codigo, NF, produto ou numero e filtros Todas / Rascunho / Paradas +24h /
+  Finalizadas / Em edicao. "Nova inspecao" cria e ja abre.
+- **Paradas +24h:** rascunho sem nenhuma alteracao ha mais de 24 horas mostra no cartao "Parada ha X h/dias
+  sem alteracao" (em laranja) e aparece no filtro Paradas +24h. Serve para achar inspecao aberta e esquecida. Clicar no menu Inspecoes sempre volta para esta lista,
   mesmo com uma inspecao aberta (o que estava digitado e salvo antes de sair).
 - **Checklist (para imprimir):** botao "Checklist" na lista abre um PDF em branco para levar na
   conferencia: identificacao, campos tecnicos nos mesmos grupos da tela (medidas informadas e aferidas)
@@ -1341,7 +1343,9 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
   Quem abre primeiro edita; os outros veem quem esta editando e acompanham ao vivo.
 - **Finalizar** bloqueia a edicao; **Reabrir** (aprovador) libera e a proxima alteracao abre nova revisao.
 - **Cliente:** digite parte do nome ou o codigo e escolha na lista do cadastro: Cliente e Codigo cliente
-  se preenchem sozinhos.
+  se preenchem sozinhos. Se o cliente tem **modelo proprio** e nenhum item foi preenchido ainda, os itens do
+  detalhamento trocam para os do modelo; cliente sem modelo fica com os itens padrao. Item com descricao ou
+  foto nunca e apagado (nesse caso nada muda). Um aviso verde no topo diz o que aconteceu.
 - **Cabecalho da inspecao:** PDF, PDF interno, Word, E-mail (so finalizada), Historico (PDF/Word de qualquer
   revisao e "O que mudou") e Exportar (arquivo para o programa desktop).
 - **Outros campos - Imprimir:** cada campo adicional tem a caixa "Imprimir". Marcado, sai no relatorio do
@@ -1354,6 +1358,53 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
 - **Corrigir texto:** na descricao de cada item e na conclusao; mostra as correcoes para marcar/desmarcar.
 - **Lista > Mais:** enviar varias inspecoes por e-mail, importar do programa desktop (escolher a pasta das
   inspecoes ou um .zip) e, para aprovadores, os Tipos de detalhamento (itens padrao de toda inspecao nova
-  e os outros que aparecem em "Adicionar item").
+  e os outros que aparecem em "Adicionar item") e os **Modelos por cliente**: buscar o cliente, montar a
+  lista de itens (adicionar, subir/descer, tirar) e Salvar modelo; Excluir faz o cliente voltar ao padrao.
 - **Lixeira** (aprovador): filtro na lista; Restaurar devolve a inspecao.
+- **Alerta do Google Drive** (aprovador): se a autorizacao das fotos cair, a lista mostra um aviso vermelho.
+  Avise o administrador para refazer a autorizacao (passos no INSPECAO_QUALIDADE.md).
+- **No historico do cliente** (Comercial > Clientes > Historico): quem tem acesso as Inspecoes ve a secao
+  "Inspecoes de qualidade" com as 10 mais recentes daquele cliente; tocar abre a inspecao e o voltar do
+  navegador retorna ao historico. So aparecem inspecoes em que o cliente foi escolhido pela busca (com codigo).
 - **Voltar:** o botao/gesto de voltar do navegador ou do celular volta da inspecao para a lista.
+
+## 27. Máquinas e medidas (Comercial)
+
+Cadastro das máquinas e dos tamanhos de cada cliente ou prospect, inclusive onde ainda não temos produto, e
+as vendas que fizemos para cada um. Menu **Comercial → Máquinas e medidas**, ou o botão **Máquinas e
+medidas** na ficha do cliente (abre já filtrado nele).
+
+- **Ao abrir**, a tela mostra só a busca (e quantas máquinas há cadastradas): as máquinas e as vendas
+  aparecem depois que você pesquisa ou usa um filtro.
+- **Pesquisa (uma tela só):** busca por empresa, código, cidade, máquina ou produto; período das vendas
+  (12 meses, 24 meses ou vida toda); em **Filtros**, produto, posição, faixas de largura, comprimento e CFM,
+  "sem venda nossa no período" e "mostrar desativadas". Primeiro aparecem as **máquinas**; abaixo, as
+  **vendas** das empresas encontradas. A busca também procura direto nas vendas: empresa que ainda não
+  tem máquina cadastrada aparece só na lista de vendas (útil para ver o que vendemos antes de cadastrar).
+  **Enquanto você digita**, aparece a lista de empresas (clientes e prospects): escolha uma com o clique
+  ou com ↓ e Enter, e a pesquisa passa a mostrar só as máquinas e as vendas dela. Digitar de novo volta à
+  busca livre.
+- **Clicar numa máquina** concentra as vendas na empresa dela e mostra, para cada venda, o item da máquina
+  com medida mais próxima e a diferença (C e L). Se a máquina tem o **nº no pedido** (o mesmo número
+  digitado no campo Detalhe do item de pedido no CIGAM), as vendas dessa máquina ficam destacadas em
+  amarelo. As vendas ficam em ordem: primeiro as com o nº da máquina, depois as de medida mais parecida
+  com algum item da máquina, e as sem medida por último. Clicar de novo, ou em "Todas as empresas", volta para todas.
+- **NF cancelada** no CIGAM sai da lista de vendas na sincronização seguinte.
+- **Cartão com muitos itens:** mostra os 4 primeiros; clique em **"+ N item(ns)"** para ver todos e em
+  **"Mostrar menos"** para recolher (isso não muda as vendas).
+- **Medida com "≈":** em vendas antigas, sem a característica cadastrada no CIGAM, a medida foi lida do texto
+  do item ou da **observação da nota** (ex.: "MED: 7,85 x 5,50"). É uma estimativa: passe o mouse para ver a explicação.
+- **Nova máquina / lápis (editar):** só a empresa é obrigatória. Escolha um **Cliente** da base ou marque
+  **Prospect** e digite só o nome. Os demais campos e os itens são livres: dá para cadastrar um item só com
+  a largura. Números com vírgula (4,250). Prospect que virou cliente: abra a máquina, clique em Cliente e
+  escolha-o. **Desativar** tira a máquina da pesquisa sem apagar (reativa em "Mostrar desativadas").
+  Para sair do cadastro, use o **Voltar** do Radar (ou o voltar do navegador/celular): se houver alteração
+  sem salvar, ele pergunta antes de sair. A mesma pergunta aparece ao trocar de tela pelo menu (Clientes, Rotas, ☰ no celular...).
+- **Quem vê:** representante vê os clientes da carteira e os prospects que ele mesmo cadastrou; admin e
+  técnico veem tudo. Liberação por pessoa na tela **Acessos** (Máquinas e medidas, editar, botão no cliente).
+- **CIGAM:** o cadastro também existirá no CIGAM. A linha pequena abaixo do título mostra a última
+  sincronização e quantas máquinas estão "pendentes de envio"; ela só fica laranja quando a última
+  sincronização deu erro (passe o mouse para ver a mensagem). **Sincronizar agora** só fica ativo quando o
+  sincronismo está rodando. Enquanto ele não for ativado, a linha avisa "ainda não ativada" e as vendas aparecem vazias.
+- **Admin:** em **Mais → Trazer cadastros da feira**, as máquinas da feira Veste Phenix entram com origem
+  "feira" (sem repetir as já trazidas).

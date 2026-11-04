@@ -9,6 +9,7 @@ import "./login.css";
 import Login from "./Login.jsx";
 import MeuDia from "./MeuDia.jsx";
 import PautaClientes from "./PautaClientes.jsx";
+import { podeTrocarDeTela } from "./saidaProtegida";
 import "./admin.css";
 import "./rotas.css";
 import "./rotas-pesquisa.css";
@@ -72,11 +73,13 @@ import {
   ClipboardCheck,
   ShieldCheck,
   LogIn,
+  Ruler,
 } from "lucide-react";
 
 // Páginas carregadas só quando abertas: não pesam no Radar de quem não usa.
 const PaginaInspecao = lazy(() => import("./inspecao/PaginaInspecao.jsx"));
 const AcessosRadar = lazy(() => import("./AcessosRadar.jsx"));
+const PaginaMaquinas = lazy(() => import("./maquinas/PaginaMaquinas.jsx"));
 
 function detectarLinkRecuperacao() {
   return (
@@ -104,6 +107,7 @@ const TELAS_PERSISTIDAS = new Set([
   "painelBIFaturamento",
   "inspecao",
   "acessos",
+  "maquinas",
 ]);
 
 const FILTROS_PESQUISA_ROTAS_INICIAIS = {
@@ -587,6 +591,14 @@ function App() {
   );
   const [carregandoAmostrasHistorico, setCarregandoAmostrasHistorico] =
     useState(false);
+  // Inspeções de qualidade do cliente no histórico: só para quem tem inspecao.ver
+  const [inspecoesHistoricoCliente, setInspecoesHistoricoCliente] = useState(
+    [],
+  );
+  const [inspecaoParaAbrir, setInspecaoParaAbrir] = useState(null);
+  // Máquinas e medidas: cliente vindo do botão na ficha; contador do menu volta para a pesquisa
+  const [clienteMaquinas, setClienteMaquinas] = useState(null);
+  const [irParaListaMaquinas, setIrParaListaMaquinas] = useState(0);
   const [impressaoAtiva, setImpressaoAtiva] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [importando, setImportando] = useState(false);
@@ -623,7 +635,12 @@ function App() {
   const acaoContatoWhatsAppRef = useRef(null);
   const [observacaoVisita, setObservacaoVisita] = useState("");
   const [gravandoVisita, setGravandoVisita] = useState(false);
-  const [telaAtual, setTelaAtual] = useState(carregarTelaSalva);
+  const [telaAtual, setTelaAtualBruto] = useState(carregarTelaSalva);
+  // Toda troca de tela passa pela guarda (ex.: máquina com alterações sem salvar pergunta antes).
+  const setTelaAtual = (tela) => {
+    if (tela !== telaAtual && !podeTrocarDeTela()) return;
+    setTelaAtualBruto(tela);
+  };
   const [abaAdmin, setAbaAdmin] = useState("usuarios");
   const [usuariosOnline, setUsuariosOnline] = useState([]);
   const [logAcessos, setLogAcessos] = useState([]);
@@ -923,6 +940,11 @@ function App() {
       const telaHistorico = evento.state?.tela;
 
       if (evento.state?.radarClientes && TELAS_PERSISTIDAS.has(telaHistorico)) {
+        // Passo interno da própria página (inspeção ou máquina aberta): a tela não muda, então não
+        // pode ligar o "ignorar" - ficaria ligado e engoliria a próxima troca de tela do histórico.
+        if (telaHistorico === ultimaTelaHistoricoRef.current) {
+          return;
+        }
         ignorarProximoHistoricoRef.current = true;
         ultimaTelaHistoricoRef.current = telaHistorico;
         navegacoesInternasRef.current = Math.max(
@@ -4880,9 +4902,31 @@ function App() {
     carregarAmostras(filtrosLimpos);
   }
 
+  async function carregarInspecoesHistorico(item) {
+    setInspecoesHistoricoCliente([]);
+    if (!pode("inspecao.ver") || !item.codigo_cliente) return;
+    const { data, error } = await supabase
+      .from("inspecoes")
+      .select("id, numero, data_inspecao, finalizado, revisao, produto, nota_fiscal, dados_gerais")
+      .is("excluido_em", null)
+      .eq("cd_cliente", String(item.codigo_cliente))
+      .order("numero", { ascending: false });
+    if (error) {
+      console.error("Falha ao carregar inspeções do histórico:", error);
+      return;
+    }
+    setInspecoesHistoricoCliente(data || []);
+  }
+
+  function abrirInspecaoDoHistorico(id) {
+    setInspecaoParaAbrir(id);
+    setTelaAtual("inspecao");
+  }
+
   async function abrirHistoricoCliente(item) {
     setClienteHistorico(item);
     setTelaAtual("historicoCliente");
+    carregarInspecoesHistorico(item);
 
     if (!permiteMenuAmostrasGrupoAtual) {
       setAmostrasHistoricoCliente([]);
@@ -5232,7 +5276,7 @@ function App() {
         aria-label="Menu principal"
       >
         <nav className="desktop-sidebar-nav">
-          {(pode("meu_dia") || pode("clientes") || pode("proximos")) && (
+          {(pode("meu_dia") || pode("clientes") || pode("proximos") || pode("maquinas")) && (
           <MenuGrupo
             titulo="Comercial"
             icone={Briefcase}
@@ -5278,6 +5322,22 @@ function App() {
             >
               <MapPin size={20} />
               Próximos
+            </button>
+            )}
+
+            {pode("maquinas") && (
+            <button
+              type="button"
+              className={telaAtual === "maquinas" ? "ativo" : ""}
+              onClick={() => {
+                setClienteMaquinas(null);
+                setIrParaListaMaquinas((n) => n + 1);
+                setTelaAtual("maquinas");
+                setMenuMobileAberto(false);
+              }}
+            >
+              <Ruler size={20} />
+              Máquinas e medidas
             </button>
             )}
           </MenuGrupo>
@@ -5513,7 +5573,24 @@ function App() {
 
       {telaAtual === "inspecao" && pode("inspecao.ver") && (
         <Suspense fallback={<div className="carregando-tela">Carregando Inspeções...</div>}>
-          <PaginaInspecao nome={perfil?.nome || session?.user?.email || ""} irParaLista={irParaListaInspecoes} />
+          <PaginaInspecao
+            nome={perfil?.nome || session?.user?.email || ""}
+            irParaLista={irParaListaInspecoes}
+            abrirId={inspecaoParaAbrir}
+            aoAbrir={() => setInspecaoParaAbrir(null)}
+          />
+        </Suspense>
+      )}
+
+      {telaAtual === "maquinas" && pode("maquinas") && (
+        <Suspense fallback={<div className="carregando-tela">Carregando Máquinas e medidas...</div>}>
+          <PaginaMaquinas
+            key={clienteMaquinas?.codigo_cliente || "todas"}
+            podeEditar={pode("maquinas.editar")}
+            podeAdmin={pode("administracao")}
+            clienteInicial={clienteMaquinas}
+            irParaLista={irParaListaMaquinas}
+          />
         </Suspense>
       )}
 
@@ -6685,6 +6762,19 @@ function App() {
                             Histórico
                           </button>
 
+                          {pode("clientes.maquinas") && pode("maquinas") && (
+                            <button
+                              type="button"
+                              className="botao-acao"
+                              onClick={() => {
+                                setClienteMaquinas(item);
+                                setTelaAtual("maquinas");
+                              }}
+                            >
+                              Máquinas e medidas
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             className={
@@ -7209,6 +7299,8 @@ function App() {
             eventos={eventosHistoricoCliente}
             permiteAmostras={permiteMenuAmostrasGrupoAtual}
             carregandoAmostras={carregandoAmostrasHistorico}
+            inspecoes={pode("inspecao.ver") ? inspecoesHistoricoCliente : null}
+            abrirInspecao={abrirInspecaoDoHistorico}
           />
         )}
 

@@ -1,9 +1,26 @@
 # CONTEXTO_PROJETO
 
-## Inspecao de Qualidade + acessos por menu (2026-10-27/28) - RETOMAR AQUI
+## Cadastro de Maquinas - mao dupla com o CIGAM (iniciado 2026-11-03)
 
-**Situacao: Radar interno.** Branch `inspecao-qualidade`, **nada commitado** (pedido do usuario: nao
-publicar no oficial). Roda com `npm run dev` (porta 5173, `host: true` para o QR do celular).
+Contrato unico: `../../01_Desktop/MWCadastroMaquinas/Docs/CADASTRO_MAQUINAS.md` (irmaos: este Radar,
+MWCadastroMaquinas e MWCadastroMaquinasSync; nao e o MWMaquinasPhenix).
+
+- **Etapa 1 (03/11) - banco**: migration `20261103120000_cadastro_maquinas.sql` **aplicada** (aditiva):
+  `cadastro_maquinas`, `_itens`, `_vendas`, `_sync_status`, `_sync_log`; codigos `maquinas`,
+  `maquinas.editar`, `clientes.maquinas` (admin/tecnico/representante sim, qualidade nao); prospect =
+  codigo `PROSPECT`, so do representante que cadastrou + admin/tecnico; IDs do Radar < 10.000.000;
+  `cadastro_maquinas_importar_feira()` (origem FEIRA). Testada com usuarios reais em transacao desfeita
+  (nada gravado). Scripts Oracle 001-003 escritos, nao rodados.
+- **Etapa 2 (03/11) - tela**: `src/maquinas/` (PaginaMaquinas, FormularioMaquina, api, maquinas.css reaproveitando inspecao.css); menu Comercial -> "Maquinas e medidas" e botao na ficha do cliente. Testada (Playwright) em 1920/1366/390: cadastro prospect e cliente, edicao, numero invalido recusado, filtro por largura, voltar do navegador, ficha do cliente -> maquinas -> voltar; sem rolagem lateral; dados de teste apagados. **Correcao no App.jsx**: voltar do navegador num passo interno da pagina (inspecao ou maquina aberta) ligava o "ignorar" e engolia a troca de tela seguinte do historico (afetava tambem Inspecoes). Vendas vazias ate o sync existir (Etapa 3).
+- **Saida protegida (03/11)**: `src/saidaProtegida.js` - toda troca de tela do App (`setTelaAtual`) consulta a guarda registrada pela pagina; o cadastro de maquina com alteracao sem salvar pergunta antes de sair pelo menu (Clientes, Rotas, ☰ no celular), alem do Voltar/voltar do navegador. Outras telas podem usar `definirGuardaSaida` da mesma forma.
+- **Etapa 3 (03/11) - sync**: `../../01_Desktop/MWCadastroMaquinasSync` homologado no XE local contra o Supabase oficial (mao dupla, conflito, acentos, fuso, vendas com medida e numero da maquina, selo "Sincronizado" na tela). Dados de teste apagados e `cadastro_maquinas_sync_status` zerado. Falta rodar 001-002 no phenixteste/oficial e agendar no MWAgendador (a cada 5 min, `--silencioso`).
+- **Etapa 4 (03/11) - desktop**: `../../01_Desktop/MWCadastroMaquinas` (pesquisa unica + cadastro/edicao + pesquisa de cliente F5) testado no XE e pelo sync ate o Radar; dados de teste apagados. Regra que mudar aqui (validacao, campos, comparacao de vendas) muda em `Dados.cs` do desktop e no `Program.cs` do sync.
+
+## Inspecao de Qualidade + acessos por menu (2026-10-27/28)
+
+**Situacao (30/10/2026): em producao** (`main` + Cloudflare). O texto abaixo e o registro de 27-28/10, quando
+ainda era interna. Estado atual, Parte 8 (modelo por cliente, paradas +24h, inspecoes no historico do
+cliente, alerta do Drive) e pendencias: `INSPECAO_QUALIDADE.md`.
 
 - **Acessos por menu (modelo Galie) - JA ATIVO NO BANCO DE PRODUCAO**: catalogo `radar_permissoes`
   (19 codigos), padrao por perfil, excecoes por pessoa, historico; `radar_pode()` nas 58 regras RLS;

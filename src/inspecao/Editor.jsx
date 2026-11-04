@@ -61,7 +61,7 @@ const paraIso = (br) => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(br || '')
 const paraBr = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : '' }
 
 /** Grupos de campos + "Outros campos" livres (só sai no relatório o que tiver valor). */
-function Campos({ grupos, padrao, lista, mudar, leitura }) {
+function Campos({ grupos, padrao, lista, mudar, leitura, aoEscolherCliente }) {
   const valorDe = (r) => lista.find((c) => c.rotulo === r)?.valor || ''
   const extras = lista.filter((c) => !padrao.includes(c.rotulo))
   const setPadrao = (rotulo, valor) =>
@@ -83,7 +83,7 @@ function Campos({ grupos, padrao, lista, mudar, leitura }) {
                   ? <input type="date" value={paraIso(valorDe(r))} readOnly={leitura} onChange={(e) => setPadrao(r, paraBr(e.target.value))} />
                   : r === 'Cliente' && padrao.includes('Código cliente')
                     ? <CampoCliente valor={valorDe(r)} leitura={leitura} mudar={(v) => setPadrao(r, v)}
-                        escolher={(c) => mudar(lista.map((x) => (x.rotulo === 'Cliente' ? { ...x, valor: c.cliente } : x.rotulo === 'Código cliente' ? { ...x, valor: c.codigo_cliente } : x)))} />
+                        escolher={(c) => { mudar(lista.map((x) => (x.rotulo === 'Cliente' ? { ...x, valor: c.cliente } : x.rotulo === 'Código cliente' ? { ...x, valor: c.codigo_cliente } : x))); aoEscolherCliente?.(c) }} />
                     : <input value={valorDe(r)} readOnly={leitura} onChange={(e) => setPadrao(r, e.target.value)} />}
               </label>
             ))}
@@ -138,8 +138,10 @@ export default function Editor({ id, papel, nome, voltar }) {
   const [saidaAberta, setSaidaAberta] = useState(false)
   const [janela, setJanela] = useState(null)     // 'email' | 'historico' | { corrigir: {campo, texto, usar} }
   const [gerando, setGerando] = useState('')
+  const [aviso, setAviso] = useState('')
   const sujo = useRef(false)
   const salvando = useRef(false)      // durante o salvamento, releituras não mexem nos campos da tela
+  const trocando = useRef(false)      // idem durante a troca de itens pelo modelo do cliente
   const salvoRef = useRef('')
   const timer = useRef(null)
   const estado = useRef({})
@@ -189,7 +191,7 @@ export default function Editor({ id, papel, nome, voltar }) {
     if (minha !== leituras.current) return
     // conferido DEPOIS da leitura: se a pessoa digitou enquanto ela chegava, a tela não é sobrescrita
     // (uma leitura atrasada apagava o que acabara de ser digitado); só as fotos entram
-    if (sujo.current || salvando.current) { setFotos(d.fotos); return }
+    if (sujo.current || salvando.current || trocando.current) { setFotos(d.fotos); return }
     setIns(d.ins); setDets(d.dets); setFotos(d.fotos)
     salvoRef.current = conteudo(d.ins, d.dets, d.fotos)
   }, [id])
@@ -224,6 +226,27 @@ export default function Editor({ id, papel, nome, voltar }) {
 
   const mudarIns = (campos) => { setIns((i) => ({ ...i, ...campos })); marcar() }
   const mudarDets = (novos) => { setDets(novos); marcar() }
+
+  // Cliente escolhido no cadastro: itens do modelo dele (sem modelo, o padrão geral). Só troca se
+  // nenhum item tem descrição ou foto - o que já foi registrado nunca é apagado.
+  // A troca grava a inspeção, e o aviso "ao vivo" dessa gravação relê a tela no meio da troca (itens
+  // novos já inseridos, antigos ainda não apagados): a lista misturada voltava e o salvamento seguinte
+  // recriava os itens apagados. Por isso nenhuma releitura vale durante a troca nem as que saíram nela.
+  async function aplicarModeloCliente(c) {
+    trocando.current = true
+    try {
+      const { titulos, modelo } = await api.titulosDoCliente(c.codigo_cliente)
+      const { ins: i, dets: d, fotos: f } = estado.current
+      if (d.some((x) => (x.texto || '').trim() || (f[x.id] || []).length)) return
+      if (titulos.join('\n') === d.map((x) => x.titulo).join('\n')) return
+      await salvarAgora()   // grava os itens atuais antes de trocá-los (senão o salvamento os recriaria)
+      const novos = await api.trocarItens(i.id, d, titulos)
+      estado.current = { ...estado.current, dets: novos }
+      setDets(novos)
+      setAviso(modelo ? `Itens do detalhamento trocados pelo modelo de ${c.cliente}.` : 'Cliente sem modelo próprio: itens do padrão geral.')
+    } catch (e) { setErro('Não foi possível aplicar o modelo do cliente: ' + e.message) }
+    finally { trocando.current = false; leituras.current++ }
+  }
 
   async function finalizar() {
     if (!confirm(`Finalizar o relatório Nº ${ins.numero} (revisão ${String(ins.revisao).padStart(2, '0')})?\n\nEle fica bloqueado para edição. Para alterar depois, use "Reabrir".`)) return
@@ -294,6 +317,7 @@ export default function Editor({ id, papel, nome, voltar }) {
           <div className="iq-aviso ok"><CheckCircle2 size={16} /> Finalizada{ins.finalizado_por ? ` por ${ins.finalizado_por}` : ''}{ins.finalizado_em ? ` em ${new Date(ins.finalizado_em).toLocaleString('pt-BR')}` : ''}. Para alterar, reabra: a próxima alteração abre a revisão {String(ins.ultima_revisao_finalizada + 1).padStart(2, '0')}.</div>
         )}
         {erro && <div className="iq-alerta" onClick={() => setErro('')}>{erro}</div>}
+        {aviso && <div className="iq-aviso ok" onClick={() => setAviso('')}><ListChecks size={16} /> {aviso}</div>}
         <div className="iq-acoes-cabecalho">
           <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('pdf')}>{gerando === 'pdf' ? <Loader2 className="iq-gira" size={15} /> : <FileText size={15} />} PDF</button>
           <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('pdfint')} title="Versão completa, com os campos adicionais sem Imprimir - uso interno">{gerando === 'pdfint' ? <Loader2 className="iq-gira" size={15} /> : <FileText size={15} />} PDF interno</button>
@@ -313,7 +337,7 @@ export default function Editor({ id, papel, nome, voltar }) {
       </div>
 
       <Secao id="iq-ident" icone={IdCard} titulo="Identificação" descricao="Cliente, nota, produto e dados da inspeção.">
-        <Campos grupos={GRUPOS_IDENT} padrao={CAMPOS_DADOS_GERAIS} lista={ins.dados_gerais} leitura={leitura} mudar={(v) => mudarIns({ dados_gerais: v })} />
+        <Campos grupos={GRUPOS_IDENT} padrao={CAMPOS_DADOS_GERAIS} lista={ins.dados_gerais} leitura={leitura} mudar={(v) => mudarIns({ dados_gerais: v })} aoEscolherCliente={aplicarModeloCliente} />
       </Secao>
 
       <Secao id="iq-tec" icone={Ruler} titulo="Informações técnicas do recebimento" descricao="Como a tela chegou para inspeção.">

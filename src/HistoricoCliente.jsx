@@ -42,6 +42,8 @@ function HistoricoCliente({
   eventos,
   permiteAmostras,
   carregandoAmostras,
+  inspecoes,
+  abrirInspecao,
 }) {
   const [filtro, setFiltro] = useState("todos");
 
@@ -115,6 +117,52 @@ function HistoricoCliente({
           <span>Última visita</span>
         </div>
       </div>
+
+      {inspecoes && inspecoes.length > 0 && (
+        <div className="historico-inspecoes">
+          <h3>Inspeções de qualidade ({inspecoes.length})</h3>
+          {inspecoes.slice(0, 10).map((inspecao) => {
+            const lote =
+              (inspecao.dados_gerais || []).find((c) => c.rotulo === "Lote")
+                ?.valor || "";
+            return (
+              <button
+                type="button"
+                key={inspecao.id}
+                className="historico-inspecao"
+                onClick={() => abrirInspecao(inspecao.id)}
+              >
+                <span className="historico-inspecao-topo">
+                  <strong>Nº {inspecao.numero}</strong>
+                  <span
+                    className={`historico-inspecao-status ${inspecao.finalizado ? "finalizada" : "rascunho"}`}
+                  >
+                    {inspecao.finalizado
+                      ? `Finalizada · rev ${String(inspecao.revisao).padStart(2, "0")}`
+                      : "Rascunho"}
+                  </span>
+                </span>
+                <span className="historico-inspecao-meta">
+                  {[
+                    inspecao.data_inspecao,
+                    lote && `Lote ${lote}`,
+                    inspecao.nota_fiscal && `NF ${inspecao.nota_fiscal}`,
+                    inspecao.produto,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </button>
+            );
+          })}
+          {inspecoes.length > 10 && (
+            <p className="historico-cliente-status">
+              Mostrando as 10 mais recentes. As demais estão no menu Qualidade →
+              Inspeções.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="historico-cliente-filtros">
         <button

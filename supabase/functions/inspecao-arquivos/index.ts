@@ -1,7 +1,8 @@
 // Inspeção de Qualidade - fotos no Google Drive, para quem está logado.
 //   POST (multipart: inspecao_id, detalhamento_id, arquivo, largura?, altura?, legenda?)  -> grava a foto (inspetor+)
 //   GET  ?foto=<id da linha em inspecao_fotos>                                         -> devolve a imagem (qualquer papel)
-import { admin, baixarArquivo, cors, doUsuario, gravarFoto, json, papel, pode } from "../_shared/inspecao.ts";
+//   GET  ?saude=1                                                                      -> { ok } ou { ok:false, error } da autorização do Drive (aprovador+)
+import { admin, baixarArquivo, cors, doUsuario, gravarFoto, json, papel, pode, testarDrive } from "../_shared/inspecao.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -9,6 +10,11 @@ Deno.serve(async (req) => {
     const p = await papel(req);
     if (!pode(p, "leitura")) return json({ error: "Sem acesso à Inspeção de Qualidade." }, 403);
     const sb = admin();
+
+    if (req.method === "GET" && new URL(req.url).searchParams.has("saude")) {
+      if (!pode(p, "aprovador")) return json({ error: "Sem acesso." }, 403);
+      try { await testarDrive(); return json({ ok: true }); } catch (e) { return json({ ok: false, error: (e as Error).message }); }
+    }
 
     if (req.method === "GET") {
       const id = new URL(req.url).searchParams.get("foto");

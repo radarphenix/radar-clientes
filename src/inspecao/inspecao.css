@@ -280,7 +280,7 @@
 .iq-acoes-cabecalho { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
 .iq-acoes-cabecalho .iq-dica { margin: 0 0 0 6px; }
 .iq-acoes-linha { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.iq-acoes-linha > input { flex: 1 1 220px; }
+.iq-acoes-linha > input, .iq-acoes-linha > .iq-select { flex: 1 1 220px; width: auto; }
 .iq-rotulo-acao { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .iq-raiz .iq-link { display: inline-flex; align-items: center; gap: 4px; color: #1d4ed8; font-size: 12px; font-weight: 700; }
 .iq-raiz .iq-link:hover { text-decoration: underline; }
@@ -323,6 +323,9 @@
 .iq-tipo { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .iq-tipo > input { flex: 1 1 200px; }
 .iq-tipo.inativo > input { color: var(--iq-fraco); text-decoration: line-through; }
+.iq-tipo-nome { flex: 1 1 200px; padding: 8px 10px; border: 1px solid var(--iq-borda); border-radius: 8px; background: #fff; color: var(--iq-titulo); font-size: 14px; }
+.iq-tipos-grupo h4 small { font-weight: 400; color: var(--iq-fraco); margin-left: 6px; }
+.iq-cartao-parada { display: flex; align-items: center; gap: 5px; color: var(--iq-ambar); font-size: 12.5px; font-weight: 600; }
 .iq-modal header .iq-secao-icone { width: 32px; height: 32px; min-width: 32px; border-radius: 10px; }
 .iq-modal header h3 { flex: 1; }
 .iq-modal footer { align-items: center; }

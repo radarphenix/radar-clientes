@@ -3,8 +3,11 @@
 Versão web do programa desktop **MWInspecaoQualidade** (irmão: regra e modelo iguais; mudança em
 um vai ao outro na mesma entrega - ver `PHENIX_ECOSSISTEMA.md`, "Família Inspeção de Qualidade").
 
-**Situação (27/10/2026): Radar interno.** Branch `inspecao-qualidade`, roda com `npm run dev`. Nada foi
-para a `main` nem para o Cloudflare. Plano: completar aqui, testar, migrar os dados do desktop e virar.
+**Situação (30/10/2026): em produção.** Na `main`, publicada no Cloudflare (`radarphenix.pages.dev`, rota do
+QR Code `/inspecao/celular` respondendo), migrations no histórico. Desktop e Radar convivem; **data da virada
+(desktop só leitura) ainda sem definição**. Funções que só existem no Radar (busca de cliente, tipos de
+detalhamento, modelos por cliente, checklist, paradas +24h) ficam só no Radar: diferença aceita pelo usuário
+em 30/10/2026, não levar ao desktop.
 
 ## Onde está
 
@@ -198,10 +201,52 @@ real 20261028-165038: 4 páginas (sem encolher seriam 6).
 - Testado: PDF do cliente x interno com campo antigo, desmarcado e marcado (só o marcado sai no do
   cliente), Word gerado; tela em 1920/1366/390 sem erros nem rolagem lateral, voltar à lista ok.
 
+## Parte 8 (30/10/2026): modelo por cliente, paradas +24h, histórico do cliente, alerta do Drive
+
+- **Modelo de itens por cliente** (Mais → Modelos por cliente, aprovador): tabela `inspecao_modelos_cliente`
+  (`codigo_cliente` → lista `titulos`), migration `20261030120000_inspecao_modelos_cliente.sql`. Ao **escolher o
+  cliente pela busca** numa inspeção cujos itens estão todos vazios (sem descrição e sem foto), os itens trocam
+  para os do modelo; cliente sem modelo volta ao **padrão geral** (tipos marcados como padrão). Item com
+  conteúdo nunca é apagado: se houver algum, nada muda. Aviso verde no cabeçalho diz o que aconteceu.
+  `api.titulosDoCliente` / `api.trocarItens`; o Editor grava o pendente antes de trocar. Checklist segue o geral.
+  Decisão do usuário: **sem "duplicar inspeção"** (cada inspeção é única).
+- **Paradas +24h:** rascunho sem nenhuma alteração (`alterado_em`) há mais de 24 h ganha o selo âmbar
+  "Parada há X h/dias sem alteração" no cartão e o filtro **Paradas +24h** na lista (`PARADA_HORAS`). Não é
+  sobre aprovação (o fluxo de aprovar ainda não existe), é sobre inspeção aberta e esquecida.
+- **Histórico do cliente no Radar** (Comercial → Clientes → Histórico): seção "Inspeções de qualidade" com as
+  10 mais recentes (número, situação, data, lote, NF, produto); tocar abre a inspeção; o voltar do navegador
+  volta ao histórico. Só aparece com `inspecao.ver` (mesmo RLS da lista). Casa por `cd_cliente` =
+  `codigo_cliente`: inspeção com cliente digitado à mão, sem código (ex.: as antigas de Fitesa/Novacki), não
+  aparece. Corrigido junto: o contador de cliques do menu Inspeções, ao remontar a página, fechava a inspeção
+  recém-aberta (agora só reage a cliques novos).
+- **Alerta do Google Drive:** `inspecao-arquivos?saude=1` (aprovador+) renova o token e lê a conta; a lista
+  mostra um alerta vermelho para aprovadores quando a autorização caiu (refazer pelos passos de "Fotos no
+  Google Drive"). Antes só se descobria quando uma foto falhava.
+- **Conferido, sem mudança:** fotos já são reduzidas no navegador (lado 1600 px, JPEG 85%, rotação aplicada)
+  antes de subir, no computador e pelo QR Code; QR Code: código de 48 caracteres aleatórios, vale 2 h, encerra
+  ao fechar a janela, só alcança o item da sessão, anônimo não lê a tabela de sessões.
+- Testado (Playwright, usuário demo): modelo aplicado e volta ao geral; selo/filtro com rascunho recuado 50 h;
+  histórico → abrir → voltar do navegador → histórico, e menu Inspeções → lista, em 1920/1366/390 sem erros nem
+  rolagem lateral; `problemaDrive()` = ok. Dados de teste apagados.
+- **Desktop - pegadinha de publicação:** a Parte 7 foi publicada em `Publicar\MWInspecaoQualidade` como
+  `.exe` de 204 KB (dependente da `.dll` ao lado), mas a rede usa o arquivo único de ~171 MB e o
+  `Atualizar.cmd` só copia o `.exe`: rodar com aquele `.exe` deixaria a rede com um programa que não abre.
+  Republicado em 30/10/2026 com o comando do README do desktop (`--self-contained -p:PublishSingleFile=true`),
+  171 MB. **Sempre conferir o tamanho do `.exe` antes do `Atualizar.cmd`.**
+- **Nova bateria em 03/11/2026 (antes do commit) achou um bug no modelo por cliente:** a troca de itens grava a
+  inspeção, e o aviso "ao vivo" dessa gravação relia a tela **no meio da troca** (itens novos já inseridos, antigos
+  ainda não apagados). A lista misturada (modelo + padrão) voltava para a tela e o salvamento seguinte **recriava os
+  itens apagados**. Aparecia ao trocar o cliente mais de uma vez. Corrigido no Editor (`trocando`: nenhuma releitura
+  vale durante a troca nem as que saíram nela). Retestado em 1920/1366/390: modelo, volta ao geral, item com
+  conteúdo preservado (banco com os 2 itens certos), paradas +24h, histórico → abrir → voltar, alerta do Drive ok.
+
 ## Falta
 
+- [ ] Rodar `Publicar\MWInspecaoQualidade\Atualizar.cmd` (`.exe` de 171 MB já pronto, Parte 7) - deploy na rede, pelo usuário
+- [ ] Definir a data da virada (desktop só leitura)
+- [ ] Fluxo de aprovação (aprovar a inspeção) - ainda não existe
+- [x] Desktop: busca de cliente, tipos e modelos ficam só no Radar (diferença aceita, 30/10/2026)
+- [x] Oficializar: migrations no histórico, `main`, rota `/inspecao/celular` no Cloudflare (conferido 30/10/2026)
 - [x] Google Drive autorizado (28/10/2026, projeto do Google "Em produção", segredos gravados) e fotos testadas: upload, celular pelo QR, foto ampliada (legenda/ordem/tirar), reabrir, PDF/Word/zip com fotos
 - [x] Importar com fotos (junto com a pasta real do desktop) — nº 20261028-165038, 7 fotos ao Drive, sem avisos (28/10/2026)
 - [x] Rodar o Importar com a pasta real do desktop — pasta `\\100.91.50.50\Inspecoes\Inspecoes` (28/10/2026)
-- [ ] Desktop: busca de cliente e cadastro de tipos existem só no Radar (regra irmã: avaliar levar ao desktop ou aceitar a diferença)
-- [ ] Oficializar: histórico de migrations, merge na `main`, rota `/inspecao/celular` no Cloudflare

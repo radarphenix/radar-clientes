@@ -98,6 +98,11 @@ export async function enviarArquivo(pai: string, nome: string, tipo: string, byt
   return (await r.json()).id;
 }
 
+/** Confere se a autorização do Drive ainda vale (renova o token e lê a conta). Lança o erro se não. */
+export async function testarDrive(): Promise<void> {
+  await drive("/about?fields=user(emailAddress)");
+}
+
 export async function baixarArquivo(id: string): Promise<Response> {
   return await drive(`/files/${encodeURIComponent(id)}?alt=media`);
 }

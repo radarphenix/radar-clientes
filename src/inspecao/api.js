@@ -134,6 +134,13 @@ export async function enviarFoto(inspecaoId, detalhamentoId, arquivo, legenda = 
   return (await respostaJson(await fetch(`${FUNCOES}/inspecao-arquivos`, { method: 'POST', headers: await cabecalhos(), body: form }))).foto
 }
 
+/** Autorização do Google Drive ainda vale? (aprovador+). Devolve '' se ok ou a mensagem do problema. */
+export async function problemaDrive() {
+  const r = await fetch(`${FUNCOES}/inspecao-arquivos?saude=1`, { headers: await cabecalhos() })
+  const j = await r.json().catch(() => ({}))
+  return r.ok && j.ok === false ? j.error || 'Google Drive indisponível.' : ''
+}
+
 const cacheFotos = new Map()
 /** URL local (blob) da foto: o Drive é privado, a função confere o acesso e entrega a imagem. */
 export function urlFoto(fotoId) {
@@ -249,6 +256,57 @@ export async function salvarTipo(t) {
 export async function excluirTipo(id) {
   const { error } = await supabase.from('inspecao_tipos_detalhamento').delete().eq('id', id)
   falhou(error)
+}
+
+// ------------------------------------------------------------------ modelos de itens por cliente
+export async function listarModelos() {
+  const { data, error } = await supabase.from('inspecao_modelos_cliente').select('*').order('cliente')
+  falhou(error)
+  return data
+}
+
+export async function salvarModelo(m) {
+  const { error } = await supabase.from('inspecao_modelos_cliente').upsert({
+    codigo_cliente: String(m.codigo_cliente).trim(), cliente: m.cliente || '', titulos: m.titulos,
+    alterado_em: new Date().toISOString(),
+  })
+  falhou(error)
+}
+
+export async function excluirModelo(codigo) {
+  const { error } = await supabase.from('inspecao_modelos_cliente').delete().eq('codigo_cliente', codigo)
+  falhou(error)
+}
+
+/** Itens de uma inspeção do cliente: os do modelo dele ou, sem modelo, o padrão geral. */
+export async function titulosDoCliente(codigo) {
+  const c = String(codigo || '').trim()
+  if (c) {
+    const { data } = await supabase.from('inspecao_modelos_cliente').select('titulos').eq('codigo_cliente', c).maybeSingle()
+    if (data?.titulos?.length) return { titulos: data.titulos, modelo: true }
+  }
+  return { titulos: await titulosDetalhamentoPadrao(), modelo: false }
+}
+
+/** Troca os itens (todos vazios) de uma inspeção por outra lista. Devolve os itens novos. */
+export async function trocarItens(inspecaoId, antigos, titulos) {
+  const { data, error } = await supabase.from('inspecao_detalhamentos')
+    .insert(titulos.map((titulo, ordem) => ({ inspecao_id: inspecaoId, titulo, ordem }))).select()
+  falhou(error)
+  if (antigos.length) {
+    const { error: e2 } = await supabase.from('inspecao_detalhamentos').delete().in('id', antigos.map((d) => d.id))
+    falhou(e2)
+  }
+  return data.sort((a, b) => a.ordem - b.ordem)
+}
+
+/** Inspeções de um cliente (histórico na ficha do cliente do Radar; o RLS só libera com inspecao.ver). */
+export async function inspecoesDoCliente(codigo) {
+  const { data, error } = await supabase.from('inspecoes')
+    .select('id, numero, data_inspecao, finalizado, revisao, produto, nota_fiscal, dados_gerais, criado_em')
+    .is('excluido_em', null).eq('cd_cliente', String(codigo)).order('numero', { ascending: false })
+  falhou(error)
+  return data
 }
 
 // ------------------------------------------------------------------ clientes (cadastro do Radar)

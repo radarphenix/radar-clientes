@@ -1,12 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ClipboardCheck, ClipboardList, Plus, Search, Lock, Camera, Factory, Mail, FolderInput, ListPlus, Trash2, RotateCcw, MoreHorizontal } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ClipboardCheck, ClipboardList, Plus, Search, Lock, Camera, Factory, Mail, FolderInput, ListPlus, Trash2, RotateCcw, MoreHorizontal, ListChecks, Clock } from 'lucide-react'
 import './inspecao.css'
-import { supabase, listar, criar, papelAtual, listarLixeira, restaurar, titulosDetalhamentoPadrao } from './api'
+import { supabase, listar, criar, papelAtual, listarLixeira, restaurar, titulosDetalhamentoPadrao, problemaDrive } from './api'
 import { pode, valor } from './modelo'
 import Editor from './Editor.jsx'
-import { JanelaEmail, JanelaImportar, JanelaSelecionarEmail, JanelaTipos } from './Janelas.jsx'
+import { JanelaEmail, JanelaImportar, JanelaModelos, JanelaSelecionarEmail, JanelaTipos } from './Janelas.jsx'
 
-const FILTROS = [['todas', 'Todas'], ['rascunho', 'Rascunho'], ['finalizada', 'Finalizadas'], ['edicao', 'Em edição']]
+const FILTROS = [['todas', 'Todas'], ['rascunho', 'Rascunho'], ['parada', 'Paradas +24h'], ['finalizada', 'Finalizadas'], ['edicao', 'Em edição']]
+const PARADA_HORAS = 24   // rascunho sem nenhuma alteração há mais que isso ganha o aviso "parada"
+
+/** Rascunho esquecido: aberto e sem digitação há mais de 24 h. Devolve as horas paradas ou 0. */
+function horasParada(i, s, agora) {
+  if (s !== 'rascunho' || !i.alterado_em) return 0
+  const h = (agora - new Date(i.alterado_em).getTime()) / 3600000
+  return h > PARADA_HORAS ? h : 0
+}
+const textoParada = (h) => (h < 48 ? `Parada há ${Math.floor(h)} h` : `Parada há ${Math.floor(h / 24)} dias`)
 
 function situacao(i, eu, agora) {
   if (i.editando_por && i.editando_por !== eu && new Date(i.editando_ate).getTime() > agora) return 'edicao'
@@ -15,12 +24,14 @@ function situacao(i, eu, agora) {
 const ROTULO = { edicao: 'Em edição', finalizada: 'Finalizada', rascunho: 'Rascunho' }
 
 /** Menu Qualidade -> Inspeções. Lista em cartões; a inspeção abre como página própria. */
-export default function PaginaInspecao({ nome, irParaLista = 0 }) {
+export default function PaginaInspecao({ nome, irParaLista = 0, abrirId = null, aoAbrir }) {
   const [papel, setPapel] = useState(undefined)
   const [lista, setLista] = useState(null)
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState('todas')
-  const [atualId, setAtualId] = useState(() => new URLSearchParams(location.search).get('inspecao'))
+  // vinda do histórico do cliente (abrirId): abre direto na inspeção, sem pushState - o Radar empilha a
+  // tela "inspecao" logo depois, e o voltar do navegador leva de volta ao histórico do cliente
+  const [atualId, setAtualId] = useState(() => abrirId || new URLSearchParams(location.search).get('inspecao'))
   const [agora, setAgora] = useState(0)
   const [eu, setEu] = useState(null)
   const [erro, setErro] = useState('')
@@ -29,6 +40,7 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
   const [mais, setMais] = useState(false)
   const [lixeira, setLixeira] = useState(null)
   const [gerandoChecklist, setGerandoChecklist] = useState(false)
+  const [driveProblema, setDriveProblema] = useState('')
 
   useEffect(() => {
     if (!mais) return
@@ -41,6 +53,11 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
     if (filtro !== 'lixeira') return
     listarLixeira().then(setLixeira).catch((e) => setErro(e.message))
   }, [filtro, lista])
+
+  // aprovador vê na lista se a autorização do Drive caiu (senão só se descobre quando a foto falha)
+  useEffect(() => {
+    if (pode(papel, 'aprovador')) problemaDrive().then(setDriveProblema).catch(() => {})
+  }, [papel])
 
   useEffect(() => {
     papelAtual().then(setPapel).catch(() => setPapel(null))
@@ -66,9 +83,16 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
   }, [])
   useEffect(() => { window.scrollTo({ top: 0 }) }, [atualId])
 
-  // clique no menu Inspeções (o Radar soma 1 em irParaLista): sempre volta para a lista (raiz)
+  // abrirId (vinda do histórico do cliente) já entrou no estado inicial; avisa o Radar para não reabrir
+  useEffect(() => { if (abrirId) aoAbrir?.() }, [abrirId, aoAbrir])
+
+  // clique no menu Inspeções (o Radar soma 1 em irParaLista): sempre volta para a lista (raiz).
+  // Só cliques novos: o contador sobrevive à página (cliques de antes) e, ao montar, não pode
+  // fechar a inspeção que veio do histórico do cliente
+  const cliqueMenuVisto = useRef(irParaLista)
   useEffect(() => {
-    if (!irParaLista) return
+    if (irParaLista === cliqueMenuVisto.current) return
+    cliqueMenuVisto.current = irParaLista
     const url = new URL(location.href)
     if (url.searchParams.has('inspecao')) {
       url.searchParams.delete('inspecao')
@@ -111,15 +135,19 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
   }
 
   const contagem = useMemo(() => {
-    const c = { todas: 0, rascunho: 0, finalizada: 0, edicao: 0 }
-    for (const i of lista || []) { c.todas++; c[situacao(i, eu, agora)]++ }
+    const c = { todas: 0, rascunho: 0, parada: 0, finalizada: 0, edicao: 0 }
+    for (const i of lista || []) {
+      const s = situacao(i, eu, agora)
+      c.todas++; c[s]++
+      if (horasParada(i, s, agora)) c.parada++
+    }
     return c
   }, [lista, eu, agora])
 
   const visiveis = useMemo(() => {
     const f = busca.trim().toLowerCase()
     return (lista || []).filter((i) =>
-      (filtro === 'todas' || situacao(i, eu, agora) === filtro) &&
+      (filtro === 'todas' || (filtro === 'parada' ? horasParada(i, situacao(i, eu, agora), agora) > 0 : situacao(i, eu, agora) === filtro)) &&
       (!f || [i.numero, i.cliente, i.cd_cliente, i.nota_fiscal, i.produto, valor(i.dados_gerais, 'Lote')].join(' ').toLowerCase().includes(f)))
   }, [lista, busca, filtro, eu, agora])
 
@@ -159,6 +187,7 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
                   <button type="button" onClick={() => setJanela('selecionar')}><Mail size={15} /> Enviar várias por e-mail</button>
                   <button type="button" onClick={() => setJanela('importar')}><FolderInput size={15} /> Importar do programa desktop</button>
                   {pode(papel, 'aprovador') && <button type="button" onClick={() => setJanela('tipos')}><ListPlus size={15} /> Tipos de detalhamento</button>}
+                  {pode(papel, 'aprovador') && <button type="button" onClick={() => setJanela('modelos')}><ListChecks size={15} /> Modelos por cliente</button>}
                 </div>
               )}
             </div>
@@ -172,6 +201,12 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
       </div>
 
       {erro && <div className="iq-alerta" onClick={() => setErro('')}>{erro}</div>}
+      {driveProblema && (
+        <div className="iq-alerta">
+          <Camera size={16} aria-hidden="true" /> Fotos indisponíveis: a autorização do Google Drive falhou ({driveProblema}).
+          Refazer a autorização do Drive conforme o INSPECAO_QUALIDADE.md.
+        </div>
+      )}
 
       <div className="iq-filtros">
         <label className="iq-busca">
@@ -218,6 +253,7 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
           {visiveis.map((i) => {
             const s = situacao(i, eu, agora)
             const lote = valor(i.dados_gerais, 'Lote')
+            const parada = horasParada(i, s, agora)
             return (
               <button type="button" key={i.id} className={`iq-cartao ${s}`} onClick={() => abrir(i.id)}>
                 <span className="iq-cartao-faixa" aria-hidden="true" />
@@ -234,6 +270,7 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
                     {[i.cd_cliente && `Cód. ${i.cd_cliente}`, i.nota_fiscal && `NF ${i.nota_fiscal}`, i.produto].filter(Boolean).join(' · ') || 'Sem nota fiscal e produto'}
                   </span>
                   <span className="iq-cartao-lote">Lote {lote || '—'}</span>
+                  {parada > 0 && <span className="iq-cartao-parada"><Clock size={13} aria-hidden="true" /> {textoParada(parada)} sem alteração</span>}
                   <span className="iq-cartao-meta">
                     Nº {i.numero}{i.data_inspecao ? ` · inspecionada em ${i.data_inspecao}` : ''}
                     {i.enviado_email_em ? ` · enviada por e-mail` : ''}
@@ -248,6 +285,7 @@ export default function PaginaInspecao({ nome, irParaLista = 0 }) {
       {janela?.email && <JanelaEmail itens={janela.email} fechar={() => setJanela(null)} />}
       {janela === 'importar' && <JanelaImportar fechar={() => setJanela(null)} />}
       {janela === 'tipos' && <JanelaTipos fechar={() => setJanela(null)} />}
+      {janela === 'modelos' && <JanelaModelos fechar={() => setJanela(null)} />}
       <p className="iq-rodape-lista"><Camera size={14} aria-hidden="true" /> As fotos ficam no Google Drive da Phenix. <Factory size={14} aria-hidden="true" /> Quando a Phenix forneceu a tela, a saída entra primeiro no relatório.</p>
     </div>
   )

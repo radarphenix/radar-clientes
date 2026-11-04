@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   X, Loader2, Mail, FileText, FileDown, History, GitCompare, SpellCheck, Plus, Trash2, ChevronUp, ChevronDown,
-  FolderInput, CheckCircle2, AlertTriangle, Search,
+  FolderInput, CheckCircle2, AlertTriangle, Search, ListChecks,
 } from 'lucide-react'
 import * as api from './api'
 import { valor, camposRelatorio, CAMPOS_DADOS_GERAIS } from './modelo'
@@ -338,6 +338,115 @@ export function JanelaTipos({ fechar }) {
       )}
       <footer><span className="iq-dica">Inativos não aparecem nas inspeções novas. O desktop tem uma lista fixa própria.</span>
         <button type="button" className="iq-btn prim" onClick={fechar}>Concluir</button></footer>
+    </Modal>
+  )
+}
+
+/** Modelos de itens por cliente: inspeção do cliente nasce com estes itens; sem modelo, o padrão geral. */
+export function JanelaModelos({ fechar }) {
+  const [modelos, setModelos] = useState(null)
+  const [tipos, setTipos] = useState([])
+  const [editando, setEditando] = useState(null)     // { codigo_cliente, cliente, titulos, novo }
+  const [busca, setBusca] = useState('')
+  const [achados, setAchados] = useState([])
+  const [escolha, setEscolha] = useState('')
+  const [erro, setErro] = useState('')
+  const carregar = () => api.listarModelos().then(setModelos).catch((e) => setErro(e.message))
+  useEffect(() => { carregar(); api.listarTipos().then((t) => setTipos(t.filter((x) => x.ativo))).catch(() => {}) }, [])
+  useEffect(() => {
+    if (busca.trim().length < 2) return
+    const t = setTimeout(() => api.buscarClientes(busca).then(setAchados).catch(() => setAchados([])), 250)
+    return () => clearTimeout(t)
+  }, [busca])
+  const buscar = (texto) => { setBusca(texto); if (texto.trim().length < 2) setAchados([]) }
+
+  async function comecar(c) {
+    setBusca(''); setAchados([])
+    const existente = (modelos || []).find((m) => m.codigo_cliente === String(c.codigo_cliente))
+    setEditando(existente ? { ...existente } : { codigo_cliente: String(c.codigo_cliente), cliente: c.cliente, titulos: await api.titulosDetalhamentoPadrao(), novo: true })
+  }
+  const titulos = editando?.titulos || []
+  const mudarTitulos = (novos) => setEditando({ ...editando, titulos: novos })
+  function mover(i, delta) {
+    const j = i + delta
+    if (j < 0 || j >= titulos.length) return
+    const n = [...titulos];[n[i], n[j]] = [n[j], n[i]]
+    mudarTitulos(n)
+  }
+  async function gravar() {
+    setErro('')
+    try { await api.salvarModelo(editando); setEditando(null); await carregar() } catch (e) { setErro(e.message) }
+  }
+  async function excluir(m) {
+    if (!confirm(`Excluir o modelo de ${m.cliente || m.codigo_cliente}? As inspeções novas dele voltam ao padrão geral.`)) return
+    try { await api.excluirModelo(m.codigo_cliente); setEditando(null); await carregar() } catch (e) { setErro(e.message) }
+  }
+  const disponiveis = tipos.map((t) => t.nome).filter((n) => !titulos.includes(n))
+
+  return (
+    <Modal titulo="Modelos por cliente" fechar={fechar} icone={ListChecks} largo>
+      {erro && <div className="iq-alerta">{erro}</div>}
+      {!modelos ? <p className="iq-vazio"><Loader2 className="iq-gira" /></p> : editando ? (
+        <section className="iq-tipos-grupo">
+          <h4>{editando.cliente || 'Cliente'} <small>Cód. {editando.codigo_cliente}</small></h4>
+          <p className="iq-dica">Itens com que a inspeção deste cliente nasce, nesta ordem.</p>
+          {titulos.map((t, i) => (
+            <div key={t} className="iq-tipo">
+              <span className="iq-tipo-nome">{t}</span>
+              <button type="button" className="iq-icone" title="Subir" disabled={i === 0} onClick={() => mover(i, -1)}><ChevronUp size={17} /></button>
+              <button type="button" className="iq-icone" title="Descer" disabled={i === titulos.length - 1} onClick={() => mover(i, 1)}><ChevronDown size={17} /></button>
+              <button type="button" className="iq-icone perigo" title="Tirar do modelo" onClick={() => mudarTitulos(titulos.filter((x) => x !== t))}><X size={16} /></button>
+            </div>
+          ))}
+          {!titulos.length && <p className="iq-vazio">Nenhum item. Adicione pelo menos um.</p>}
+          <form className="iq-acoes-linha" onSubmit={(e) => { e.preventDefault(); if (escolha) { mudarTitulos([...titulos, escolha]); setEscolha('') } }}>
+            <select className="iq-select" value={escolha} onChange={(e) => setEscolha(e.target.value)} aria-label="Item a adicionar">
+              <option value="">Adicionar item...</option>
+              {disponiveis.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <button type="submit" className="iq-btn sec" disabled={!escolha}><Plus size={16} /> Adicionar</button>
+          </form>
+        </section>
+      ) : (
+        <>
+          <div className="iq-autocompletar">
+            <input value={busca} onChange={(e) => buscar(e.target.value)} placeholder="Buscar cliente para criar ou editar o modelo" aria-label="Buscar cliente" autoComplete="off" />
+            {achados.length > 0 && (
+              <ul className="iq-sugestoes" role="listbox">
+                {achados.map((c) => (
+                  <li key={c.codigo_cliente} role="option" aria-selected="false" onMouseDown={(e) => { e.preventDefault(); comecar(c) }}>
+                    <Search size={16} aria-hidden="true" /><span><b>{c.cliente}</b><small>Cód. {c.codigo_cliente}{c.cidade ? ` · ${c.cidade}/${c.uf}` : ''}</small></span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="iq-lista-marcar">
+            {!modelos.length && <p className="iq-vazio">Nenhum cliente com modelo próprio: todos usam o padrão geral.</p>}
+            {modelos.map((m) => (
+              <div key={m.codigo_cliente} className="iq-linha-marcar">
+                <span><b>{m.cliente || m.codigo_cliente}</b><small>Cód. {m.codigo_cliente} · {m.titulos.length} item(ns): {m.titulos.slice(0, 4).join(', ')}{m.titulos.length > 4 ? '...' : ''}</small></span>
+                <button type="button" className="iq-btn sec peq" onClick={() => setEditando({ ...m })}>Editar</button>
+                <button type="button" className="iq-icone perigo" title="Excluir modelo" onClick={() => excluir(m)}><Trash2 size={16} /></button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      <footer>
+        {editando ? (
+          <>
+            {!editando.novo && <button type="button" className="iq-btn perigo" onClick={() => excluir(editando)}><Trash2 size={16} /> Excluir</button>}
+            <button type="button" className="iq-btn sec" onClick={() => setEditando(null)}>Cancelar</button>
+            <button type="button" className="iq-btn prim" disabled={!titulos.length} onClick={gravar}>Salvar modelo</button>
+          </>
+        ) : (
+          <>
+            <span className="iq-dica">Vale ao escolher o cliente numa inspeção com os itens ainda vazios. Cliente sem modelo usa o padrão geral.</span>
+            <button type="button" className="iq-btn prim" onClick={fechar}>Concluir</button>
+          </>
+        )}
+      </footer>
     </Modal>
   )
 }
