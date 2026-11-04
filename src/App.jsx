@@ -851,7 +851,7 @@ function App() {
           !estaEmRecuperacao &&
           !window.localStorage.getItem(TELA_ATUAL_STORAGE_KEY)
         ) {
-          setTelaAtual(telaInicial);
+          setTelaAtual("home"); // permissões ainda não carregaram aqui: carregarPerfil corrige para quem não tem Meu Dia
           setRotaSelecionada(null);
           setClientesDaRota([]);
           setBuscaClienteRota("");
@@ -881,7 +881,7 @@ function App() {
         window.localStorage.removeItem(ROTA_SELECIONADA_STORAGE_KEY);
 
         if (!estaEmRecuperacao) {
-          setTelaAtual(telaInicial);
+          setTelaAtual("home"); // closure da montagem: telaInicial aqui seria sempre "alterarSenha" (permissões vazias)
         }
       }
     });
