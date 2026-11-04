@@ -240,6 +240,23 @@ real 20261028-165038: 4 páginas (sem encolher seriam 6).
   vale durante a troca nem as que saíram nela). Retestado em 1920/1366/390: modelo, volta ao geral, item com
   conteúdo preservado (banco com os 2 itens certos), paradas +24h, histórico → abrir → voltar, alerta do Drive ok.
 
+## Parte 9 (04/11/2026): marcas na foto (círculo, seta, destaque)
+
+- Foto ampliada → barra **Marcar**: Círculo, Seta, Destaque (retângulo); arrastar sobre a foto desenha. Cores:
+  **Azul Phenix (#1F64AD, padrão)**, vermelho, amarelo, branco (para foto com fundo azul). Desfazer e Limpar.
+- **O arquivo no Drive não muda.** As formas ficam em `inspecao_fotos.extras.marcas` (sem migration), em
+  coordenadas 0-1: `{ tipo: circulo|seta|retangulo, cor, x1, y1, x2, y2 }`. Código em `src/inspecao/marcas.js`.
+- Tela: SVG por cima da imagem (`meet` na ampliada, `slice` na miniatura com object-fit cover).
+  PDF/Word: `urlComMarcas` gera um JPEG com as marcas só para o relatório. Retrato da revisão guarda as marcas
+  (vai a linha inteira da foto); `conteudo()` e o comparador detectam marcação alterada.
+- Desktop: `Foto.Marcas` (`Tipo, Cor, X1..Y2`) no inspecao.json; exportar/importar .zip leva as marcas;
+  `MarcasFoto.ParaRelatorio` desenha no PDF/Word do desktop (mesma espessura e ponta de seta). O desktop
+  **não tem editor de marcas**: só preserva e imprime.
+- **Foto excluída continua no Drive** (`removida = true`), de propósito: revisões antigas a usam.
+- Teste 04/11/2026 (usuário demo, 1920/1366/390): desenhar as 3 formas com cores, Desfazer, miniatura com
+  marcas, recarregar e conferir no banco, imagem do relatório com marcas. Inspeções de teste apagadas
+  (3 fotos de teste ficaram órfãs no Drive).
+
 ## Falta
 
 - [ ] Rodar `Publicar\MWInspecaoQualidade\Atualizar.cmd` (`.exe` de 171 MB já pronto, Parte 7) - deploy na rede, pelo usuário

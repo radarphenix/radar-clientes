@@ -3,7 +3,8 @@
 //    Mesmo número, itens, fotos com legenda, revisões finalizadas. Número que já existe é pulado,
 //    então dá para rodar de novo (é a ferramenta da migração).
 //  - exportar: .zip no formato do desktop (o programa importa de volta).
-import { supabase, enviarFoto, urlFoto } from './api'
+import { supabase, enviarFoto, urlFoto, salvarMarcas } from './api'
+import { marcasDe, marcasParaDesktop, marcasDoDesktop } from './marcas'
 import { colunasDeBusca } from './modelo'
 
 // Imprimir: marca do campo adicional (sem ela = não imprimir); campo padrão não leva
@@ -75,6 +76,7 @@ export async function importar(item, progresso = () => {}) {
         const blob = await ler()
         const enviada = await enviarFoto(nova.id, det.id, new File([blob], f.Arquivo, { type: 'image/jpeg' }), f.Legenda || '', 'importacao')
         novoIdDaFoto[f.Arquivo] = enviada.id
+        if (f.Marcas?.length) await salvarMarcas(enviada, marcasDoDesktop(f.Marcas))
       } catch (e) { avisos.push(`foto ${f.Arquivo}: ${e.message}`) }
     }
   }
@@ -88,7 +90,7 @@ export async function importar(item, progresso = () => {}) {
       finalizado: true, finalizado_em: quando(rev.FinalizadoEm), finalizado_por: rev.FinalizadoPor || '', alterado_em: quando(rev.AlteradoEm),
       detalhamentos: (rev.Detalhamentos || []).map((d, ordem) => ({
         titulo: d.Titulo || '', texto: d.Texto || '', ordem,
-        fotos: (d.Fotos || []).map((f) => ({ id: novoIdDaFoto[f.Arquivo] || null, legenda: f.Legenda || '', arquivo: f.Arquivo })).filter((f) => f.id),
+        fotos: (d.Fotos || []).map((f) => ({ id: novoIdDaFoto[f.Arquivo] || null, legenda: f.Legenda || '', arquivo: f.Arquivo, extras: f.Marcas?.length ? { marcas: marcasDoDesktop(f.Marcas) } : {} })).filter((f) => f.id),
       })),
     }
     const { error: e3 } = await supabase.from('inspecao_revisoes').insert({
@@ -113,7 +115,7 @@ export async function exportarZip(ins, dets, fotos, revisoes) {
     DadosGerais: camposDesktop(i.dados_gerais),
     InformacoesTecnicas: camposDesktop(i.informacoes_tecnicas),
     InformacoesTecnicasSaida: camposDesktop(i.informacoes_tecnicas_saida),
-    Detalhamentos: detsDe.map((d) => ({ Titulo: d.titulo, Texto: d.texto, Fotos: (d.fotos || []).map((f) => ({ Arquivo: `${f.id}.jpg`, Legenda: f.legenda || '' })) })),
+    Detalhamentos: detsDe.map((d) => ({ Titulo: d.titulo, Texto: d.texto, Fotos: (d.fotos || []).map((f) => ({ Arquivo: `${f.id}.jpg`, Legenda: f.legenda || '', ...(marcasDe(f).length ? { Marcas: marcasParaDesktop(marcasDe(f)) } : {}) })) })),
     Conclusao: i.conclusao, ElaboradoPor: i.elaborado_por, AprovadoPor: i.aprovado_por, Setor: i.setor,
   })
   const atual = dets.map((d) => ({ ...d, fotos: fotos[d.id] || [] }))

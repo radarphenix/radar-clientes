@@ -32,6 +32,10 @@ export function comparar(antes, depois) {
     if (fa !== fd) {
       r.push({ item: `${item} - fotos`, antes: `${(a.fotos || []).length} foto(s)`,
         depois: `${(d.fotos || []).length} foto(s)${(a.fotos || []).length === (d.fotos || []).length ? ' (trocadas ou reordenadas)' : ''}` })
+    } else {
+      const ma = JSON.stringify((a.fotos || []).map((f) => f.extras?.marcas || []))
+      const md = JSON.stringify((d.fotos || []).map((f) => f.extras?.marcas || []))
+      if (ma !== md) r.push({ item: `${item} - fotos`, antes: 'marcações anteriores', depois: 'marcações alteradas' })
     }
   }
   texto('Conclusão', antes.conclusao, depois.conclusao)

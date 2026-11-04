@@ -2,21 +2,75 @@ import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import {
   Plus, ChevronUp, ChevronDown, Trash2, Camera, ImagePlus, Smartphone, X, ChevronLeft, ChevronRight,
-  ListPlus, Loader2, GripVertical, SpellCheck,
+  ListPlus, Loader2, GripVertical, SpellCheck, Circle, ArrowUpRight, Square, Undo2, Eraser,
 } from 'lucide-react'
 import * as api from './api'
 import { TITULOS_PADRAO, TITULOS_SUGERIDOS } from './modelo'
+import { AZUL_PHENIX, CORES, formaSvg, marcaValida, marcasDe } from './marcas'
 
 /** Título comparável: "Lateral Esquerda" = "lateral esquerda" = "Lateral esquerda ". */
 const chaveTitulo = (t) => (t || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 /** Imagem de foto vinda do Drive (a função confere o acesso e devolve a imagem). */
-export function FotoDrive({ id, alt }) {
+export function FotoDrive({ id, alt, marcas }) {
   const [url, setUrl] = useState(null)
   const [falha, setFalha] = useState(false)
+  const [tam, setTam] = useState(null)
   useEffect(() => { api.urlFoto(id).then(setUrl).catch(() => setFalha(true)) }, [id])
   if (falha) return <span className="iq-dica">foto indisponível</span>
-  return url ? <img src={url} alt={alt || ''} loading="lazy" /> : <Loader2 className="iq-gira" size={18} />
+  if (!url) return <Loader2 className="iq-gira" size={18} />
+  return (
+    <>
+      <img src={url} alt={alt || ''} loading="lazy" onLoad={(e) => setTam({ w: e.target.naturalWidth, h: e.target.naturalHeight })} />
+      {/* miniatura usa object-fit: cover -> "slice" deixa as marcas no mesmo lugar da foto */}
+      {tam && marcas?.length > 0 && <SvgMarcas marcas={marcas} w={tam.w} h={tam.h} ajuste="slice" />}
+    </>
+  )
+}
+
+/** Desenho das marcas por cima da foto, com o mesmo enquadramento da imagem. */
+function SvgMarcas({ marcas, w, h, ajuste, svgRef, ...eventos }) {
+  return (
+    <svg ref={svgRef} className={`iq-marcas ${eventos.onPointerDown ? 'desenhando' : ''}`} viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio={`xMidYMid ${ajuste}`} aria-hidden="true" {...eventos}>
+      {marcas.map((m, i) => { const f = formaSvg(m, w, h); const E = f.tipo; return <E key={i} {...f.props} /> })}
+    </svg>
+  )
+}
+
+const FERRAMENTAS = [
+  { tipo: 'circulo', nome: 'Círculo', Icone: Circle },
+  { tipo: 'seta', nome: 'Seta', Icone: ArrowUpRight },
+  { tipo: 'retangulo', nome: 'Destaque', Icone: Square },
+]
+
+/** Foto grande com as marcas; com uma ferramenta escolhida, arrastar desenha a forma. */
+function FotoMarcavel({ foto, marcas, ferramenta, cor, adicionar }) {
+  const [url, setUrl] = useState(null)
+  const [falha, setFalha] = useState(false)
+  const [tam, setTam] = useState(null)
+  const [nova, setNova] = useState(null)
+  const svg = useRef(null)
+  useEffect(() => { api.urlFoto(foto.id).then(setUrl).catch(() => setFalha(true)) }, [foto.id])
+  const ponto = (e) => {
+    const p = svg.current.createSVGPoint(); p.x = e.clientX; p.y = e.clientY
+    const q = p.matrixTransform(svg.current.getScreenCTM().inverse())
+    return [Math.min(1, Math.max(0, q.x / tam.w)), Math.min(1, Math.max(0, q.y / tam.h))]
+  }
+  const eventos = ferramenta && tam ? {
+    onPointerDown: (e) => { e.currentTarget.setPointerCapture(e.pointerId); const [x, y] = ponto(e); setNova({ tipo: ferramenta, cor, x1: x, y1: y, x2: x, y2: y }) },
+    onPointerMove: (e) => { if (nova) { const [x, y] = ponto(e); setNova({ ...nova, x2: x, y2: y }) } },
+    onPointerUp: () => { if (nova && marcaValida(nova)) adicionar(nova); setNova(null) },
+    onPointerCancel: () => setNova(null),
+  } : {}
+  return (
+    <div className="iq-marcador">
+      {falha ? <span className="iq-dica">foto indisponível</span> : !url ? <Loader2 className="iq-gira" /> : (
+        <img src={url} alt={foto.legenda || ''} onLoad={(e) => setTam({ w: e.target.naturalWidth, h: e.target.naturalHeight })} />
+      )}
+      {tam && <SvgMarcas svgRef={svg} marcas={nova ? [...marcas, nova] : marcas} w={tam.w} h={tam.h} ajuste="meet" {...eventos} />}
+    </div>
+  )
 }
 
 /** Endereço que o celular consegue abrir: em desenvolvimento, troca "localhost" pelo IP da rede. */
@@ -79,16 +133,39 @@ function JanelaCelular({ ins, det, fotosDet, fechar }) {
 }
 
 /** Foto ampliada: legenda, ordem, mover de item, tirar do relatório. */
-function FotoAberta({ foto, indice, total, dets, detAtual, leitura, mudarLegenda, mover, paraItem, remover, navegar, fechar }) {
+function FotoAberta({ foto, indice, total, dets, detAtual, leitura, mudarLegenda, mudarMarcas, mover, paraItem, remover, navegar, fechar }) {
   const [legenda, setLegenda] = useState(foto.legenda || '')
+  const [ferramenta, setFerramenta] = useState(null)
+  const [cor, setCor] = useState(AZUL_PHENIX)
+  const marcas = marcasDe(foto)
   const salvarLegenda = () => { if (legenda !== (foto.legenda || '')) mudarLegenda(legenda) }
   return (
     <Modal titulo={`${detAtual.titulo || 'Item'} - foto ${indice + 1} de ${total}`} fechar={() => { salvarLegenda(); fechar() }} largo>
       <div className="iq-foto-grande">
         <button type="button" className="iq-icone nav" disabled={indice === 0} onClick={() => { salvarLegenda(); navegar(-1) }} title="Anterior"><ChevronLeft size={28} /></button>
-        <FotoDrive id={foto.id} alt={foto.legenda} />
+        <FotoMarcavel foto={foto} marcas={marcas} ferramenta={leitura ? null : ferramenta} cor={cor} adicionar={(m) => mudarMarcas([...marcas, m])} />
         <button type="button" className="iq-icone nav" disabled={indice === total - 1} onClick={() => { salvarLegenda(); navegar(1) }} title="Próxima"><ChevronRight size={28} /></button>
       </div>
+      {!leitura && (
+        <div className="iq-marcar-barra" role="toolbar" aria-label="Marcar na foto">
+          <span className="iq-marcar-rotulo">Marcar:</span>
+          {FERRAMENTAS.map(({ tipo, nome, Icone }) => (
+            <button key={tipo} type="button" className={`iq-btn sec ${ferramenta === tipo ? 'ativo' : ''}`} aria-pressed={ferramenta === tipo}
+              title={`${nome}: arraste sobre a foto`} onClick={() => setFerramenta(ferramenta === tipo ? null : tipo)}><Icone size={16} /> {nome}</button>
+          ))}
+          <span className="iq-cores">
+            {CORES.map((c) => (
+              <button key={c.cor} type="button" className={`iq-cor ${cor === c.cor ? 'ativo' : ''}`} style={{ background: c.cor }}
+                title={c.nome} aria-label={`Cor ${c.nome}`} aria-pressed={cor === c.cor} onClick={() => setCor(c.cor)} />
+            ))}
+          </span>
+          <span className="iq-marcar-fim">
+            <button type="button" className="iq-btn sec" disabled={!marcas.length} onClick={() => mudarMarcas(marcas.slice(0, -1))} title="Desfazer a última marca"><Undo2 size={16} /> Desfazer</button>
+            <button type="button" className="iq-btn sec" disabled={!marcas.length} onClick={() => { if (confirm('Tirar todas as marcas desta foto?')) mudarMarcas([]) }} title="Tirar todas as marcas"><Eraser size={16} /> Limpar</button>
+          </span>
+        </div>
+      )}
+      {!leitura && ferramenta && <p className="iq-dica iq-marcar-dica">Arraste sobre a foto para desenhar. Toque na ferramenta de novo para parar.</p>}
       <label className="iq-campo">
         <span>Legenda (sai embaixo da foto no relatório)</span>
         <input value={legenda} readOnly={leitura} placeholder="Ex.: emenda descolada na lateral" onChange={(e) => setLegenda(e.target.value)} onBlur={salvarLegenda} />
@@ -159,7 +236,7 @@ function CartaoItem({ det, n, total, fotosDet, aberto, alternar, leitura, mudar,
                 onDragOver={(e) => { if (arrasto.foto) e.preventDefault() }}
                 onDrop={(e) => { e.preventDefault(); e.stopPropagation(); arrasto.soltarSobre(det.id, i) }}>
                 <button type="button" className="iq-foto-abrir" onClick={() => abrirFoto(i)} title={f.legenda || 'Abrir foto'}>
-                  <span className="iq-foto-moldura"><FotoDrive id={f.id} alt={f.legenda} /><span className="iq-foto-n">{i + 1}</span></span>
+                  <span className="iq-foto-moldura"><FotoDrive id={f.id} alt={f.legenda} marcas={marcasDe(f)} /><span className="iq-foto-n">{i + 1}</span></span>
                   <span className="iq-foto-legenda">{f.legenda || <em>sem legenda</em>}</span>
                 </button>
                 {!leitura && <GripVertical className="iq-foto-pega so-computador" size={14} aria-hidden="true" />}
@@ -281,6 +358,12 @@ export default function Detalhamentos({ ins, dets, fotos, leitura, mudarDets, se
     setAbertos((s) => new Set([...s, paraId]))
   }
 
+  async function mudarMarcas(detId, foto, marcas) {
+    const extras = { ...(foto.extras || {}), marcas }
+    setFotos((atual) => ({ ...atual, [detId]: (atual[detId] || []).map((f) => (f.id === foto.id ? { ...f, extras } : f)) }))
+    try { await api.salvarMarcas(foto, marcas) } catch (e) { setErro(e.message) }
+  }
+
   async function removerFoto(detId, foto) {
     if (!confirm('Excluir esta foto do relatório?')) return
     try {
@@ -359,6 +442,7 @@ export default function Detalhamentos({ ins, dets, fotos, leitura, mudarDets, se
         <FotoAberta key={faFotos[fotoAberta.indice].id} foto={faFotos[fotoAberta.indice]} indice={fotoAberta.indice} total={faFotos.length}
           dets={dets} detAtual={fa} leitura={leitura}
           mudarLegenda={(legenda) => regravar({ [fa.id]: faFotos.map((f, j) => (j === fotoAberta.indice ? { ...f, legenda } : f)) })}
+          mudarMarcas={(marcas) => mudarMarcas(fa.id, faFotos[fotoAberta.indice], marcas)}
           mover={(delta) => { moverFoto(fa.id, fotoAberta.indice, fotoAberta.indice + delta); setFotoAberta({ ...fotoAberta, indice: fotoAberta.indice + delta }) }}
           paraItem={(paraId) => { fotoParaItem(faFotos[fotoAberta.indice], fa.id, paraId); setFotoAberta(null) }}
           remover={() => removerFoto(fa.id, faFotos[fotoAberta.indice])}

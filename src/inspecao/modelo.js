@@ -180,7 +180,7 @@ export const colunasDeBusca = (ins) => ({
 export const conteudo = (ins, dets, fotos) => JSON.stringify({
   t: ins.titulo, d: ins.dados_gerais, i: ins.informacoes_tecnicas, s: ins.informacoes_tecnicas_saida,
   c: ins.conclusao, e: ins.elaborado_por, a: ins.aprovado_por, st: ins.setor,
-  det: dets.map((d) => [d.titulo, d.texto, (fotos[d.id] || []).map((f) => [f.id, f.legenda])]),
+  det: dets.map((d) => [d.titulo, d.texto, (fotos[d.id] || []).map((f) => [f.id, f.legenda, f.extras?.marcas || []])]),
 })
 
 export const PAPEIS = { leitura: 'Leitura', inspetor: 'Inspetor', aprovador: 'Aprovador', admin: 'Administrador' }

@@ -1336,6 +1336,10 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
 - **Detalhamento:** cada item e um cartao; os vazios ficam recolhidos (toque para abrir) e nao saem no
   relatorio. Fotos no proprio item; tocar numa foto abre ampliada para legenda, ordem, mover de item ou
   tirar do relatorio. "Adicionar item" traz os titulos padrao e sugeridos.
+- **Marcar o defeito na foto:** na foto ampliada, escolha Circulo, Seta ou Destaque e arraste sobre a
+  foto. A cor padrao e o azul da Phenix; se a foto ja for azul, toque em vermelho, amarelo ou branco.
+  Desfazer tira a ultima marca, Limpar tira todas. A foto original nao muda: as marcas aparecem por
+  cima e saem no PDF/Word. Toque na ferramenta de novo para voltar a navegar entre as fotos.
 - **Fotos:** no celular, botao Camera; no computador, "Adicionar fotos", arrastar arquivos para o item
   ou "Do celular" (QR Code: no celular, "Tirar foto" abre a camera e "Escolher da galeria" pega varias de uma vez; as fotos
   aparecem no computador; fechar invalida o codigo).

@@ -341,3 +341,21 @@
 
 .iq-imprimir { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #44566b; white-space: nowrap; cursor: pointer; }
 .iq-imprimir input { width: 16px; height: 16px; margin: 0; }
+
+/* ---------------------------------------------------------------- marcas na foto (círculo, seta, destaque) */
+.iq-marcas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.iq-marcas.desenhando { pointer-events: auto; cursor: crosshair; touch-action: none; }
+.iq-marcador { position: relative; flex: 1; min-width: 0; height: 60vh; border-radius: 10px; background: #0f172a; display: flex; align-items: center; justify-content: center; color: #cbd5e1; user-select: none; }
+.iq-marcador > img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; -webkit-user-drag: none; }
+.iq-marcar-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.iq-marcar-rotulo { font-weight: 700; color: var(--iq-sec); font-size: 14px; }
+.iq-marcar-barra .iq-btn.ativo { background: var(--iq-azul); color: #fff; border-color: var(--iq-azul); }
+.iq-marcar-fim { display: flex; gap: 6px; margin-left: auto; }
+.iq-cores { display: flex; gap: 8px; padding: 0 4px; }
+.iq-raiz .iq-cor, .iq-cor { width: 28px; height: 28px; min-width: 28px; border-radius: 50%; border: 2px solid #94a3b8; cursor: pointer; padding: 0; }
+.iq-cor.ativo { outline: 3px solid var(--iq-azul-escuro); outline-offset: 2px; }
+.iq-marcar-dica { margin: -4px 0 0; }
+@media (max-width: 640px) {
+  .iq-marcador { height: min(46vh, 78vw); }
+  .iq-marcar-fim { margin-left: 0; }
+}

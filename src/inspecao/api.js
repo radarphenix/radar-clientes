@@ -162,6 +162,14 @@ export async function salvarFotos(lista) {
   falhou(error)
 }
 
+/** Grava as marcações (círculo/seta/retângulo) da foto em extras.marcas; o arquivo no Drive não muda. */
+export async function salvarMarcas(foto, marcas) {
+  const extras = { ...(foto.extras || {}), marcas }
+  const { error } = await supabase.from('inspecao_fotos').update({ extras }).eq('id', foto.id)
+  falhou(error)
+  return extras
+}
+
 /** Tira a foto do relatório sem apagar o arquivo (revisões antigas continuam a encontrar). */
 export async function removerFoto(id) {
   const { error } = await supabase.from('inspecao_fotos').update({ removida: true }).eq('id', id)

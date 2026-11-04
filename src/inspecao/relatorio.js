@@ -7,6 +7,7 @@ import {
   CAMPOS_DADOS_GERAIS, CAMPOS_TECNICOS, CAMPOS_TECNICOS_SAIDA,
 } from './modelo'
 import { urlFoto } from './api'
+import { marcasDe, urlComMarcas } from './marcas'
 
 const AZUL_ESCURO = [0x12, 0x3f, 0x73]
 const AZUL = [0x1f, 0x64, 0xad]
@@ -49,7 +50,7 @@ async function preparar(ins, dets, fotos, interno) {
   for (const d of itens) {
     const lista = []
     for (const f of fotos[d.id] || []) {
-      try { lista.push({ ...(await imagem(await urlFoto(f.id))), legenda: f.legenda || '' }) } catch { /* foto indisponível: fica de fora */ }
+      try { lista.push({ ...(await imagem(await urlComMarcas(await urlFoto(f.id), marcasDe(f)))), legenda: f.legenda || '' }) } catch { /* foto indisponível: fica de fora */ }
     }
     fotosItens.push({ titulo: caixaAlta(d.titulo), texto: linhas(caixaFrase(d.texto)), fotos: lista })
   }
