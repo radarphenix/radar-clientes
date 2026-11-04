@@ -1340,6 +1340,8 @@ O servidor confere as mesmas permissoes: esconder o menu nao e a unica protecao.
   foto. A cor padrao e o azul da Phenix; se a foto ja for azul, toque em vermelho, amarelo ou branco.
   Desfazer tira a ultima marca, Limpar tira todas. A foto original nao muda: as marcas aparecem por
   cima e saem no PDF/Word. Toque na ferramenta de novo para voltar a navegar entre as fotos.
+- **Resumo:** gera uma folha so com os dados da inspecao (sem fotos), para uso interno: imprimir e
+  guardar junto com a tela. Tem um campo "Guardado em" para anotar o local/etiqueta.
 - **Fotos:** no celular, botao Camera; no computador, "Adicionar fotos", arrastar arquivos para o item
   ou "Do celular" (QR Code: no celular, "Tirar foto" abre a camera e "Escolher da galeria" pega varias de uma vez; as fotos
   aparecem no computador; fechar invalida o codigo).

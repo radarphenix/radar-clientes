@@ -257,6 +257,18 @@ real 20261028-165038: 4 páginas (sem encolher seriam 6).
   marcas, recarregar e conferir no banco, imagem do relatório com marcas. Inspeções de teste apagadas
   (3 fotos de teste ficaram órfãs no Drive).
 
+## Parte 10 (04/11/2026): Data de entrada no checklist e Resumo interno
+
+- Checklist de conferência: identificação ganhou **Data de entrada** (agora 4 colunas: Cliente, Nota fiscal,
+  Produto, Lote / Data de entrada, Data da inspeção, Inspetor).
+- Botão **Resumo** na inspeção (`src/inspecao/resumo.js`): PDF de **uma folha**, uso interno, para imprimir e
+  guardar junto com a tela. Só dados, sem fotos: identificação (todos os dados gerais preenchidos), tabela de
+  medidas informado x aferido x saída, equipamento/material (inclusive adicionais "não imprimir"), detalhamento
+  resumido (título, nº de fotos, até 3 linhas), conclusão (até 8 linhas), responsáveis e caixa "Guardado em".
+  Não cabendo, a letra diminui (até 72%); só no limite vai para 2ª folha.
+- Desktop: não tem checklist nem resumo, nada a levar.
+- Teste 04/11/2026: resumo de duas inspeções reais (1 folha cada), checklist, botão em 1920/1366/390.
+
 ## Falta
 
 - [ ] Rodar `Publicar\MWInspecaoQualidade\Atualizar.cmd` (`.exe` de 171 MB já pronto, Parte 7) - deploy na rede, pelo usuário

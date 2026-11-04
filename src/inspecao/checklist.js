@@ -14,7 +14,7 @@ const FUNDO_ROTULO = [0xea, 0xf1, 0xf9]
 const PAG = { l: 21, a: 29.7, topo: 1.2, base: 1.4, esq: 1.5, dir: 1.5 }
 const UTIL = PAG.l - PAG.esq - PAG.dir // 18 cm
 
-const IDENTIFICACAO = ['Cliente', 'Nota fiscal', 'Produto', 'Lote', 'Data da inspeção', 'Inspetor']
+const IDENTIFICACAO = ['Cliente', 'Nota fiscal', 'Produto', 'Lote', 'Data de entrada', 'Data da inspeção', 'Inspetor']
 
 export async function gerarChecklist(titulos) {
   const { jsPDF } = await import('jspdf')
@@ -75,7 +75,7 @@ export async function gerarChecklist(titulos) {
   }
 
   secao('IDENTIFICAÇÃO')
-  campos(IDENTIFICACAO, 3)
+  campos(IDENTIFICACAO, 4)
 
   secao('INFORMAÇÕES TÉCNICAS DO RECEBIMENTO')
   GRUPOS_TEC.forEach(([titulo, rotulos]) => campos(rotulos, titulo.startsWith('Material') ? 2 : 3, titulo))

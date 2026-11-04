@@ -269,7 +269,10 @@ export default function Editor({ id, papel, nome, voltar }) {
     try {
       const rel = await import('./relatorio.js')
       const atual = estado.current
-      if (tipo === 'zip') {
+      if (tipo === 'resumo') {
+        const { gerarResumo, nomeArquivoResumo } = await import('./resumo.js')
+        rel.baixar(await gerarResumo(atual.ins, atual.dets, atual.fotos), nomeArquivoResumo(atual.ins))
+      } else if (tipo === 'zip') {
         const { exportarZip } = await import('./troca.js')
         rel.baixar(await exportarZip(atual.ins, atual.dets, atual.fotos, await api.listarRevisoes(atual.ins.id)), `Inspecao_${atual.ins.numero}.zip`)
       } else {
@@ -321,6 +324,7 @@ export default function Editor({ id, papel, nome, voltar }) {
         <div className="iq-acoes-cabecalho">
           <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('pdf')}>{gerando === 'pdf' ? <Loader2 className="iq-gira" size={15} /> : <FileText size={15} />} PDF</button>
           <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('pdfint')} title="Versão completa, com os campos adicionais sem Imprimir - uso interno">{gerando === 'pdfint' ? <Loader2 className="iq-gira" size={15} /> : <FileText size={15} />} PDF interno</button>
+          <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('resumo')} title="Uma folha só com os dados (sem fotos), uso interno - imprimir e guardar junto com a tela">{gerando === 'resumo' ? <Loader2 className="iq-gira" size={15} /> : <FileText size={15} />} Resumo</button>
           <button type="button" className="iq-btn sec peq" disabled={!!gerando} onClick={() => gerar('word')}>{gerando === 'word' ? <Loader2 className="iq-gira" size={15} /> : <FileDown size={15} />} Word</button>
           {ins.finalizado && pode(papel, 'inspetor') && <button type="button" className="iq-btn sec peq" onClick={() => setJanela('email')}><Mail size={15} /> E-mail</button>}
           <button type="button" className="iq-btn sec peq" onClick={() => setJanela('historico')}><History size={15} /> Histórico</button>
