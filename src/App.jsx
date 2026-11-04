@@ -80,6 +80,8 @@ import {
 const PaginaInspecao = lazy(() => import("./inspecao/PaginaInspecao.jsx"));
 const AcessosRadar = lazy(() => import("./AcessosRadar.jsx"));
 const PaginaMaquinas = lazy(() => import("./maquinas/PaginaMaquinas.jsx"));
+import { erroDeRede, sessaoGuardada, guardarPerfil, perfilGuardado, esquecerPerfil, limparCache } from "./offline";
+import { iniciarFila as iniciarFilaMaquinas, estadoFila as estadoFilaMaquinas } from "./maquinas/fila";
 
 function detectarLinkRecuperacao() {
   return (
@@ -837,6 +839,8 @@ function App() {
     iniciarSessao();
 
     const { data } = supabase.auth.onAuthStateChange((event, sessionAtual) => {
+      // abertura sem rede: iniciarSessao já usou a sessão guardada; não apagar a tela por causa do "nulo"
+      if (event === "INITIAL_SESSION" && !sessionAtual && sessaoGuardada()) return;
       const estaEmRecuperacao = detectarLinkRecuperacao();
 
       if (estaEmRecuperacao) {
@@ -1091,7 +1095,18 @@ function App() {
   }, [perfil, telaAtual, permiteMenuAmostrasGrupoAtual]);
 
   async function iniciarSessao() {
-    const { data } = await supabase.auth.getSession();
+    // Sem rede e com o token vencido, o Supabase fica até ~30 s tentando renovar e depois devolve nulo, mas
+    // mantém a sessão guardada. Não esperamos: passados 5 s (ou com erro de rede) entra com a cópia guardada
+    // (modo offline). Quando a rede volta, ele renova o token sozinho (TOKEN_REFRESHED).
+    const ESPERA = Symbol("espera");
+    const r = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise((ok) => setTimeout(() => ok(ESPERA), 5000)),
+    ]);
+    const data = r === ESPERA ? { session: null } : r.data;
+    if (!data.session && (r === ESPERA || erroDeRede(r.error)) && sessaoGuardada()) {
+      data.session = sessaoGuardada();
+    }
     setSession(data.session);
 
     if (data.session?.user) {
@@ -1362,6 +1377,10 @@ function App() {
   }
 
   async function sair() {
+    const naFila = estadoFilaMaquinas().pendentes;
+    if (naFila && !window.confirm(`Há ${naFila} cadastro(s) de máquina guardado(s) neste aparelho esperando internet. Eles continuam guardados e sobem quando você entrar de novo neste aparelho. Sair mesmo assim?`)) return;
+    esquecerPerfil();
+    limparCache();
     if (session?.user?.id) {
       await registrarAcesso(session.user.id, "LOGOUT");
     }
@@ -1406,12 +1425,37 @@ function App() {
 
     perfilCarregadoUsuarioRef.current = userId;
 
-    const { data, error } = await supabase
+    // sem rede (ou rede que não responde em 8 s) com perfil guardado: não espera a consulta
+    const guardadoAntes = perfilGuardado(userId);
+    const consultaPerfil = supabase
       .from("perfis")
       .select("*")
       .eq("user_id", userId)
       .eq("ativo", true)
       .maybeSingle();
+    const { data, error } = guardadoAntes
+      ? await Promise.race([
+          consultaPerfil,
+          new Promise((ok) => setTimeout(() => ok({ data: null, error: { message: "Failed to fetch (sem resposta)" } }), navigator.onLine ? 8000 : 0)),
+        ])
+      : await consultaPerfil;
+
+    // sem rede: entra com o perfil/acessos do último login com internet (não desloga)
+    if (error && erroDeRede(error)) {
+      const guardado = perfilGuardado(userId);
+      if (guardado) {
+        const minhasOffline = new Set(guardado.permissoes);
+        setMensagemLogin("");
+        setPermissoes(minhasOffline);
+        setPerfil({ ...guardado.perfil, offline: true });
+        setUsuarioResponsavelRota(userId);
+        // sem rede só o Cadastro de Máquinas funciona: abre direto nele
+        if (minhasOffline.has("maquinas")) setTelaAtual("maquinas");
+        else if (!minhasOffline.has("meu_dia")) setTelaAtual(minhasOffline.has("inspecao.ver") ? "inspecao" : "alterarSenha");
+        setCarregando(false);
+        return true;
+      }
+    }
 
     if (error) {
       perfilCarregadoUsuarioRef.current = "";
@@ -1445,6 +1489,9 @@ function App() {
     setMensagemLogin("");
     setPermissoes(minhas);
     setPerfil({ ...data, calendario_token: tokenAgenda?.calendario_token || null });
+    guardarPerfil(userId, { ...data, calendario_token: tokenAgenda?.calendario_token || null }, minhas);
+    // cadastros de máquina guardados sem internet sobem mesmo sem abrir a tela de Máquinas
+    if (minhas.has("maquinas.editar")) iniciarFilaMaquinas();
     setUsuarioResponsavelRota(userId);
     if (!minhas.has("meu_dia")) setTelaAtual(minhas.has("inspecao.ver") ? "inspecao" : "alterarSenha");
     await carregarConfiguracoesWhatsAppGrupos(data);

@@ -4,8 +4,9 @@ import '../inspecao/inspecao.css'
 import './maquinas.css'
 import {
   PROSPECT, listarMaquinas, listarVendas, buscarVendasPorEmpresa, buscarClientes, statusSync, solicitarSync, importarFeira, syncOnline, pendenteSync,
-  chaveCodigo, normalizarNumero, paraNumero, formatarNumero,
+  chaveCodigo, normalizarNumero, paraNumero, formatarNumero, atualizarCarteira,
 } from './api'
+import { assinarFila, iniciarFila, processarFila, descartar } from './fila'
 import FormularioMaquina from './FormularioMaquina.jsx'
 import { definirGuardaSaida } from '../saidaProtegida'
 
@@ -115,6 +116,19 @@ export default function PaginaMaquinas({ podeEditar, podeAdmin, clienteInicial, 
     statusSync().then(setStatus).catch(() => {})
   }, [])
   useEffect(() => { recarregar() }, [recarregar])
+  // fila offline: estado ao vivo, envio automático e lista atualizada quando algo sobe
+  const [fila, setFila] = useState({ pendentes: 0, recusados: [], enviando: false })
+  const [online, setOnline] = useState(() => navigator.onLine)
+  useEffect(() => {
+    const sair = assinarFila(setFila)
+    iniciarFila()
+    if (navigator.onLine) atualizarCarteira().catch(() => {})
+    const subiu = (e) => { setAviso(`${e.detail} cadastro(s) guardado(s) no aparelho foram enviados.`); recarregar() }
+    const mudou = () => { setOnline(navigator.onLine); if (navigator.onLine) recarregar() }
+    window.addEventListener('maquinas:fila-enviada', subiu)
+    window.addEventListener('online', mudou); window.addEventListener('offline', mudou)
+    return () => { sair(); window.removeEventListener('maquinas:fila-enviada', subiu); window.removeEventListener('online', mudou); window.removeEventListener('offline', mudou) }
+  }, [recarregar])
   useEffect(() => { if (clienteInicial) aoUsarClienteInicial?.() }, [clienteInicial, aoUsarClienteInicial])
 
   // O formulário avisa aqui se tem alteração sem salvar; toda saída do cadastro pergunta antes.
@@ -163,9 +177,10 @@ export default function PaginaMaquinas({ podeEditar, podeAdmin, clienteInicial, 
     history.pushState({ ...history.state, maquinaAberta: id }, '')
     setAberta(id)
   }
-  function fechar(salvouId) {
+  function fechar(salvouId, pendente) {
     alteradoRef.current = false
     if (salvouId) { setSelecionada(salvouId); recarregar() }
+    if (pendente) setAviso('Sem internet: o cadastro ficou guardado neste aparelho e sobe sozinho quando a conexão voltar.')
     if (history.state?.maquinaAberta) { history.back(); return }
     setAberta(null)
   }
@@ -277,7 +292,8 @@ export default function PaginaMaquinas({ podeEditar, podeAdmin, clienteInicial, 
     // vendasDe muda junto com vendas
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maquinaSel, numeroSel, vendas, filtros.semVenda])
-  const pendentes = (maquinas || []).filter((m) => pendenteSync(m) || m.itens.some(pendenteSync)).length
+  // o que ainda está na fila do aparelho não chegou ao servidor: não conta como pendente do CIGAM
+  const pendentes = (maquinas || []).filter((m) => !m.envioPendente && (pendenteSync(m) || m.itens.some(pendenteSync))).length
   const qtdFiltrosExtras = ['produto', 'posicao', 'larguraDe', 'larguraAte', 'comprimentoDe', 'comprimentoAte', 'cfmDe', 'cfmAte', 'semVenda', 'inativas'].filter((k) => filtros[k]).length
   const mudar = (k) => (e) => setFiltros({ ...filtros, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
 
@@ -299,7 +315,7 @@ export default function PaginaMaquinas({ podeEditar, podeAdmin, clienteInicial, 
           </div>
         </div>
         <div className="iq-acoes-lista">
-          {podeAdmin && podeEditar && (
+          {podeAdmin && podeEditar && online && (
             <div className="iq-menu-ancora">
               <button type="button" className="iq-btn sec" onClick={() => setMais(!mais)} aria-expanded={mais}><MoreHorizontal size={18} /> Mais</button>
               {mais && <div className="iq-menu-fundo" onClick={() => setMais(false)} aria-hidden="true" />}
@@ -322,6 +338,29 @@ export default function PaginaMaquinas({ podeEditar, podeAdmin, clienteInicial, 
 
       <SeloSync key={`${status?.ultima_execucao}|${status?.solicitado_em}`} status={status} podeEditar={podeEditar} pendentes={pendentes}
         aoSolicitar={async () => { try { await solicitarSync(); setStatus(await statusSync()) } catch (e) { setErro(e.message) } }} />
+      {(!online || maquinas?.offlineEm) && (
+        <div className="mq-offline" role="status">
+          <CloudOff size={16} aria-hidden="true" />
+          <span><b>Sem internet.</b> {maquinas?.offlineEm ? `Mostrando a cópia salva em ${new Date(maquinas.offlineEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}. ` : ''}
+            Pode cadastrar e alterar: fica guardado no aparelho e sobe sozinho. Vendas só com internet.</span>
+        </div>
+      )}
+      {fila.pendentes > 0 && (
+        <div className="mq-fila" role="status">
+          <Clock size={16} aria-hidden="true" />
+          <span>{fila.enviando ? 'Enviando' : 'Aguardando envio'}: <b>{fila.pendentes}</b> cadastro(s) guardado(s) neste aparelho. Não desinstale o app nem limpe os dados do navegador até subirem.</span>
+          {online && !fila.enviando && <button type="button" className="iq-btn sec peq" onClick={() => processarFila()}><RefreshCw size={14} /> Enviar agora</button>}
+        </div>
+      )}
+      {fila.recusados.map((r) => (
+        <div key={r.envio_id} className="iq-alerta mq-recusado">
+          <span>Cadastro recusado pelo servidor ({r.maquina.nome_maquina || r.maquina.nome_prospect || r.cliente?.cliente || 'máquina'}): {r.recusado}</span>
+          <span className="mq-recusado-acoes">
+            <button type="button" className="iq-btn sec peq" onClick={() => abrir(r.maquina.id || `p:${r.envio_id}`)}><Pencil size={14} /> Corrigir</button>
+            <button type="button" className="iq-btn sec peq" onClick={() => { if (window.confirm('Descartar este cadastro? O que foi digitado será perdido.')) { descartar(r.envio_id); recarregar() } }}><X size={14} /> Descartar</button>
+          </span>
+        </div>
+      ))}
       {erro && <div className="iq-alerta" onClick={() => setErro('')}>{erro}</div>}
       {aviso && <div className="iq-ok mq-aviso" onClick={() => setAviso('')}>{aviso}</div>}
 
@@ -401,7 +440,7 @@ export default function PaginaMaquinas({ podeEditar, podeAdmin, clienteInicial, 
                     {[m.nome_maquina || 'Máquina sem nome', m.numero_maquina_pedido && `nº ${m.numero_maquina_pedido} no pedido`, m.tipo_papel].filter(Boolean).join(' · ')}
                   </span>
                   {itens.length ? (
-                    <span className="mq-itens">{(abertas.has(m.id) ? itens : itens.slice(0, 4)).map((i) => <span key={i.id}>{resumoItem(i)}</span>)}
+                    <span className="mq-itens">{(abertas.has(m.id) ? itens : itens.slice(0, 4)).map((i) => <span key={i.id ?? i.chave}>{resumoItem(i)}</span>)}
                       {itens.length > 4 && (
                         <span className="mq-mais" role="button" tabIndex={0} onClick={(e) => alternarItens(e, m.id)}
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternarItens(e, m.id) } }}
@@ -413,6 +452,7 @@ export default function PaginaMaquinas({ podeEditar, podeAdmin, clienteInicial, 
                   <span className="mq-selos">
                     {m.codigo_cliente !== PROSPECT && vendas && <span className={qtdVendas ? 'mq-selo venda' : 'mq-selo semvenda'}>{qtdVendas ? `${qtdVendas} venda(s) no período` : 'Sem venda no período'}</span>}
                     {!m.ativo && <span className="mq-selo">Desativada</span>}
+                    {m.envioPendente && <span className={`mq-selo ${m.envioRecusado ? 'recusado' : 'fila'}`}>{m.envioRecusado ? 'Recusado pelo servidor' : 'Aguardando envio'}</span>}
                   </span>
                 </button>
                 <button type="button" className="iq-icone mq-editar" onClick={() => abrir(m.id)} title={podeEditar ? 'Editar máquina' : 'Ver cadastro'} aria-label={podeEditar ? 'Editar máquina' : 'Ver cadastro'}>

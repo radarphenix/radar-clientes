@@ -10,7 +10,7 @@ const NUMEROS = [['comprimento', 'Comprimento', 3], ['largura', 'Largura', 3], [
 
 let seq = 0
 const itemVazio = () => ({ chave: `n${seq++}`, produto: '', nome_produto_outros: '', modelo: '', posicao: '', comprimento: '', largura: '', espessura: '', cfm: '', gramatura: '', durabilidade: '', teflonada: null, observacoes: '' })
-const paraTela = (i) => ({ ...i, chave: `i${i.id}`, ...Object.fromEntries(NUMEROS.map(([k, , c]) => [k, formatarNumero(i[k], c)])) })
+const paraTela = (i) => ({ ...i, chave: i.chave || `i${i.id}`, ...Object.fromEntries(NUMEROS.map(([k, , c]) => [k, formatarNumero(i[k], c)])) })
 const texto = (v) => v ?? ''
 
 /** Cadastro/edição de uma máquina: empresa (cliente ou prospect), dados da máquina e itens livres. */
@@ -83,14 +83,15 @@ export default function FormularioMaquina({ maquina, clienteInicial, podeEditar,
     try {
       const dados = { ...m, codigo_cliente: codigo }
       if (!ehProspect) Object.assign(dados, { nome_prospect: null, cidade_prospect: null, uf_prospect: null, contato_prospect: null, telefone_prospect: null })
-      const id = await salvarMaquina(dados, prontos, removidos)
+      const r = await salvarMaquina(dados, prontos, removidos, { envioId: maquina?.envioPendente, cliente: ehProspect ? null : cliente })
       setAlterado(false)
-      voltar(id)
+      voltar(r.id, r.pendente)
     } catch (e) { setErro(e.message) }
     setSalvando(false)
   }
 
   async function alternarAtivo() {
+    if (maquina.envioPendente) return setErro('Este cadastro ainda não subiu. Desative depois que ele for enviado.')
     const ativar = !maquina.ativo
     if (!ativar && !window.confirm('Desativar esta máquina? Ela some da pesquisa (dá para reativar em "Mostrar desativadas").')) return
     try { await definirAtivo(maquina.id, ativar); voltar(maquina.id) } catch (e) { setErro(e.message) }
@@ -104,10 +105,12 @@ export default function FormularioMaquina({ maquina, clienteInicial, podeEditar,
           {maquina.origem !== 'RADAR' && `Origem ${nomeOrigem(maquina.origem)} · `}
           {maquina.criado_por_nome && `Cadastrada por ${maquina.criado_por_nome} · `}
           Alterada em {new Date(maquina.atualizado_em).toLocaleString('pt-BR')}{maquina.atualizado_por_nome ? ` por ${maquina.atualizado_por_nome}` : ''}
-          {pendenteSync(maquina) ? ' · pendente de envio ao CIGAM' : ''}
+          {!maquina.envioPendente && pendenteSync(maquina) ? ' · pendente de envio ao CIGAM' : ''}
         </span>}
+        {maquina?.envioPendente && !maquina.envioRecusado && <span className="mq-fila-selo">Guardado no aparelho, aguardando internet para enviar</span>}
       </div>
       {erro && <div className="iq-alerta" onClick={() => setErro('')}>{erro}</div>}
+      {maquina?.envioRecusado && <div className="iq-alerta">O servidor recusou este cadastro: {maquina.envioRecusado} Corrija e salve de novo.</div>}
 
       <fieldset className="mq-bloco" disabled={so}>
         <legend>Empresa</legend>

@@ -1414,3 +1414,11 @@ medidas** na ficha do cliente (abre já filtrado nele).
   sincronismo está rodando. Enquanto ele não for ativado, a linha avisa "ainda não ativada" e as vendas aparecem vazias.
 - **Admin:** em **Mais → Trazer cadastros da feira**, as máquinas da feira Veste Phenix entram com origem
   "feira" (sem repetir as já trazidas).
+- **Sem internet (visita, feira):** com o Radar instalado e tendo entrado nele uma vez com internet, dá
+  para abrir o app, pesquisar as máquinas (cópia guardada no aparelho, com a data dela no aviso laranja) e
+  **cadastrar ou alterar**. O cadastro fica **guardado no aparelho** (aviso azul "Aguardando envio" e selo no
+  cartão) e **sobe sozinho** quando a internet volta; também dá para tocar em **Enviar agora**. Sem internet
+  o Radar abre direto em Máquinas; as vendas e as outras telas só funcionam com internet. Não desinstale o
+  app nem limpe os dados do navegador com cadastro aguardando envio. Se o servidor recusar um cadastro,
+  aparece um aviso vermelho com **Corrigir** ou **Descartar**. Ao clicar em Sair com cadastro pendente, o
+  Radar avisa (o cadastro continua guardado e sobe quando você entrar de novo no mesmo aparelho).

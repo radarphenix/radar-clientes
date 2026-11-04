@@ -120,3 +120,15 @@
 
 /* medida de venda antiga lida do texto da nota */
 .mq-estimada { color: var(--iq-sec); font-weight: 600; }
+
+/* ---------------------------------------------------------------- sem internet / fila de envio */
+.mq-offline, .mq-fila { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; line-height: 1.4; }
+.mq-offline { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; }
+.mq-fila { background: #eef5ff; border: 1px solid #bfdbfe; color: #123f70; }
+.mq-offline > span, .mq-fila > span { flex: 1 1 220px; }
+.mq-offline svg, .mq-fila svg { flex: 0 0 auto; }
+.mq-recusado { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+.mq-recusado-acoes { display: flex; gap: 6px; }
+.mq-selo.fila { background: #eef5ff; color: #1f64ad; border-color: #bfdbfe; }
+.mq-selo.recusado { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.mq-fila-selo { flex-basis: 100%; font-size: 12.5px; font-weight: 600; color: #1f64ad; }
