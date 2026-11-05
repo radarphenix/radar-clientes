@@ -26,7 +26,9 @@ jobs:
       - name: Instalar Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # versão fixa: com "latest" o workflow passou a baixar a CLI 3.x (lançada em 11/2026) e o
+          # deploy da função falhou; 2.100.1 é a mesma usada nesta máquina e no último deploy que deu certo
+          version: 2.100.1
 
       - name: Vincular o projeto Radar
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"

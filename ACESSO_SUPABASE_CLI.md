@@ -91,3 +91,9 @@ Pegadinha: se uma migration for aplicada no banco a partir deste computador mas 
 commitado, o `db push` do workflow falha com *Remote migration versions not found in local
 migrations directory*. Solução: commitar o arquivo da migration que falta. **Toda migration
 aplicada no banco precisa estar versionada em `supabase/migrations/`.**
+
+Outras pegadinhas (detalhes e histórico em `OPERACAO_DEPLOY_SUPABASE_RADAR.md`):
+- Aplique migration com `supabase db push --linked`, não só com `db query`: `db query` roda o SQL mas não
+  registra a versão, e o próximo `db push` (local ou do workflow) tenta aplicar de novo.
+- O workflow usa a CLI em **versão fixa** (2.100.1). Não troque por `latest`: em 04/11/2026 a 3.0.0 quebrou o
+  deploy da função da feira.
