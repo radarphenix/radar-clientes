@@ -195,6 +195,25 @@ menu da feira (`src/MenuFeira.jsx`, `src/FeiraVestePhenix.jsx`).
   `/assets/index-*.js` atual e procurar um texto novo. "Não mudou nada" costuma ser cache do
   PWA; no navegador, **Ctrl+Shift+R**; no app instalado, fechar e abrir de novo.
 
+### 5.1 Atualização automática do Radar instalado (desde 12/11/2026)
+
+O service worker baixa a versão nova sozinho (`autoUpdate`), mas a página aberta continuava com o
+código antigo. Depois de um deploy, a aba antiga pedia um `/assets/*.js` que não existe mais. O Pages
+responde com o `index.html` (`text/html`), e aparecia **"Failed to fetch dynamically imported module"**
+(caso real: PDF da Inspeção em 12/11). A lógica fica em `src/atualizacaoApp.js`:
+
+- **Código antigo sumiu** → recarrega na hora (`recarregarPorVersaoAntiga`), no máximo 1 vez a cada
+  30 s (sem laço). Tratado no PDF/Word/Resumo/ZIP do editor, no Histórico e no Checklist, e por
+  ouvintes globais (`vite:preloadError`, `unhandledrejection`) para telas lazy e janelas.
+- **Versão nova pendente** → o Radar troca de versão quando o app volta a ficar visível depois de
+  **15 min ou mais** em segundo plano, e só se `telaLivreParaRecarregar()` (`src/saidaProtegida.js`)
+  permitir: nenhuma guarda de alterações (Máquinas) e nenhuma edição aberta. O editor da Inspeção
+  se marca com `marcarEdicaoAberta()`. Ao recarregar, abre na tela inicial (a tela atual não é guardada).
+- A feira/promoção continuam com `recarregarSeAtualizado()` nos momentos seguros delas.
+- Testado com Playwright sobre o build (`vite preview`): chunk sumido recarrega 1 vez e não entra
+  em laço; versão nova + volta após 16 min recarrega; após 5 min, ou sem versão nova, não recarrega.
+  **Não testado** (exige login): o bloqueio com o editor da Inspeção aberto ou Máquinas com alteração.
+
 ## 6. Solução de problemas de instalação
 
 | Sintoma | Causa provável | O que fazer |

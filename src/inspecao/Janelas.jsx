@@ -4,6 +4,7 @@ import {
   FolderInput, CheckCircle2, AlertTriangle, Search, ListChecks,
 } from 'lucide-react'
 import * as api from './api'
+import { recarregarPorVersaoAntiga } from '../atualizacaoApp'
 import { valor, camposRelatorio, CAMPOS_DADOS_GERAIS } from './modelo'
 
 export function Modal({ titulo, fechar, children, largo, icone: Icone }) {
@@ -198,7 +199,7 @@ export function JanelaHistorico({ ins, fechar }) {
       const interno = tipo === 'pdfint'
       const blob = tipo === 'word' ? await rel.gerarWord(insRev, dets, fotos) : await rel.gerarPdf(insRev, dets, fotos, { interno })
       rel.baixar(blob, rel.nomeArquivo(insRev, tipo === 'word' ? 'docx' : 'pdf', interno))
-    } catch (e) { alert('Não foi possível gerar: ' + e.message) }
+    } catch (e) { if (!recarregarPorVersaoAntiga(e)) alert('Não foi possível gerar: ' + e.message) }
     setGerando('')
   }
 

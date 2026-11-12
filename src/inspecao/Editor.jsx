@@ -4,6 +4,8 @@ import {
   Trash2, Cloud, CloudOff, Loader2, Plus, X, FileText, FileDown, Mail, History, Archive, SpellCheck, Building2,
 } from 'lucide-react'
 import * as api from './api'
+import { marcarEdicaoAberta } from '../saidaProtegida'
+import { recarregarPorVersaoAntiga } from '../atualizacaoApp'
 import { CAMPOS_DADOS_GERAIS, CAMPOS_TECNICOS, CAMPOS_TECNICOS_SAIDA, GRUPOS_TEC, GRUPOS_TEC_SAIDA, completarFabricanteSaida, conteudo, pode, temSaida, FORNECEDOR_PHENIX } from './modelo'
 import Detalhamentos from './Detalhamentos.jsx'
 import { JanelaCorrecao, JanelaEmail, JanelaHistorico } from './Janelas.jsx'
@@ -147,6 +149,8 @@ export default function Editor({ id, papel, nome, voltar }) {
   const estado = useRef({})
   // o salvamento roda fora do render (timer, ao sair): lê sempre o estado mais novo por aqui
   useEffect(() => { estado.current = { ins, dets, fotos } })
+  // Editor aberto: a atualização automática do app não recarrega a página por baixo dele.
+  useEffect(() => marcarEdicaoAberta(), [])
 
   const salvarAgora = useCallback(async () => {
     clearTimeout(timer.current)
@@ -281,7 +285,11 @@ export default function Editor({ id, papel, nome, voltar }) {
         const blob = tipo === 'word' ? await rel.gerarWord(atual.ins, atual.dets, atual.fotos) : await rel.gerarPdf(atual.ins, atual.dets, atual.fotos, { interno })
         rel.baixar(blob, rel.nomeArquivo(atual.ins, tipo === 'word' ? 'docx' : 'pdf', interno))
       }
-    } catch (e) { setErro('Não foi possível gerar: ' + e.message) }
+    } catch (e) {
+      // aba com versão antiga (deploy novo apagou o código): já salvou acima, recarrega e o usuário clica de novo
+      if (recarregarPorVersaoAntiga(e)) return
+      setErro('Não foi possível gerar: ' + e.message)
+    }
     setGerando('')
   }
 

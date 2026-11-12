@@ -3,6 +3,7 @@ import { ClipboardCheck, ClipboardList, Plus, Search, Lock, Camera, Factory, Mai
 import './inspecao.css'
 import { supabase, listar, criar, papelAtual, listarLixeira, restaurar, titulosDetalhamentoPadrao, problemaDrive } from './api'
 import { pode, valor } from './modelo'
+import { recarregarPorVersaoAntiga } from '../atualizacaoApp'
 import Editor from './Editor.jsx'
 import { JanelaEmail, JanelaImportar, JanelaModelos, JanelaSelecionarEmail, JanelaTipos } from './Janelas.jsx'
 
@@ -116,7 +117,7 @@ export default function PaginaInspecao({ nome, irParaLista = 0, abrirId = null, 
         const { baixar } = await import('./relatorio')
         baixar(blob, 'Checklist_Inspecao.pdf')
       }
-    } catch (e) { aba?.close(); setErro(e.message) }
+    } catch (e) { aba?.close(); if (!recarregarPorVersaoAntiga(e)) setErro(e.message) }
     setGerandoChecklist(false)
   }
 

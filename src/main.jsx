@@ -5,7 +5,8 @@ import App from './App.jsx'
 import FormularioPromocao from './FormularioPromocao.jsx'
 import FeiraVestePhenix from './FeiraVestePhenix.jsx'
 import CadastroProdutosAvulso from './CadastroProdutosAvulso.jsx'
-import { iniciarVerificacaoAtualizacao } from './atualizacaoApp.js'
+import { iniciarVerificacaoAtualizacao, iniciarAtualizacaoRadar } from './atualizacaoApp.js'
+import { telaLivreParaRecarregar } from './saidaProtegida.js'
 import { registrarAcessoPromocao } from './eventosVestePhenix.js'
 
 // Página pública sem login e sem menu — só alcançável pelo link direto.
@@ -69,6 +70,10 @@ if (ehCadastroProdutos) {
 }
 // Tablets da feira ficam abertos o dia todo: buscam versão nova e recarregam em momento seguro.
 if (ehPromocao || ehFeiraVestePhenix) iniciarVerificacaoAtualizacao()
+// Radar (instalado ou aba): troca de versão ao voltar após 15+ min fora, sem edição aberta;
+// e recarrega na hora se a aba pedir código de um deploy antigo que já sumiu.
+else if (!ehCadastroProdutos && !ehInspecaoCelular) iniciarAtualizacaoRadar(telaLivreParaRecarregar)
+else iniciarVerificacaoAtualizacao()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
