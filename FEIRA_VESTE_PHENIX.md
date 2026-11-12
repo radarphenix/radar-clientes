@@ -212,7 +212,9 @@ responde com o `index.html` (`text/html`), e aparecia **"Failed to fetch dynamic
 - A feira/promoção continuam com `recarregarSeAtualizado()` nos momentos seguros delas.
 - Testado com Playwright sobre o build (`vite preview`): chunk sumido recarrega 1 vez e não entra
   em laço; versão nova + volta após 16 min recarrega; após 5 min, ou sem versão nova, não recarrega.
-  **Não testado** (exige login): o bloqueio com o editor da Inspeção aberto ou Máquinas com alteração.
+  Em produção (12/11, usuário demo, gravações no Supabase bloqueadas no navegador): editor da Inspeção
+  aberto + versão nova + volta após 16 min **não** recarregou; ao sair do editor, recarregou e abriu na
+  tela inicial. Não testado: Máquinas com alteração pendente (usa a mesma guarda já existente).
 
 ## 6. Solução de problemas de instalação
 
