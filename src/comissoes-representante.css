@@ -85,6 +85,15 @@
 .comissoes-ajuste-origem strong { color:#032b63; font-size:11px; }
 .comissoes-ajuste-origem span { color:#526b86; font-size:9px; font-weight:700; line-height:1.45; }
 .comissoes-sem-ajuste { margin:9px 0 4px; color:#718399; font-size:10px; }
+.comissoes-resumo-ano { grid-column:1 / -1; border-color:#9fbfe3; }
+.comissoes-devolucao-linha > div { display:flex; justify-content:space-between; gap:12px; min-width:0; }
+.comissoes-devolucao-linha > div strong { overflow-wrap:anywhere; }
+.comissoes-devolucao-linha > div strong:last-child { flex:none; text-align:right; }
+.comissoes-resumo-ano dl { margin-top:8px; }
+.comissoes-resumo-ano .comissoes-ajuste-origem span { text-align:left; }
+.comissoes-resumo-ano .comissoes-mes-bloco > h4 { text-align:left; }
+.comissoes-resumo-ano dt, .comissoes-resumo-ano .comissoes-devolucao-linha > div strong:first-child { text-align:left; }
+.comissoes-resumo-ano dd, .comissoes-resumo-ano .comissoes-devolucao-linha > div strong:last-child { white-space:nowrap; }
 .comissoes-origem-devolucoes { margin-top:10px; }
 .comissoes-origem-devolucoes summary { cursor:pointer; color:#0057d8; font-size:9px; font-weight:800; list-style:none; }
 .comissoes-origem-devolucoes summary::-webkit-details-marker { display:none; }

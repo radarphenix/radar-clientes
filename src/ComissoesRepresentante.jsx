@@ -80,6 +80,17 @@ function normalizarCodigo(valor) {
 // de zeros), então a checagem precisa comparar com este valor explicitamente.
 const CODIGO_SEM_REPRESENTANTE = "000000";
 
+// Comissão + fixo que as notas emitidas no mês geraram (sem descontar devoluções).
+function comissaoGeradaMes(item) {
+  return Number(item.comissao_gerada || 0) || Number(item.comissao_prevista || 0) + Number(item.estorno_comissao || 0);
+}
+
+function mesPorExtenso(valor) {
+  if (!valor) return "-";
+  const [ano, mes] = String(valor).slice(0, 10).split("-");
+  return ano && mes ? `${MESES[Number(mes) - 1].toLowerCase()}/${ano}` : "-";
+}
+
 function dadosDemonstrativos(ano, mes, codigosRepresentantes) {
   const competencia = `${ano}-${String(mes).padStart(2, "0")}`;
   const codigos = codigosRepresentantes?.length
@@ -222,6 +233,9 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
   const [lancamentos, setLancamentos] = useState([]);
   const [resumos, setResumos] = useState([]);
   const [faixas, setFaixas] = useState([]);
+  // Devoluções do ano inteiro (pela data da devolução) para o Resumo do ano no Histórico.
+  // Os lançamentos acima são só os do mês escolhido.
+  const [devolucoesAno, setDevolucoesAno] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [mensagem, setMensagem] = useState("");
   const [demonstrativo, setDemonstrativo] = useState(false);
@@ -254,7 +268,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
       const proximoMes = new Date(ano, mes, 1);
       const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}-01`;
 
-      const [retornoLancamentos, retornoResumos, retornoFaixas] =
+      const [retornoLancamentos, retornoResumos, retornoFaixas, retornoDevolucoes] =
         await Promise.all([
           supabase
             .from("comissoes_lancamentos")
@@ -274,10 +288,17 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
             .from("comissoes_faixas")
             .select("*")
             .order("valor_meta", { ascending: true }),
+          supabase
+            .from("comissoes_lancamentos")
+            .select("*")
+            .eq("lancamento_devolucao", true)
+            .gte("data_emissao", `${ano}-01-01`)
+            .lt("data_emissao", `${ano + 1}-01-01`)
+            .order("data_emissao", { ascending: true }),
         ]);
 
       if (!ativo) return;
-      const erro = retornoLancamentos.error || retornoResumos.error || retornoFaixas.error;
+      const erro = retornoLancamentos.error || retornoResumos.error || retornoFaixas.error || retornoDevolucoes.error;
 
       if (erro) {
         if (import.meta.env.DEV) {
@@ -291,6 +312,8 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
           setLancamentos(demo.lancamentos);
           setResumos(demo.resumos);
           setFaixas(demo.faixas);
+          setDevolucoesAno(dadosDemonstrativos(ano, 7, administrador ? codigosRepresentantes : [perfil?.codigo_representante].filter(Boolean))
+            .lancamentos.filter((item) => item.lancamento_devolucao));
           setDemonstrativo(true);
           setMensagem(
             "Prévia local: as tabelas consultivas ainda não foram aplicadas ao Supabase.",
@@ -299,6 +322,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
           setLancamentos([]);
           setResumos([]);
           setFaixas([]);
+          setDevolucoesAno([]);
           setDemonstrativo(false);
           setMensagem("Os dados de comissões ainda não estão disponíveis.");
         }
@@ -306,6 +330,7 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
         setLancamentos(retornoLancamentos.data || []);
         setResumos(retornoResumos.data || []);
         setFaixas(retornoFaixas.data || []);
+        setDevolucoesAno(retornoDevolucoes.data || []);
         setDemonstrativo(false);
       }
 
@@ -436,6 +461,22 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
       .sort((a, b) => Number(b.vendas_liquidas || 0) - Number(a.vendas_liquidas || 0)),
     [mes, resumosVisiveis],
   );
+
+  // Resumo do ano (19/11/2026, pedido do usuário): os cards mostram só o que as notas de
+  // cada mês geraram; as devoluções entram aqui, uma vez só, pelo ano em que aconteceram,
+  // com o mês da venda de origem e onde foram descontadas.
+  const resumoAno = useMemo(() => {
+    const faturado = resumosHistorico.reduce((soma, item) => soma + Number(item.vendas_brutas || 0), 0);
+    const gerado = resumosHistorico.reduce((soma, item) => soma + comissaoGeradaMes(item), 0);
+    const devolucoes = devolucoesAno.filter(pertenceAoSelecionado).map((item) => {
+      const recuperar = Number(item.estorno_comissao || 0);
+      const pendente = Number(item.comissao_futura_cancelada || 0);
+      return { item, recuperar, pendente, total: recuperar + pendente };
+    });
+    const totalDevolucoes = devolucoes.reduce((soma, dev) => soma + dev.total, 0);
+    return { faturado, gerado, devolucoes, totalDevolucoes, liquido: gerado - totalDevolucoes };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumosHistorico, devolucoesAno, codigoEmExibicao, exibeEquipe]);
 
   function imprimir() {
     document.body.classList.add("modo-impressao-comissoes");
@@ -615,29 +656,16 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
           {aba === "historico" && (
             <div className="comissoes-historico-grid">
               {resumosHistorico.map((item) => {
-                const descontoPago = Number(item.estorno_comissao || 0);
                 const ajustePercentualManual = Number(item.valor_ajuste_percentual_manual || 0);
-                const reducaoPendente = Number(item.comissao_futura_cancelada || 0);
-                const comissaoGerada = Number(item.comissao_gerada || 0) || Number(item.comissao_prevista || 0) + descontoPago;
+                const descontoDevolucoes = Number(item.estorno_comissao || 0) + Number(item.comissao_futura_cancelada || 0);
+                const comissaoGerada = comissaoGeradaMes(item);
                 const fixoPrevisto = Number(item.valor_fixo || 0);
                 const comissaoPercentual = comissaoGerada - fixoPrevisto;
-                const ajustesMes = lancamentosVisiveis.filter((lancamento) => {
-                  if (!lancamento.lancamento_devolucao) return false;
-                  const data = String(lancamento.data_emissao || "").slice(0, 10).split("-");
-                  return Number(data[0]) === Number(item.ano) && Number(data[1]) === Number(item.mes)
-                    && (exibeEquipe || normalizarCodigo(lancamento.codigo_representante) === normalizarCodigo(item.codigo_representante));
-                });
-                const devolucoesQueReduziramBase = lancamentosVisiveis.filter((lancamento) => {
-                  if (!lancamento.lancamento_devolucao || !lancamento.competencia_origem_devolucao) return false;
-                  const origem = String(lancamento.competencia_origem_devolucao).slice(0, 10).split("-");
-                  return Number(origem[0]) === Number(item.ano) && Number(origem[1]) === Number(item.mes)
-                    && (exibeEquipe || normalizarCodigo(lancamento.codigo_representante) === normalizarCodigo(item.codigo_representante));
-                });
                 return (
                 <article className="comissoes-mes-card" key={`${item.codigo_representante || "equipe"}-${item.ano}-${item.mes}`}>
                   <header>
                     <div><span>Mês</span><strong>{MESES[Number(item.mes) - 1]}</strong></div>
-                    <div className="comissoes-mes-prevista"><span>Líquido previsto</span><strong>{moeda(item.comissao_prevista)}</strong></div>
+                    <div className="comissoes-mes-prevista"><span>{fixoPrevisto !== 0 ? "Comissão + fixo" : "Comissão"}</span><strong>{moeda(comissaoGerada)}</strong></div>
                   </header>
                   <section className="comissoes-mes-bloco">
                     <h4>Notas emitidas no mês</h4>
@@ -662,46 +690,45 @@ function ComissoesRepresentante({ perfil, usuariosPerfis = [] }) {
                       {item.percentual_manual != null && <div className="linha-detalhe"><dt>Ajuste manual vigente ({percentual(item.percentual_sistema)} → {percentual(item.percentual_manual)})</dt><dd>{moeda(ajustePercentualManual)}</dd></div>}
                       {item.percentual_manual != null && item.motivo_percentual_manual && <div className="linha-detalhe"><dt>Motivo do último ajuste manual</dt><dd>{item.motivo_percentual_manual}</dd></div>}
                     </dl>
-                    {devolucoesQueReduziramBase.length > 0 && (
-                      <details className="comissoes-origem-devolucoes">
-                        <summary>
-                          Nota{devolucoesQueReduziramBase.length > 1 ? "s" : ""} que reduziu{devolucoesQueReduziramBase.length > 1 ? "ram" : ""} a base neste mês
-                        </summary>
-                        {devolucoesQueReduziramBase.map((dev) => (
-                          <div className="comissoes-ajuste-origem" key={dev.id}>
-                            <strong>NF {dev.nota_origem_devolucao || "-"} · devolvida em {dataBr(dev.data_emissao)}</strong>
-                            <span>Devolução {dev.nota_fiscal} · emissão da nota de origem: {dataBr(dev.competencia_origem_devolucao)}</span>
-                            {exibeEquipe && <span>Representante: {nomeRepresentante(dev.codigo_representante)}</span>}
-                            <span>Valor devolvido: {moeda(Math.abs(Number(dev.valor_parcela || 0)))} · percentual aplicado: {percentual(dev.percentual_comissao)}</span>
-                          </div>
-                        ))}
-                      </details>
+                    {descontoDevolucoes > 0.005 && (
+                      <p className="comissoes-sem-ajuste">Devolução descontada nos vencimentos deste mês: {moeda(descontoDevolucoes)}. Ela não muda o que as vendas deste mês geraram; veja o Resumo do ano.</p>
                     )}
-                  </section>
-                  <section className="comissoes-mes-bloco calculo ajustes-mes">
-                    <h4>Ajustes por devoluções ocorridas neste mês</h4>
-                    <dl>
-                      <div className="linha-deducao"><dt>(−) Recuperar de valores já pagos</dt><dd>{moeda(descontoPago)}</dd></div>
-                      <div><dt>Redução em lançamentos ainda pendentes</dt><dd>{moeda(reducaoPendente)}</dd></div>
-                      <div className="linha-total destaque"><dt>(=) Líquido previsto neste mês</dt><dd>{moeda(item.comissao_prevista)}</dd></div>
-                    </dl>
-                    {ajustesMes.length ? ajustesMes.map((ajuste) => {
-                      const faixaPaga = Number(ajuste.ajuste_faixa_pago || 0);
-                      const faixaPendente = Number(ajuste.ajuste_faixa_pendente || 0);
-                      return <div className="comissoes-ajuste-origem" key={ajuste.id}>
-                        <strong>Devolução {ajuste.nota_fiscal} · origem {ajuste.nota_origem_devolucao || "-"}</strong>
-                        <span>Competência original: {ajuste.competencia_origem_devolucao ? MESES[Number(String(ajuste.competencia_origem_devolucao).slice(5,7))-1] + "/" + String(ajuste.competencia_origem_devolucao).slice(0,4) : "-"}</span>
-                        <span>Vendas da competência: {moeda(ajuste.vendas_competencia_original)} → {moeda(ajuste.vendas_competencia_recalculada)}</span>
-                        <span>Faixa: {percentual(ajuste.percentual_faixa_original)} → {percentual(ajuste.percentual_faixa_recalculado)}</span>
-                        <span>Nota devolvida — pago a recuperar: {moeda(Math.max(0,Number(ajuste.estorno_comissao || 0)-faixaPaga))} · pendente cancelado: {moeda(Math.max(0,Number(ajuste.comissao_futura_cancelada || 0)-faixaPendente))}</span>
-                        <span>Demais notas da competência — pago a recuperar: {moeda(faixaPaga)} · pendente reduzido: {moeda(faixaPendente)}</span>
-                      </div>;
-                    }) : <p className="comissoes-sem-ajuste">Nenhuma devolução processada neste mês.</p>}
                   </section>
                   <footer><span>Comissão já marcada como paga nas notas deste mês</span><strong>{moeda(item.comissao_paga)}</strong></footer>
                 </article>
                 );
               })}
+              <article className="comissoes-mes-card comissoes-resumo-ano">
+                <header>
+                  <div><span>Resumo do ano</span><strong>{ano}</strong></div>
+                  <div className="comissoes-mes-prevista"><span>Comissão total do ano</span><strong>{moeda(resumoAno.liquido)}</strong></div>
+                </header>
+                <section className="comissoes-mes-bloco">
+                  <dl>
+                    <div><dt>Faturado no ano</dt><dd>{moeda(resumoAno.faturado)}</dd></div>
+                    <div className="linha-total"><dt>Comissão + fixo gerados pelas vendas</dt><dd>{moeda(resumoAno.gerado)}</dd></div>
+                  </dl>
+                </section>
+                <section className="comissoes-mes-bloco">
+                  <h4>(−) Devoluções ocorridas no ano</h4>
+                  {resumoAno.devolucoes.length ? resumoAno.devolucoes.map(({ item: dev, recuperar, pendente, total }, indice) => (
+                    <div className="comissoes-ajuste-origem comissoes-devolucao-linha" key={dev.id || `${dev.nota_fiscal}-${indice}`}>
+                      <div><strong>{indice + 1}. NF {dev.nota_origem_devolucao || "-"} · {dev.nome_cliente || dev.codigo_cliente || "-"}</strong><strong>{moeda(total)}</strong></div>
+                      {exibeEquipe && <span>Representante: {nomeRepresentante(dev.codigo_representante)}</span>}
+                      <span>Venda de {mesPorExtenso(dev.competencia_origem_devolucao)} · devolvida em {dataBr(dev.data_emissao)} (nota de devolução {dev.nota_fiscal || "-"}, {moeda(Math.abs(Number(dev.valor_parcela || 0)))})</span>
+                      {recuperar > 0.005 && <span>Recuperado de comissão já paga: {moeda(recuperar)}, descontado nos vencimentos de {mesPorExtenso(dev.data_competencia_pagamento || dev.data_emissao)}</span>}
+                      {pendente > 0.005 && <span>Reduzido de lançamentos ainda pendentes: {moeda(pendente)}</span>}
+                      {Number(dev.percentual_faixa_original || 0) !== Number(dev.percentual_faixa_recalculado || 0) && Number(dev.percentual_faixa_recalculado || 0) > 0 && (
+                        <span>A venda de origem caiu de faixa ({percentual(dev.percentual_faixa_original)} → {percentual(dev.percentual_faixa_recalculado)}): o valor inclui o ajuste nas demais notas daquele mês</span>
+                      )}
+                    </div>
+                  )) : <p className="comissoes-sem-ajuste">Nenhuma devolução no ano.</p>}
+                  <dl>
+                    <div className="linha-deducao"><dt>Total de devoluções</dt><dd>{moeda(resumoAno.totalDevolucoes)}</dd></div>
+                    <div className="linha-total destaque"><dt>(=) Comissão total do ano</dt><dd>{moeda(resumoAno.liquido)}</dd></div>
+                  </dl>
+                </section>
+              </article>
             </div>
           )}
         </div>

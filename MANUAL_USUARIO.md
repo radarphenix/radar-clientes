@@ -1086,7 +1086,17 @@ mensal do representante.
 
 ### Histórico anual
 
-Aqui sim a competência é pela **emissão** da nota, porque é o que define a faixa de comissão do mês. Quando uma devolução posterior reduz a base de vendas de um mês já fechado, aparece a linha "Base válida após devoluções posteriores" com um link "Ver devolução(ões) que reduziu(ram) a base" - mostra a nota de origem, a devolução, a data e o representante responsável.
+Aqui sim a competência é pela **emissão** da nota, porque é o que define a faixa de comissão do mês. Quando uma devolução posterior reduz a base de vendas de um mês já fechado, aparece a linha "Base válida após devoluções posteriores".
+
+Desde 19/11/2026, **cada card mostra só o que as notas daquele mês geraram** (vendas, faixa, comissão, fixo e "Total comissão + fixo", que também fica no topo do card). A devolução não é mais subtraída do card: ela muda o que ele recebe nos vencimentos, não o que as vendas do mês renderam. No mês em que uma devolução foi descontada, o card traz só um aviso: "Devolução descontada nos vencimentos deste mês: R$ X ... veja o Resumo do ano".
+
+No fim do histórico fica o **Resumo do ano**:
+
+- Faturado no ano e Comissão + fixo gerados pelas vendas (a soma dos cards);
+- **(−) Devoluções ocorridas no ano**, uma por linha, numeradas: nota de origem e cliente, mês da venda de origem, data e nota da devolução, quanto foi recuperado de comissão já paga (e em que mês foi descontado), quanto foi reduzido de lançamentos pendentes e, se a venda de origem caiu de faixa, o aviso de que o valor inclui o ajuste nas demais notas daquele mês;
+- Total de devoluções e **(=) Comissão total do ano**.
+
+A devolução entra no resumo do **ano em que aconteceu**, mesmo que a venda seja do ano anterior (a linha mostra "Venda de dezembro/2025").
 
 Na visão **Toda a equipe** (administrador), "Vendas emitidas" e "Vendas líquidas" usam o total da empresa: uma nota com dois representantes conta uma vez só, igual ao Painel BI e ao MW Comissões. Na visão de um representante a nota compartilhada continua contando inteira para ele, porque vale para a meta de cada um (07/10/2026).
 
@@ -1094,7 +1104,7 @@ Na visão **Toda a equipe** (administrador), "Vendas emitidas" e "Vendas líquid
 
 Regra de 07/10/2026 - visão micro (representante) x macro (gestor):
 
-- **Representante**: a parcela retida não existe para ele - não aparece na lista, não soma nos totais, não aparece no card do Meu Dia, e a comissão dela também não entra no "Total comissão" / "Líquido previsto" do Histórico. O banco nem envia essa linha para a conta dele.
+- **Representante**: a parcela retida não existe para ele - não aparece na lista, não soma nos totais, não aparece no card do Meu Dia, e a comissão dela também não entra no "Total comissão" do Histórico nem no Resumo do ano. O banco nem envia essa linha para a conta dele.
 - **Administrador** (aba Comissões): a parcela aparece em cinza com a situação **Retida** e a comissão **riscada** (a comissão que ela teria), fora dos totais, com o total retido destacado acima da lista. No Histórico aparece a linha "Retida no MW Comissões (já fora do total, oculta ao representante)".
 
 Desmarcar o Pagar depois de revisado também tira a parcela da tela do representante na próxima sincronização, sem aviso.
