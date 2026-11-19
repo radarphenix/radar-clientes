@@ -1,5 +1,13 @@
 # CONTEXTO_PROJETO
 
+## Comissoes: Resumo do ano no Historico anual (2026-11-19)
+
+- Cards do mes mostram so o que as vendas do mes geraram ("Comissao + fixo"); devolucao descontada no mes vira so um aviso.
+- Novo card **Resumo do ano** no fim: faturado, gerado, devolucoes numeradas (NF/cliente, mes da venda de origem, data/NF da devolucao, recuperado de comissao paga e mes do desconto, reduzido de pendentes, aviso de queda de faixa), total e comissao total do ano. Devolucao conta no ano em que aconteceu.
+- Commit `e3ba01f`, push feito (19/11). Manual (Historico anual) e POP-COM-001 v1.1 atualizados. Testado 1920/1366/390.
+- Nao coberto: devolucao de venda do ano anterior (sem dado real).
+- View `EX_MW_VW_RADAR_COMISSOES_RES`: COMISSAO_PREVISTA corrigida (ajuste de faixa descontado 2x), aplicada na oficial 19/11 - ver MWCOMISSOESSYNC_ACOMPANHAMENTO.
+
 ## Cadastro de Maquinas - mao dupla com o CIGAM (iniciado 2026-11-03)
 
 Contrato unico: `../../01_Desktop/MWCadastroMaquinas/Docs/CADASTRO_MAQUINAS.md` (irmaos: este Radar,
@@ -15,6 +23,25 @@ MWCadastroMaquinas e MWCadastroMaquinasSync; nao e o MWMaquinasPhenix).
 - **Saida protegida (03/11)**: `src/saidaProtegida.js` - toda troca de tela do App (`setTelaAtual`) consulta a guarda registrada pela pagina; o cadastro de maquina com alteracao sem salvar pergunta antes de sair pelo menu (Clientes, Rotas, ☰ no celular), alem do Voltar/voltar do navegador. Outras telas podem usar `definirGuardaSaida` da mesma forma.
 - **Etapa 3 (03/11) - sync**: `../../01_Desktop/MWCadastroMaquinasSync` homologado no XE local contra o Supabase oficial (mao dupla, conflito, acentos, fuso, vendas com medida e numero da maquina, selo "Sincronizado" na tela). Dados de teste apagados e `cadastro_maquinas_sync_status` zerado. Falta rodar 001-002 no phenixteste/oficial e agendar no MWAgendador (a cada 5 min, `--silencioso`).
 - **Etapa 4 (03/11) - desktop**: `../../01_Desktop/MWCadastroMaquinas` (pesquisa unica + cadastro/edicao + pesquisa de cliente F5) testado no XE e pelo sync ate o Radar; dados de teste apagados. Regra que mudar aqui (validacao, campos, comparacao de vendas) muda em `Dados.cs` do desktop e no `Program.cs` do sync.
+- **Importacao do Agendor CRM (03/11)**: migration `20261103170000_cadastro_maquinas_origem_agendor.sql` (origem
+  `AGENDOR`, aplicada; Oracle `005_origem_agendor.sql`). 122 maquinas / 625 itens importados (empresa casada por
+  CNPJ, nome+UF ou CEP, so o conferido pelo usuario). Chave de nao repetir em `id_feira_origem` (`AGENDOR:...`).
+- **Medida estimada (03/11)**: venda antiga sem CD_CARAC tem a medida lida do texto do item, depois da
+  **observacao da nota** (`FAOBSERN`, linhas juntadas, medidas na ordem dos itens) e por ultimo do material;
+  `medida_pela_descricao` (migration `20261103150000_...`) mostra "≈". Oficial: 329 de 379 vendas com medida.
+- **NF cancelada (03/11)**: status na `FAGERNFE` (5 = cancelada); o CIGAM apaga os itens do ESMOVIME. O sync
+  apaga do Radar as vendas do periodo lido que sumiram e ignora nota com status 5.
+- **Tela mais limpa (03/11, pedido do usuario)**: abre so com a busca; cartao sem selos de origem/pendente;
+  "+ N item(ns)" abre/fecha a lista (stopPropagation: nao filtra vendas); sync numa linha discreta, laranja so
+  com `resultado = 'ERRO'`; maquina escolhida ordena as vendas (nº no pedido, medida mais parecida, sem medida
+  por ultimo; mesma regra no desktop). Testado em 1920/1366/390.
+- **Situacao (03/11 fim do dia): em producao.** Oracle oficial com 002 e 005; sync novo publicado e rodado com
+  `--vendas-completo` (379 vendas, nada a apagar); agendado no MWAgendador; desktop no GO-Global; tela no
+  commit `df271fe`. Pendente: nenhum. A remocao de venda de NF cancelada no Supabase ainda nao aconteceu na
+  pratica (nenhuma cancelada depois do envio): conferir no `sucesso.txt` ("Vendas apagadas do Radar") quando ocorrer.
+- **Cuidado ao testar**: nunca rodar o sync contra o XE com maquinas pendentes (ele as envia ao XE e marca como
+  sincronizadas no Supabase; nunca chegariam a oficial). Para testar a leitura de vendas, carregar o
+  `MWCadastroMaquinas.exe` por reflexao e trocar `Dados.ConnectionString` para o XE.
 
 ## Inspecao de Qualidade + acessos por menu (2026-10-27/28)
 
