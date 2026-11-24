@@ -1596,7 +1596,8 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
 - Pedido "em aberto" = situação diferente de F (situações vistas: L Liberado, P Pendente, F Faturado).
 - **Alertas na rota**: `src/AlertasCigam.jsx` + `useAlertasCigam` (`src/lib/cigamAcompanhamentos.js`) em `RotasOperacao.jsx`; função `?alertas=cod1,cod2,...` (até 80) faz 2 consultas para a rota toda (`CodigoEmpresa in (...)` nos títulos vencidos e `$apply=groupby((CodigoCliente),aggregate(DataEmissao with max as Ultima))` nas notas). Liga com `clientes.cigam_vendas` ou `clientes.cigam_financeiro`; sem compra = 90 dias (`DIAS_SEM_COMPRA_ALERTA`).
 - Contatos do WhatsApp **já vêm do CIGAM** pelo RadarSync (`VECEMPRE` → `clientes_contatos`); o `ge/Contato/Buscar` da API é outra tabela, quase só e-mails, não acrescenta.
-- A conferir com o usuário: há títulos com 300+ dias "em aberto" e pedidos pendentes com prazo vencido; pode ser baixa/atualização não feita no CIGAM.
+- **Visão geral** (`VisaoGeralCigam`): calculada no navegador a partir de pedidos (`$expand=Itens($expand=Material)`, até 100), notas (até 200), títulos abertos e **pagos** (`?ficha=pagos`: `Tipo eq 'c'`, o CIGAM troca R → c na liquidação). Cache de 5 min por cliente+parte em `FichaCigam.jsx`. NotaFiscal não tem `Itens` na API: produtos vêm dos itens dos pedidos.
+- **Títulos "vencidos" da Bragagnolo (24/11/2026)**: conferido no CIGAM pela API, as parcelas 10147/1-2, 10148/1-2, 10249/3 e 10286/1-3 são R01 com saldo cheio e **sem E01 de baixa** (as 10249/1-2 têm E01 e viraram tipo c). O Comissões (view `EX_MW_VW_RADAR_COMISSOES`, regra R01 + saldo do GFLANCAM ao vivo) mostra as mesmas como "Vencida": regra correta, falta baixa no financeiro do CIGAM. Usuário diz que o cliente não deve; acertar no CIGAM corrige Radar e Comissões juntos.
 
 ## Segurança: revisão de 2026-11-24
 

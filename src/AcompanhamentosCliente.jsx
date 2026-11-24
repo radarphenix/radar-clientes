@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { chamarAcompanhamentosCigam as chamar } from "./lib/cigamAcompanhamentos.js";
-import { NotasCigam, PedidosCigam, TitulosCigam } from "./FichaCigam.jsx";
+import { NotasCigam, PedidosCigam, TitulosCigam, VisaoGeralCigam } from "./FichaCigam.jsx";
 
 // Acompanhamentos do cliente lidos do CIGAM (somente leitura) pela função cigam-acompanhamentos.
 // Detalhes da integração: INTEGRACAO_CIGAM_ESTUDO.md.
@@ -166,13 +166,15 @@ function Acompanhamento({ item, cliente }) {
 
 export default function AcompanhamentosCliente({ cliente, podeVendas = false, podeFinanceiro = false }) {
   const abas = [
+    ...(podeVendas ? [{ id: "visao", nome: "Visão geral", curto: "Geral" }] : []),
     { id: "acomp", nome: "Acompanhamentos", curto: "Acomp." },
     ...(podeVendas ? [{ id: "pedidos", nome: "Pedidos" }, { id: "notas", nome: "Notas" }] : []),
-    ...(podeFinanceiro ? [{ id: "titulos", nome: "Financeiro" }] : []),
+    ...(podeFinanceiro ? [{ id: "titulos", nome: "Financeiro", curto: "Financ." }] : []),
   ];
-  const [aba, setAba] = useState("acomp");
+  const inicial = podeVendas ? "visao" : "acomp";
+  const [aba, setAba] = useState(inicial);
   // Aba já aberta fica montada (escondida) para não consultar o CIGAM de novo ao voltar nela.
-  const [visitadas, setVisitadas] = useState(["acomp"]);
+  const [visitadas, setVisitadas] = useState(["acomp", inicial]);
   function abrirAba(id) {
     setAba(id);
     if (!visitadas.includes(id)) setVisitadas([...visitadas, id]);
@@ -297,6 +299,11 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
         </nav>
       )}
 
+      {visitadas.includes("visao") && (
+        <div hidden={aba !== "visao"}>
+          <VisaoGeralCigam cliente={codigoCigam(cliente)} podeFinanceiro={podeFinanceiro} irPara={abrirAba} />
+        </div>
+      )}
       {visitadas.includes("pedidos") && <div hidden={aba !== "pedidos"}><PedidosCigam cliente={codigoCigam(cliente)} /></div>}
       {visitadas.includes("notas") && <div hidden={aba !== "notas"}><NotasCigam cliente={codigoCigam(cliente)} /></div>}
       {visitadas.includes("titulos") && <div hidden={aba !== "titulos"}><TitulosCigam cliente={codigoCigam(cliente)} /></div>}

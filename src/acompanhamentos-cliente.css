@@ -545,3 +545,71 @@
 }
 .alerta-cigam.vencido { background: #fee2e2; color: #b91c1c; }
 .alerta-cigam.compra { background: #fef3c7; color: #92400e; }
+
+/* Ficha CIGAM: Visão geral */
+.ficha-visao { display: grid; gap: 14px; text-align: left; }
+.ficha-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ficha-kpi {
+  display: grid; gap: 4px; padding: 14px; border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35); background: #fff;
+}
+.ficha-kpi span { font-size: 0.8rem; color: #64748b; }
+.ficha-kpi strong { font-size: 1.15rem; color: #0f172a; }
+.ficha-kpi small { font-size: 0.78rem; color: #64748b; }
+.positivo { color: #15803d !important; }
+.negativo { color: #b91c1c !important; }
+.ficha-bloco { padding: 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: #fff; }
+.ficha-bloco h3 { margin: 0 0 10px; font-size: 0.95rem; }
+.ficha-bloco-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ficha-bloco-topo small { color: #94a3b8; font-size: 0.78rem; }
+.ficha-colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.ficha-link {
+  background: none; border: none; box-shadow: none; padding: 2px 0; color: #0b4fd6;
+  font-weight: 600; font-size: 0.85rem; cursor: pointer; text-decoration: underline;
+}
+.ficha-fatos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ficha-fatos li { display: flex; justify-content: space-between; gap: 10px; font-size: 0.9rem; }
+.ficha-fatos li span { color: #64748b; }
+.ficha-grafico { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; height: 170px; align-items: end; }
+.ficha-barra { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; gap: 4px; }
+.ficha-barra-valor { font-size: 0.68rem; color: #475569; white-space: nowrap; overflow: hidden; min-height: 1em; }
+.ficha-barra-trilho { display: flex; align-items: flex-end; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+.ficha-barra-cheia { width: 100%; background: linear-gradient(180deg, #3b82f6, #0b4fd6); border-radius: 6px 6px 0 0; }
+.ficha-barra-mes { font-size: 0.72rem; color: #64748b; }
+.ficha-produtos { display: grid; gap: 6px; }
+.ficha-produto { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.ficha-produto:last-child { border-bottom: none; }
+.ficha-produto-pos {
+  width: 26px; height: 26px; border-radius: 50%; background: #eff6ff; color: #0b4fd6;
+  display: grid; place-items: center; font-weight: 700; font-size: 0.8rem;
+}
+.ficha-produto-nome { display: grid; gap: 2px; min-width: 0; }
+.ficha-produto-nome small { color: #64748b; font-size: 0.78rem; }
+/* Itens do pedido */
+.ficha-linha-clicavel { cursor: pointer; grid-template-areas: "principal valor" "detalhe valor" "itens itens"; }
+.ficha-linha-clicavel:hover { border-color: #93c5fd; }
+.ficha-itens { grid-area: itens; display: grid; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; cursor: default; }
+.ficha-itens.vazio { color: #94a3b8; font-size: 0.85rem; }
+.ficha-item { display: flex; justify-content: space-between; gap: 12px; font-size: 0.86rem; }
+.ficha-item-nome { display: grid; gap: 2px; min-width: 0; }
+.ficha-item-nome small { color: #94a3b8; }
+.ficha-item-num { display: grid; justify-items: end; gap: 2px; white-space: nowrap; color: #475569; }
+@media (max-width: 900px) { .ficha-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .ficha-linha-clicavel { grid-template-areas: "principal" "detalhe" "valor" "itens"; }
+  .ficha-grafico { height: 140px; gap: 3px; }
+  .ficha-barra-valor { display: none; }
+  .ficha-item { flex-direction: column; gap: 2px; }
+  .ficha-item-num { justify-items: start; }
+  .ficha-produto { grid-template-columns: 24px 1fr; }
+  .ficha-produto .ficha-valor { grid-column: 2; }
+}
+.ficha-produto .ficha-valor { grid-area: auto; }
+@media (max-width: 560px) {
+  .ficha-abas { gap: 0; }
+  .ficha-abas button { padding: 10px 7px; font-size: 0.9rem; }
+}
+@media (max-width: 560px) {
+  .ficha-barra { grid-template-rows: 1fr auto; }
+  .ficha-produto .ficha-valor { grid-column: 2; }
+}

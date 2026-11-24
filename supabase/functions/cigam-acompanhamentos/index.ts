@@ -245,6 +245,7 @@ const FICHA_PERMISSAO: Record<string, string> = {
   pedidos: "clientes.cigam_vendas",
   notas: "clientes.cigam_vendas",
   titulos: "clientes.cigam_financeiro",
+  pagos: "clientes.cigam_financeiro",
 };
 
 const txt = (v: unknown) => (typeof v === "string" ? v.trim() : v ?? null) || null;
@@ -253,23 +254,34 @@ const odata = (s: string) => s.replace(/ /g, "%20").replace(/'/g, "%27");
 async function buscarFicha(parte: string, cliente: string) {
   type L = Record<string, unknown>;
   if (parte === "pedidos") {
-    const r = (await api(odata(`comercial/fa/Pedido/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataPedido desc&$top=60`))) as L[];
+    const r = (await api(odata(`comercial/fa/Pedido/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataPedido desc&$top=100&$expand=Itens($expand=Material)`))) as L[];
     return (r || []).map((p) => ({
       codigo: txt(p.Codigo), data: txt(p.DataPedido), situacao: txt(p.Situacao), situacao_descricao: txt(p.SituacaoDescricao),
       prazo_entrega: txt(p.PrazoEntrega), prazo_programado: txt(p.PrazoProgramado),
       total: Number(p.TotalPedido) || 0, faturado: Number(p.TotalFaturamento) || 0,
       tipo: txt(p.TipoNotaDescricao), representante: txt(p.CodigoRepresentante),
+      itens: ((p.Itens as L[]) || []).map((i) => ({
+        seq: i.Sequencia, material: txt(i.CodigoMaterial), descricao: txt((i.Material as L)?.Descricao) || txt(i.CodigoMaterial),
+        un: txt(i.CodigoUnidadeMedida), qtd: Number(i.Quantidade) || 0, preco: Number(i.PrecoUnitario) || 0,
+        desconto: Number(i.PercentualDesconto) || 0, total: Number(i.TotalItemLiquido) || 0,
+        situacao: txt(i.Situacao), prazo: txt(i.PrazoEntrega),
+      })),
     }));
   }
   if (parte === "notas") {
-    const r = (await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataEmissao desc&$top=40`))) as L[];
+    const r = (await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataEmissao desc&$top=200`))) as L[];
     return (r || []).map((n) => ({
       nf: n.NF, serie: txt(n.CodigoSerie), emissao: txt(n.DataEmissao), saida: txt(n.DataSaida),
       total: Number(n.TotalNF) || 0, mercadoria: Number(n.TotalMercadoria) || 0,
       pedido: txt(n.CodigoPedido), cfop: txt(n.Cfop), tipo: txt(n.TipoNotaDescricao), frete: txt(n.TipoFreteDescricao),
     }));
   }
-  // títulos a receber em aberto (saldo > 0)
+  // Títulos a receber: em aberto = Tipo 'R' com saldo; pagos = Tipo 'c' (o CIGAM troca o tipo na liquidação,
+  // mesma regra da view de comissões). Os pagos alimentam a pontualidade.
+  if (parte === "pagos") {
+    const p = (await api(odata(`financas/gf/LancamentoFinanceiro/BuscarLancamentos?$filter=CodigoEmpresa eq '${cliente}' and Tipo eq 'c'&$orderby=Vencimento desc&$top=300`))) as L[];
+    return (p || []).map((t) => ({ vencimento: txt(t.Vencimento), pagamento: txt(t.DataUltimaLiquidacao), valor: Number(t.Valor) || 0 }));
+  }
   const r = (await api(odata(`financas/gf/LancamentoFinanceiro/BuscarLancamentos?$filter=CodigoEmpresa eq '${cliente}' and Tipo eq 'R' and Saldo gt 0&$orderby=Vencimento&$top=200`))) as L[];
   return (r || []).map((t) => ({
     codigo: t.Codigo, nf: t.Nf || null, parcela: txt(t.Complemento), emissao: txt(t.Emissao), vencimento: txt(t.Vencimento),

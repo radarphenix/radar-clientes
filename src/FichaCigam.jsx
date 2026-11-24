@@ -13,28 +13,42 @@ function data(d) {
   return dia ? `${dia}/${m}/${a}` : "-";
 }
 
+const numero = (v) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 const hojeISO = () => new Date().toISOString().slice(0, 10);
 
 function diasEntre(de, ate) {
   return Math.round((new Date(`${ate}T12:00:00`) - new Date(`${de}T12:00:00`)) / 86400000);
 }
 
-function useFicha(cliente, parte) {
+// Cache por cliente+parte (5 min): Visão geral e as abas usam os mesmos dados sem consultar o CIGAM de novo.
+const cache = new Map();
+function buscar(cliente, parte, forcar) {
+  const chave = `${cliente}|${parte}`;
+  const c = cache.get(chave);
+  if (c && !forcar && Date.now() - c.em < 300000) return c.promessa;
+  const promessa = chamar({ cliente, ficha: parte }).then(async (r) => {
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || `Erro ${r.status}`);
+    return j.itens || [];
+  });
+  promessa.catch(() => cache.delete(chave));
+  cache.set(chave, { promessa, em: Date.now() });
+  return promessa;
+}
+
+function useFicha(cliente, parte, ativo = true) {
   const [estado, setEstado] = useState({ itens: null, erro: "" });
   const [tentativa, setTentativa] = useState(0);
   useEffect(() => {
-    let ativo = true;
-    chamar({ cliente, ficha: parte })
-      .then(async (r) => {
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error || `Erro ${r.status}`);
-        if (ativo) setEstado({ itens: j.itens || [], erro: "" });
-      })
-      .catch((e) => ativo && setEstado({ itens: null, erro: e.message || "Falha ao consultar o CIGAM." }));
+    if (!ativo) return undefined;
+    let vivo = true;
+    buscar(cliente, parte, tentativa > 0)
+      .then((itens) => vivo && setEstado({ itens, erro: "" }))
+      .catch((e) => vivo && setEstado({ itens: null, erro: e.message || "Falha ao consultar o CIGAM." }));
     return () => {
-      ativo = false;
+      vivo = false;
     };
-  }, [cliente, parte, tentativa]);
+  }, [cliente, parte, tentativa, ativo]);
   const repetir = () => {
     setEstado({ itens: null, erro: "" });
     setTentativa((t) => t + 1);
@@ -63,10 +77,31 @@ function Estado({ estado, repetir, vazio, children }) {
   return children;
 }
 
+function ItensPedido({ itens }) {
+  if (!itens.length) return <div className="ficha-itens vazio">Pedido sem itens no CIGAM.</div>;
+  return (
+    <div className="ficha-itens" onClick={(e) => e.stopPropagation()}>
+      {itens.map((i) => (
+        <div key={i.seq} className="ficha-item">
+          <div className="ficha-item-nome">
+            <strong>{i.descricao}</strong>
+            <small>Cód. {i.material}{i.prazo ? ` · entrega ${data(i.prazo)}` : ""}</small>
+          </div>
+          <div className="ficha-item-num">
+            <span>{numero(i.qtd)} {i.un || ""} × {moeda(i.preco)}{i.desconto ? ` (−${numero(i.desconto)}%)` : ""}</span>
+            <strong>{moeda(i.total)}</strong>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ------------------------------------------------------------------ Pedidos
 export function PedidosCigam({ cliente }) {
   const [estado, repetir] = useFicha(cliente, "pedidos");
   const [soAbertos, setSoAbertos] = useState(true);
+  const [abertoPedido, setAbertoPedido] = useState(null);
   const itens = estado.itens || [];
   const abertos = itens.filter((p) => p.situacao !== "F");
   const lista = soAbertos ? abertos : itens;
@@ -93,8 +128,18 @@ export function PedidosCigam({ cliente }) {
         <div className="ficha-lista">
           {lista.map((p) => {
             const atrasado = p.situacao !== "F" && p.prazo_entrega && p.prazo_entrega < hoje;
+            const aberto = abertoPedido === p.codigo;
             return (
-              <article key={p.codigo} className="ficha-linha">
+              <article
+                key={p.codigo}
+                className="ficha-linha ficha-linha-clicavel"
+                data-aberto={aberto}
+                role="button"
+                tabIndex={0}
+                aria-expanded={aberto}
+                onClick={() => setAbertoPedido(aberto ? null : p.codigo)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setAbertoPedido(aberto ? null : p.codigo))}
+              >
                 <div className="ficha-linha-principal">
                   <strong>Pedido {p.codigo}</strong>
                   <span className={`ficha-selo sit-${(p.situacao || "").toLowerCase()}`}>{p.situacao_descricao || p.situacao}</span>
@@ -104,8 +149,10 @@ export function PedidosCigam({ cliente }) {
                   <span>Emitido {data(p.data)}</span>
                   <span>Entrega {data(p.prazo_entrega)}</span>
                   {p.tipo && p.tipo !== "Normal" && <span>{p.tipo}</span>}
+                  <span>{p.itens?.length || 0} {p.itens?.length === 1 ? "item" : "itens"} {aberto ? "▴" : "▾"}</span>
                 </div>
                 <strong className="ficha-valor">{moeda(p.total)}</strong>
+                {aberto && <ItensPedido itens={p.itens || []} />}
               </article>
             );
           })}
@@ -150,7 +197,7 @@ export function NotasCigam({ cliente }) {
           </article>
         ))}
       </div>
-      <p className="ficha-nota">Mostra as 40 notas mais recentes.</p>
+      <p className="ficha-nota">Mostra até as 200 notas mais recentes.</p>
     </Estado>
   );
 }
@@ -201,5 +248,270 @@ export function TitulosCigam({ cliente }) {
         })}
       </div>
     </Estado>
+  );
+}
+
+// ------------------------------------------------------------------ Visão geral
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const moedaCurta = (v) => {
+  const n = Number(v || 0);
+  if (n >= 1e6) return `${(n / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+  if (n >= 1e3) return `${(n / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mil`;
+  return n ? n.toLocaleString("pt-BR", { maximumFractionDigits: 0 }) : "";
+};
+function somarDias(iso, dias) {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+function calcular(pedidos, notas, abertos, pagos) {
+  const hoje = hojeISO();
+  const ha12 = somarDias(hoje, -365);
+  const ha24 = somarDias(hoje, -730);
+  const r = {};
+
+  // Compras (notas)
+  const n12 = notas.filter((n) => (n.emissao || "") >= ha12);
+  const n24 = notas.filter((n) => (n.emissao || "") >= ha24 && (n.emissao || "") < ha12);
+  r.total12 = n12.reduce((s, n) => s + n.total, 0);
+  r.total24 = n24.reduce((s, n) => s + n.total, 0);
+  r.variacao = r.total24 > 0 ? ((r.total12 - r.total24) / r.total24) * 100 : null;
+  r.primeiraNota = notas.length ? notas[notas.length - 1].emissao : null;
+  r.ticket = n12.length ? r.total12 / n12.length : 0;
+  r.qtd12 = n12.length;
+  const datas = [...new Set(notas.map((n) => n.emissao).filter(Boolean))].sort();
+  const intervalos = datas.slice(1).map((d, i) => diasEntre(datas[i], d)).slice(-10);
+  r.frequencia = intervalos.length ? Math.round(intervalos.reduce((s, x) => s + x, 0) / intervalos.length) : null;
+  r.ultima = datas[datas.length - 1] || null;
+  r.diasSemComprar = r.ultima ? diasEntre(r.ultima, hoje) : null;
+  r.proxima = r.ultima && r.frequencia ? somarDias(r.ultima, r.frequencia) : null;
+
+  // Compras por mês (últimos 12 meses, mês atual incluso)
+  const base = new Date(`${hoje}T12:00:00`);
+  r.meses = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(base.getFullYear(), base.getMonth() - 11 + i, 1);
+    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return { chave, rotulo: MESES[d.getMonth()], ano: d.getFullYear(), total: 0 };
+  });
+  for (const n of notas) {
+    const m = r.meses.find((x) => (n.emissao || "").startsWith(x.chave));
+    if (m) m.total += n.total;
+  }
+
+  // Produtos (itens dos pedidos)
+  const prod = new Map();
+  for (const p of pedidos)
+    for (const i of p.itens || []) {
+      const k = i.material || i.descricao;
+      const a = prod.get(k) || { descricao: i.descricao, material: i.material, un: i.un, qtd: 0, valor: 0, pedidos: 0, ultima: "", preco: 0 };
+      a.qtd += i.qtd;
+      a.valor += i.total;
+      a.pedidos += 1;
+      if ((p.data || "") >= a.ultima) {
+        a.ultima = p.data || "";
+        a.preco = i.preco;
+      }
+      prod.set(k, a);
+    }
+  r.produtos = [...prod.values()].sort((a, b) => b.valor - a.valor);
+
+  // Pedidos em aberto
+  const ab = pedidos.filter((p) => p.situacao !== "F");
+  r.abertos = ab.length;
+  r.abertosValor = ab.reduce((s, p) => s + p.total, 0);
+  r.atrasados = ab.filter((p) => p.prazo_entrega && p.prazo_entrega < hoje).length;
+  r.proximaEntrega = ab.map((p) => p.prazo_entrega).filter((d) => d && d >= hoje).sort()[0] || null;
+
+  // Financeiro
+  if (abertos) {
+    r.emAberto = abertos.reduce((s, t) => s + t.saldo, 0);
+    const venc = abertos.filter((t) => t.vencimento && t.vencimento < hoje);
+    r.vencido = venc.reduce((s, t) => s + t.saldo, 0);
+    r.qtdVencidos = venc.length;
+  }
+  if (pagos && pagos.length) {
+    const atrasos = pagos.filter((t) => t.vencimento && t.pagamento).map((t) => diasEntre(t.vencimento, t.pagamento));
+    const emDia = atrasos.filter((d) => d <= 0).length;
+    const atrasados = atrasos.filter((d) => d > 0);
+    r.pontualidade = atrasos.length ? Math.round((emDia / atrasos.length) * 100) : null;
+    r.atrasoMedio = atrasados.length ? Math.round(atrasados.reduce((s, d) => s + d, 0) / atrasados.length) : 0;
+    r.qtdPagos = atrasos.length;
+  }
+  return r;
+}
+
+function GraficoMeses({ meses }) {
+  const max = Math.max(...meses.map((m) => m.total), 1);
+  return (
+    <div className="ficha-grafico" role="img" aria-label="Compras por mês nos últimos 12 meses">
+      {meses.map((m) => (
+        <div key={m.chave} className="ficha-barra" title={`${m.rotulo}/${m.ano}: ${moeda(m.total)}`}>
+          <span className="ficha-barra-valor">{moedaCurta(m.total)}</span>
+          <div className="ficha-barra-trilho">
+            <div className="ficha-barra-cheia" style={{ height: `${(m.total / max) * 100}%` }} />
+          </div>
+          <span className="ficha-barra-mes">{m.rotulo}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function VisaoGeralCigam({ cliente, podeFinanceiro, irPara }) {
+  const [ped, repPed] = useFicha(cliente, "pedidos");
+  const [nf, repNf] = useFicha(cliente, "notas");
+  const [tit] = useFicha(cliente, "titulos", podeFinanceiro);
+  const [pag] = useFicha(cliente, "pagos", podeFinanceiro);
+  const [todosProdutos, setTodosProdutos] = useState(false);
+
+  const r = useMemo(
+    () =>
+      ped.itens && nf.itens
+        ? calcular(ped.itens, nf.itens, podeFinanceiro ? tit.itens : null, podeFinanceiro ? pag.itens : null)
+        : null,
+    [ped.itens, nf.itens, tit.itens, pag.itens, podeFinanceiro],
+  );
+
+  const erro = ped.erro || nf.erro;
+  if (erro)
+    return (
+      <Estado
+        estado={{ itens: null, erro }}
+        repetir={() => {
+          repPed();
+          repNf();
+        }}
+      />
+    );
+  if (!r) return <Estado estado={{ itens: null, erro: "" }} />;
+  if (!ped.itens.length && !nf.itens.length)
+    return <div className="acomp-vazio">Este cliente ainda não tem pedidos nem notas no CIGAM.</div>;
+
+  const atrasadaProxima = r.proxima && r.proxima < hojeISO();
+  const produtos = todosProdutos ? r.produtos : r.produtos.slice(0, 6);
+
+  return (
+    <div className="ficha-visao">
+      <div className="ficha-kpis">
+        <div className="ficha-kpi">
+          <span>Comprado em 12 meses</span>
+          <strong>{moeda(r.total12)}</strong>
+          {r.variacao !== null ? (
+            <small className={r.variacao >= 0 ? "positivo" : "negativo"}>
+              {r.variacao >= 0 ? "▲" : "▼"} {Math.abs(r.variacao).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}% vs. 12 meses anteriores
+            </small>
+          ) : (
+            <small>{r.primeiraNota ? `Histórico no CIGAM desde ${data(r.primeiraNota)}` : "Sem notas"}</small>
+          )}
+        </div>
+        <div className="ficha-kpi">
+          <span>Valor médio por nota</span>
+          <strong>{moeda(r.ticket)}</strong>
+          <small>{r.qtd12} nota{r.qtd12 === 1 ? "" : "s"} em 12 meses</small>
+        </div>
+        <div className="ficha-kpi">
+          <span>Última compra</span>
+          <strong>{r.ultima ? data(r.ultima) : "-"}</strong>
+          <small className={r.diasSemComprar >= 90 ? "negativo" : ""}>
+            {r.diasSemComprar !== null ? `há ${r.diasSemComprar} dia${r.diasSemComprar === 1 ? "" : "s"}` : "sem compras"}
+          </small>
+        </div>
+        <div className="ficha-kpi">
+          <span>Ritmo de compra</span>
+          <strong>{r.frequencia ? `a cada ${r.frequencia} dias` : "-"}</strong>
+          <small className={atrasadaProxima ? "negativo" : ""}>
+            {r.proxima
+              ? `${atrasadaProxima ? "próxima compra atrasada desde" : "próxima prevista para"} ${data(r.proxima)}`
+              : "poucas compras para estimar"}
+          </small>
+        </div>
+      </div>
+
+      <section className="ficha-bloco">
+        <h3>Compras por mês (notas)</h3>
+        <GraficoMeses meses={r.meses} />
+      </section>
+
+      <div className="ficha-colunas">
+        <section className="ficha-bloco">
+          <div className="ficha-bloco-topo">
+            <h3>Pedidos em aberto</h3>
+            <button type="button" className="ficha-link" onClick={() => irPara("pedidos")}>ver pedidos</button>
+          </div>
+          {r.abertos ? (
+            <ul className="ficha-fatos">
+              <li><span>Pedidos</span><strong>{r.abertos}</strong></li>
+              <li><span>Valor</span><strong>{moeda(r.abertosValor)}</strong></li>
+              <li><span>Com prazo vencido</span><strong className={r.atrasados ? "negativo" : ""}>{r.atrasados}</strong></li>
+              <li><span>Próxima entrega</span><strong>{data(r.proximaEntrega)}</strong></li>
+            </ul>
+          ) : (
+            <p className="ficha-nota">Nenhum pedido em aberto.</p>
+          )}
+        </section>
+
+        {podeFinanceiro && (
+          <section className="ficha-bloco">
+            <div className="ficha-bloco-topo">
+              <h3>Financeiro</h3>
+              <button type="button" className="ficha-link" onClick={() => irPara("titulos")}>ver títulos</button>
+            </div>
+            {tit.itens === null && !tit.erro ? (
+              <p className="ficha-nota">Carregando…</p>
+            ) : (
+              <ul className="ficha-fatos">
+                <li><span>Em aberto</span><strong>{moeda(r.emAberto)}</strong></li>
+                <li>
+                  <span>Vencido</span>
+                  <strong className={r.vencido ? "negativo" : ""}>
+                    {moeda(r.vencido)}
+                    {r.qtdVencidos ? ` (${r.qtdVencidos})` : ""}
+                  </strong>
+                </li>
+                <li>
+                  <span>Pagou em dia</span>
+                  <strong className={r.pontualidade !== null && r.pontualidade < 70 ? "negativo" : "positivo"}>
+                    {r.pontualidade !== null ? `${r.pontualidade}% de ${r.qtdPagos}` : "-"}
+                  </strong>
+                </li>
+                <li><span>Atraso médio quando atrasa</span><strong>{r.atrasoMedio ? `${r.atrasoMedio} dias` : "-"}</strong></li>
+              </ul>
+            )}
+          </section>
+        )}
+      </div>
+
+      <section className="ficha-bloco">
+        <div className="ficha-bloco-topo">
+          <h3>Produtos mais comprados</h3>
+          <small>{r.produtos.length} produto{r.produtos.length === 1 ? "" : "s"} nos pedidos</small>
+        </div>
+        {r.produtos.length ? (
+          <div className="ficha-produtos">
+            {produtos.map((p, i) => (
+              <div key={p.material || p.descricao} className="ficha-produto">
+                <span className="ficha-produto-pos">{i + 1}</span>
+                <div className="ficha-produto-nome">
+                  <strong>{p.descricao}</strong>
+                  <small>
+                    {numero(p.qtd)} {p.un || ""} em {p.pedidos} pedido{p.pedidos === 1 ? "" : "s"} · último em {data(p.ultima)} a{" "}
+                    {moeda(p.preco)}
+                  </small>
+                </div>
+                <strong className="ficha-valor">{moeda(p.valor)}</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="ficha-nota">Pedidos sem itens no CIGAM.</p>
+        )}
+        {r.produtos.length > 6 && (
+          <button type="button" className="ficha-link" onClick={() => setTodosProdutos(!todosProdutos)}>
+            {todosProdutos ? "mostrar menos" : `ver todos os ${r.produtos.length}`}
+          </button>
+        )}
+      </section>
+    </div>
   );
 }
