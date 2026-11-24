@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { chamarAcompanhamentosCigam as chamar } from "./lib/cigamAcompanhamentos.js";
+import { NotasCigam, PedidosCigam, TitulosCigam } from "./FichaCigam.jsx";
 
 // Acompanhamentos do cliente lidos do CIGAM (somente leitura) pela função cigam-acompanhamentos.
 // Detalhes da integração: INTEGRACAO_CIGAM_ESTUDO.md.
@@ -163,7 +164,19 @@ function Acompanhamento({ item, cliente }) {
   );
 }
 
-export default function AcompanhamentosCliente({ cliente }) {
+export default function AcompanhamentosCliente({ cliente, podeVendas = false, podeFinanceiro = false }) {
+  const abas = [
+    { id: "acomp", nome: "Acompanhamentos", curto: "Acomp." },
+    ...(podeVendas ? [{ id: "pedidos", nome: "Pedidos" }, { id: "notas", nome: "Notas" }] : []),
+    ...(podeFinanceiro ? [{ id: "titulos", nome: "Financeiro" }] : []),
+  ];
+  const [aba, setAba] = useState("acomp");
+  // Aba já aberta fica montada (escondida) para não consultar o CIGAM de novo ao voltar nela.
+  const [visitadas, setVisitadas] = useState(["acomp"]);
+  function abrirAba(id) {
+    setAba(id);
+    if (!visitadas.includes(id)) setVisitadas([...visitadas, id]);
+  }
   const [lista, setLista] = useState(null);
   const [erro, setErro] = useState("");
   const [filtro, setFiltro] = useState("comerciais");
@@ -252,7 +265,7 @@ export default function AcompanhamentosCliente({ cliente }) {
     <section className="painel acomp-painel">
       <div className="acomp-topo">
         <div>
-          <span className="acomp-sobretitulo">Acompanhamentos CIGAM</span>
+          <span className="acomp-sobretitulo">{abas.length > 1 ? "Ficha CIGAM" : "Acompanhamentos CIGAM"}</span>
           <h2>{cliente.cliente || "Cliente sem nome"}</h2>
           <p className="acomp-sub">
             <span><strong>Código:</strong> {codigoCigam(cliente)}</span>
@@ -267,6 +280,28 @@ export default function AcompanhamentosCliente({ cliente }) {
         </a>
       </div>
 
+      {abas.length > 1 && (
+        <nav className="ficha-abas" role="tablist">
+          {abas.map((a) => (
+            <button key={a.id} type="button" role="tab" aria-selected={aba === a.id} data-active={aba === a.id} onClick={() => abrirAba(a.id)}>
+              {a.curto ? (
+                <>
+                  <span className="ficha-aba-longo">{a.nome}</span>
+                  <span className="ficha-aba-curto">{a.curto}</span>
+                </>
+              ) : (
+                a.nome
+              )}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {visitadas.includes("pedidos") && <div hidden={aba !== "pedidos"}><PedidosCigam cliente={codigoCigam(cliente)} /></div>}
+      {visitadas.includes("notas") && <div hidden={aba !== "notas"}><NotasCigam cliente={codigoCigam(cliente)} /></div>}
+      {visitadas.includes("titulos") && <div hidden={aba !== "titulos"}><TitulosCigam cliente={codigoCigam(cliente)} /></div>}
+
+      <div hidden={aba !== "acomp"}>
       {erro && (
         <div className="acomp-aviso erro">
           <p>Não foi possível carregar os acompanhamentos: {erro}</p>
@@ -374,6 +409,7 @@ export default function AcompanhamentosCliente({ cliente }) {
           )}
         </>
       )}
+      </div>
     </section>
   );
 }

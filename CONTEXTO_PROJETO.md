@@ -1588,6 +1588,16 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
   - `supabase/functions/agenda-geral-ics/`
   - `supabase/config.toml`
 
+## Ficha CIGAM do cliente (2026-11-24)
+
+- Botão **Acomp.** abre a "Ficha CIGAM": abas Acompanhamentos + **Pedidos**, **Notas** e **Financeiro** (`src/FichaCigam.jsx`), lidos ao vivo do CIGAM pela função `cigam-acompanhamentos?cliente=&ficha=pedidos|notas|titulos` (somente leitura).
+- Permissões novas (migration `20261124220000_permissoes_ficha_cigam.sql`): `clientes.cigam_vendas` (pedidos e notas) e `clientes.cigam_financeiro` (títulos). **Início só admin**, por decisão do usuário; conferidas no servidor com `radar_pode` além da trava de cliente visível.
+- Rotas do CIGAM: `fa/Pedido/Buscar`, `fa/NotaFiscal/Buscar`, `gf/LancamentoFinanceiro/BuscarLancamentos` (`Tipo eq R and Saldo gt 0`). **`$select` derruba essas rotas** ("Ocorreu uma falha"): pedir sem `$select` e reduzir na função. `TotalFaturamento` do pedido vem igual ao total mesmo pendente (não é "já faturado").
+- Pedido "em aberto" = situação diferente de F (situações vistas: L Liberado, P Pendente, F Faturado).
+- **Alertas na rota**: `src/AlertasCigam.jsx` + `useAlertasCigam` (`src/lib/cigamAcompanhamentos.js`) em `RotasOperacao.jsx`; função `?alertas=cod1,cod2,...` (até 80) faz 2 consultas para a rota toda (`CodigoEmpresa in (...)` nos títulos vencidos e `$apply=groupby((CodigoCliente),aggregate(DataEmissao with max as Ultima))` nas notas). Liga com `clientes.cigam_vendas` ou `clientes.cigam_financeiro`; sem compra = 90 dias (`DIAS_SEM_COMPRA_ALERTA`).
+- Contatos do WhatsApp **já vêm do CIGAM** pelo RadarSync (`VECEMPRE` → `clientes_contatos`); o `ge/Contato/Buscar` da API é outra tabela, quase só e-mails, não acrescenta.
+- A conferir com o usuário: há títulos com 300+ dias "em aberto" e pedidos pendentes com prazo vencido; pode ser baixa/atualização não feita no CIGAM.
+
 ## Segurança: revisão de 2026-11-24
 
 Fechamento das pendências da auditoria de 2026-08 e dos alertas do `supabase db advisors --type security`:

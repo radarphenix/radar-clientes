@@ -261,6 +261,8 @@ Botoes principais:
 - Funcao: abre a tela **Acompanhamentos CIGAM** do cliente, dentro do Radar (somente consulta).
 - Mostra a linha do tempo dos acompanhamentos lancados no CIGAM: data/hora, quem registrou, contato, assunto, texto, datas prevista/realizada e anexos.
 - Filtros: **Comerciais** (padrao; esconde registros automaticos do CIGAM como remessa bancaria), **Com anexos** e **Tudo**; campo de busca no texto, usuario ou nome do anexo.
+- **Ficha CIGAM** (para quem tem acesso; no inicio so admin, liberar em Administracao -> Acessos): abas **Pedidos** (em aberto/todos, situacao, prazo de entrega e aviso de prazo vencido), **Notas** (comprado em 12 meses, ultima compra, 40 notas mais recentes) e **Financeiro** (titulos a receber em aberto, total vencido, maior atraso e dias de atraso de cada titulo). Tudo lido do CIGAM na hora, somente consulta. Acessos: "Pedidos e notas do CIGAM no cliente" e "Titulos financeiros do CIGAM no cliente".
+- **Alertas na rota** (mesmos acessos da Ficha CIGAM): no Cliente Atual e nos Proximos Clientes aparecem selos vermelhos de titulo vencido (valor e maior atraso) e amarelos de "N dias sem comprar" (a partir de 90 dias) ou "Sem compras no CIGAM".
 - Filtro **Titulos**: toque nos titulos que quer ver (ex.: VISITA, RECLAMACAO); pode marcar varios. A escolha fica salva no aparelho e vale para os proximos clientes; **Mostrar todos** limpa. Titulo marcado que o cliente nao tem e ignorado.
 - Anexos de acompanhamentos antigos tambem baixam (podem levar ~10 s, porque o CIGAM busca nas paginas mais antigas).
 - Anexo: clique para baixar. **Abrir no portal** abre a mesma pesquisa no portal do CIGAM.

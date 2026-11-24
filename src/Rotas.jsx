@@ -60,6 +60,7 @@ setFiltroResponsavelRotas,
 alterarResponsavelRota,
 filtroStatusRotas,
 setFiltroStatusRotas,
+  alertasCigamAtivos,
 }) {
   const [modoReordenar, setModoReordenar] = useState(false);
 const clienteAtual = clientesDaRota.find(
@@ -285,6 +286,7 @@ setFiltroStatusRotas={setFiltroStatusRotas}
     abrirAcompanhamento={abrirAcompanhamento}
     reenviarAvisoWhatsAppCliente={reenviarAvisoWhatsAppCliente}
     permiteAvisoWhatsAppRotaGrupoAtual={permiteAvisoWhatsAppRotaGrupoAtual}
+    alertasCigamAtivos={alertasCigamAtivos}
     reabrirRota={reabrirRota}
   />
 

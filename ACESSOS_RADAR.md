@@ -50,3 +50,13 @@ essa compatibilidade pode sair de `radar_pode`.
 
 Aplicada com `supabase db query -f` (fora do histórico de migrations, como a da Inspeção). Ao oficializar,
 o `db push` roda de novo sem efeito (idempotente).
+
+## Ficha CIGAM (24/11/2026)
+
+| Código | O que libera | Padrão |
+|---|---|---|
+| `clientes.cigam_vendas` | Abas Pedidos e Notas na ficha do cliente; selo "dias sem comprar" na rota | só admin |
+| `clientes.cigam_financeiro` | Aba Financeiro (títulos a receber em aberto); selo "título vencido" na rota | só admin |
+
+Conferidas no servidor pela função `cigam-acompanhamentos` (`radar_pode`), além da trava de cliente visível.
+Migration: `20261124220000_permissoes_ficha_cigam.sql`. Liberar para perfis ou pessoas em Administração → Acessos.

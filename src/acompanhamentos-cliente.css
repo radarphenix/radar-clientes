@@ -466,3 +466,82 @@
   cursor: pointer;
   font-size: 0.85rem;
 }
+
+/* Ficha CIGAM: abas Pedidos / Notas / Financeiro */
+.ficha-abas {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ficha-abas button {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  box-shadow: none;
+}
+.ficha-abas button[data-active="true"] {
+  color: #0b4fd6;
+  border-bottom-color: #0b4fd6;
+}
+.ficha-chips { margin-bottom: 12px; }
+.ficha-lista { display: grid; gap: 8px; text-align: left; }
+.ficha-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "principal valor" "detalhe valor";
+  gap: 4px 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  background: #fff;
+}
+.ficha-linha[data-vencido="true"] { border-left: 4px solid #dc2626; }
+.ficha-linha-principal { grid-area: principal; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ficha-linha-detalhe { grid-area: detalhe; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.85rem; color: #64748b; }
+.ficha-valor { grid-area: valor; font-size: 1.02rem; white-space: nowrap; }
+.ficha-selo {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+.ficha-selo.sit-f { background: #dcfce7; color: #166534; }
+.ficha-selo.sit-p { background: #fef3c7; color: #92400e; }
+.ficha-selo.sit-l { background: #dbeafe; color: #1e40af; }
+.ficha-selo.alerta { background: #fee2e2; color: #b91c1c; }
+.ficha-resumo-alerta strong { color: #b91c1c; }
+.ficha-nota { font-size: 0.8rem; color: #94a3b8; text-align: left; margin-top: 8px; }
+@media (max-width: 560px) {
+  .ficha-linha { grid-template-columns: 1fr; grid-template-areas: "principal" "detalhe" "valor"; }
+  .ficha-valor { justify-self: start; }
+}
+.ficha-aba-curto { display: none; }
+@media (max-width: 560px) {
+  .ficha-abas button { padding: 10px 10px; }
+  .ficha-aba-longo { display: none; }
+  .ficha-aba-curto { display: inline; }
+}
+
+/* Alertas do CIGAM na rota */
+.alertas-cigam { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.alerta-cigam {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.alerta-cigam.vencido { background: #fee2e2; color: #b91c1c; }
+.alerta-cigam.compra { background: #fef3c7; color: #92400e; }

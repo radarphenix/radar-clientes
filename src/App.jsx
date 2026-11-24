@@ -7351,6 +7351,8 @@ function App() {
           <AcompanhamentosCliente
             key={clienteAcompanhamento.codigo_cliente}
             cliente={clienteAcompanhamento}
+            podeVendas={pode("clientes.cigam_vendas")}
+            podeFinanceiro={pode("clientes.cigam_financeiro")}
           />
         )}
 
@@ -7418,6 +7420,7 @@ function App() {
             permiteAvisoWhatsAppRotaGrupoAtual={
               permiteAvisoWhatsAppRotaGrupoAtual
             }
+            alertasCigamAtivos={pode("clientes.cigam_vendas") || pode("clientes.cigam_financeiro")}
             ordenarRotaPorDistancia={ordenarRotaPorDistancia}
             filtroResponsavelRotas={filtroResponsavelRotas}
             setFiltroResponsavelRotas={setFiltroResponsavelRotas}

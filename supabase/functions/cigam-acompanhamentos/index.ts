@@ -238,6 +238,92 @@ async function baixar(cliente: string, arquivo: string): Promise<Response> {
   return json({ error: "CIGAM: sessão do portal não renovou." }, 502);
 }
 
+// ------------------------------------------------------------------ ficha 360° (pedidos, notas, títulos)
+// Somente leitura. Atenção: $select derruba essas rotas no CIGAM ("Ocorreu uma falha"), por isso
+// a resposta vem inteira e é reduzida aqui. Cada parte tem a sua permissão no catálogo do Radar.
+const FICHA_PERMISSAO: Record<string, string> = {
+  pedidos: "clientes.cigam_vendas",
+  notas: "clientes.cigam_vendas",
+  titulos: "clientes.cigam_financeiro",
+};
+
+const txt = (v: unknown) => (typeof v === "string" ? v.trim() : v ?? null) || null;
+const odata = (s: string) => s.replace(/ /g, "%20").replace(/'/g, "%27");
+
+async function buscarFicha(parte: string, cliente: string) {
+  type L = Record<string, unknown>;
+  if (parte === "pedidos") {
+    const r = (await api(odata(`comercial/fa/Pedido/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataPedido desc&$top=60`))) as L[];
+    return (r || []).map((p) => ({
+      codigo: txt(p.Codigo), data: txt(p.DataPedido), situacao: txt(p.Situacao), situacao_descricao: txt(p.SituacaoDescricao),
+      prazo_entrega: txt(p.PrazoEntrega), prazo_programado: txt(p.PrazoProgramado),
+      total: Number(p.TotalPedido) || 0, faturado: Number(p.TotalFaturamento) || 0,
+      tipo: txt(p.TipoNotaDescricao), representante: txt(p.CodigoRepresentante),
+    }));
+  }
+  if (parte === "notas") {
+    const r = (await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataEmissao desc&$top=40`))) as L[];
+    return (r || []).map((n) => ({
+      nf: n.NF, serie: txt(n.CodigoSerie), emissao: txt(n.DataEmissao), saida: txt(n.DataSaida),
+      total: Number(n.TotalNF) || 0, mercadoria: Number(n.TotalMercadoria) || 0,
+      pedido: txt(n.CodigoPedido), cfop: txt(n.Cfop), tipo: txt(n.TipoNotaDescricao), frete: txt(n.TipoFreteDescricao),
+    }));
+  }
+  // títulos a receber em aberto (saldo > 0)
+  const r = (await api(odata(`financas/gf/LancamentoFinanceiro/BuscarLancamentos?$filter=CodigoEmpresa eq '${cliente}' and Tipo eq 'R' and Saldo gt 0&$orderby=Vencimento&$top=200`))) as L[];
+  return (r || []).map((t) => ({
+    codigo: t.Codigo, nf: t.Nf || null, parcela: txt(t.Complemento), emissao: txt(t.Emissao), vencimento: txt(t.Vencimento),
+    valor: Number(t.Valor) || 0, saldo: Number(t.Saldo) || 0, situacao: txt(t.SituacaoDescricao), documento: txt(t.Documento),
+  }));
+}
+
+// ------------------------------------------------------------------ alertas da rota (vários clientes de uma vez)
+// ?alertas=000123,002040,... → { alertas: { "002040": { vencido, vencidos, maior_atraso, ultima_compra } } }
+// Duas consultas no CIGAM para a rota toda ($filter ... in (...) e $apply groupby). Só clientes que o
+// usuário enxerga no Radar; cada informação respeita a sua permissão.
+async function alertas(req: Request, lista: string) {
+  const pedidos = [...new Set(lista.split(",").map((c) => c.replace(/\D/g, "")).filter((c) => c && !/^0+$/.test(c)))].slice(0, 80);
+  if (!pedidos.length) return { alertas: {} };
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+  });
+  const [{ data: vis }, { data: podeFin }, { data: podeVen }] = await Promise.all([
+    sb.from("clientes").select("codigo_cliente").in("codigo_cliente", pedidos.flatMap(variantes)),
+    sb.rpc("radar_pode", { p_codigo: "clientes.cigam_financeiro" }),
+    sb.rpc("radar_pode", { p_codigo: "clientes.cigam_vendas" }),
+  ]);
+  const codigos = [...new Set((vis || []).map((c) => String(c.codigo_cliente).replace(/\D/g, "").padStart(6, "0")))];
+  if (!codigos.length || (podeFin !== true && podeVen !== true)) return { alertas: {} };
+
+  const em = `(${codigos.map((c) => `'${c}'`).join(",")})`;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const saida: Record<string, Record<string, unknown>> = {};
+  const de = (c: string) => (saida[c] ??= {});
+  type L = Record<string, unknown>;
+
+  await Promise.all([
+    podeFin === true &&
+      api(odata(`financas/gf/LancamentoFinanceiro/BuscarLancamentos?$filter=Tipo eq 'R' and Saldo gt 0 and Vencimento lt ${hoje} and CodigoEmpresa in ${em}&$top=5000`))
+        .then((r) => {
+          for (const t of (r as L[]) || []) {
+            const a = de(String(t.CodigoEmpresa).trim());
+            const atraso = Math.round((Date.parse(hoje) - Date.parse(String(t.Vencimento).slice(0, 10))) / 86400000);
+            a.vencido = Math.round(((Number(a.vencido) || 0) + (Number(t.Saldo) || 0)) * 100) / 100;
+            a.vencidos = (Number(a.vencidos) || 0) + 1;
+            a.maior_atraso = Math.max(Number(a.maior_atraso) || 0, atraso);
+          }
+        }),
+    podeVen === true &&
+      api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente in ${em}&$apply=groupby((CodigoCliente),aggregate(DataEmissao with max as Ultima))`))
+        .then((r) => {
+          for (const n of (r as L[]) || []) de(String(n.CodigoCliente).trim()).ultima_compra = String(n.Ultima || "").slice(0, 10) || null;
+          // Sem nota nenhuma no CIGAM: marca explicitamente para a tela poder dizer "sem compras".
+          for (const c of codigos) if (!("ultima_compra" in de(c))) de(c).ultima_compra = null;
+        }),
+  ]);
+  return { alertas: saida, financeiro: podeFin === true, vendas: podeVen === true };
+}
+
 // ------------------------------------------------------------------ entrada
 function variantes(codigo: string) {
   const d = codigo.replace(/\D/g, ""), s = d.replace(/^0+/, "") || d;
@@ -250,6 +336,7 @@ servir(async (req) => {
   try {
     const url = new URL(req.url);
     if (url.searchParams.has("aquecer")) return json(await aquecer());
+    if (url.searchParams.has("alertas")) return json(await alertas(req, url.searchParams.get("alertas") || ""));
     const bruto = (url.searchParams.get("cliente") || "").trim();
     const digitos = bruto.replace(/\D/g, "");
     if (!digitos || /^0+$/.test(digitos)) return json({ error: "Cliente sem código." }, 400);
@@ -261,6 +348,15 @@ servir(async (req) => {
     });
     const { data: visivel } = await sb.from("clientes").select("codigo_cliente").in("codigo_cliente", variantes(bruto)).limit(1);
     if (!visivel?.length) return json({ error: "Cliente não encontrado ou sem acesso." }, 403);
+
+    const ficha = url.searchParams.get("ficha");
+    if (ficha) {
+      const codigo = FICHA_PERMISSAO[ficha];
+      if (!codigo) return json({ error: "Parte da ficha desconhecida." }, 400);
+      const { data: pode } = await sb.rpc("radar_pode", { p_codigo: codigo });
+      if (pode !== true) return json({ error: "Sem acesso a esta parte da ficha." }, 403);
+      return json({ cliente, ficha, itens: await buscarFicha(ficha, cliente) });
+    }
 
     const arquivo = url.searchParams.get("arquivo");
     if (arquivo) return await baixar(cliente, arquivo);

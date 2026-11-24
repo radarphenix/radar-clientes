@@ -1,4 +1,6 @@
 import SugestoesPautaRota from "./SugestoesPautaRota.jsx";
+import AlertasCigam from "./AlertasCigam.jsx";
+import { useAlertasCigam } from "./lib/cigamAcompanhamentos.js";
 
 function RotasOperacao({
   rotaSelecionada,
@@ -23,7 +25,13 @@ function RotasOperacao({
   abrirAcompanhamento,
   reenviarAvisoWhatsAppCliente,
   permiteAvisoWhatsAppRotaGrupoAtual,
+  alertasCigamAtivos = false,
 }) {
+  // Alertas do CIGAM (título vencido, tempo sem comprar) para todos os clientes da rota numa consulta só.
+  const alertasCigam = useAlertasCigam(
+    (clientesDaRota || []).map((item) => buscarCliente(item)?.codigo_cliente),
+    alertasCigamAtivos && !!rotaSelecionada,
+  );
   return (
     <>
       <SugestoesPautaRota
@@ -143,6 +151,8 @@ function RotasOperacao({
                       <span>{clienteAtual.sequencia}º da rota</span>
                     </div>
 
+                    <AlertasCigam alertas={alertasCigam} codigo={buscarCliente(clienteAtual)?.codigo_cliente} />
+
                     <p>
                       <strong>Endereço:</strong>{" "}
                       {buscarCliente(clienteAtual)?.endereco_completo || "-"}
@@ -257,6 +267,7 @@ function RotasOperacao({
 
                       <div className="linha-proximo-info">
                         <h3>{cliente?.cliente || "Cliente sem nome"}</h3>
+                        <AlertasCigam alertas={alertasCigam} codigo={cliente?.codigo_cliente} />
                         <p>{cliente?.endereco_completo || "-"}</p>
                         <small>
                           {cliente?.cidade || "-"} / {cliente?.uf || "-"}
