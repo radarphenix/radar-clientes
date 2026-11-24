@@ -252,22 +252,65 @@ const FICHA_PERMISSAO: Record<string, string | string[]> = {
 const txt = (v: unknown) => (typeof v === "string" ? v.trim() : v ?? null) || null;
 const odata = (s: string) => s.replace(/ /g, "%20").replace(/'/g, "%27");
 
+async function buscarPedidos(cliente: string) {
+  type L = Record<string, unknown>;
+  const r = (await api(odata(`comercial/fa/Pedido/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataPedido desc&$top=100&$expand=Itens($expand=Material)`))) as L[];
+  return (r || []).map((p) => ({
+    codigo: txt(p.Codigo), data: txt(p.DataPedido), situacao: txt(p.Situacao), situacao_descricao: txt(p.SituacaoDescricao),
+    prazo_entrega: txt(p.PrazoEntrega), prazo_programado: txt(p.PrazoProgramado),
+    total: Number(p.TotalPedido) || 0, faturado: Number(p.TotalFaturamento) || 0,
+    tipo: txt(p.TipoNotaDescricao), representante: txt(p.CodigoRepresentante),
+    itens: ((p.Itens as L[]) || []).map((i) => ({
+      seq: i.Sequencia, material: txt(i.CodigoMaterial), descricao: txt((i.Material as L)?.Descricao) || txt(i.CodigoMaterial),
+      un: txt(i.CodigoUnidadeMedida), qtd: Number(i.Quantidade) || 0, preco: Number(i.PrecoUnitario) || 0,
+      desconto: Number(i.PercentualDesconto) || 0, total: Number(i.TotalItemLiquido) || 0,
+      situacao: txt(i.Situacao), prazo: txt(i.PrazoEntrega), identificador: txt(i.CodigoEspecificacao1),
+    })),
+  }));
+}
+
+// Medidas do configurador do CIGAM, por identificador (CodigoEspecificacao1 do item). O identificador
+// não muda depois de criado, então fica em cache na memória da função. Só as medidas que interessam
+// ao comercial (pedido do usuário, 24/11/2026): largura, comprimento, CFM, gramatura e espessura.
+// O código da característica varia por configurador (CO1/COM, LA1/LAR...), por isso casa pela descrição.
+const MEDIDAS: [string, RegExp][] = [
+  ["largura", /^LARGURA/], ["comprimento", /^COMPRIMENTO/], ["cfm", /^CFM/], ["gramatura", /^GRAMATURA/], ["espessura", /^ESPESSURA/],
+];
+const cacheMedidas = new Map<string, Record<string, number> | null>();
+async function buscarMedidas(ids: string[]) {
+  const faltam = ids.filter((id) => !cacheMedidas.has(id));
+  for (let i = 0; i < faltam.length; i += 8) {
+    await Promise.all(faltam.slice(i, i + 8).map(async (id) => {
+      try {
+        const r = (await api(`suprimentos/cp/ConfiguraItem/BuscarIdentificador?codigoIdentificador=${encodeURIComponent(id)}`)) as Record<string, unknown>;
+        const m: Record<string, number> = {};
+        for (const c of (r?.Caracteristicas as Record<string, unknown>[]) || []) {
+          const desc = String(((c.Caracteristica as Record<string, unknown>)?.Caracteristica as Record<string, unknown>)?.Descricao || "").trim().toUpperCase();
+          const chave = MEDIDAS.find(([, re]) => re.test(desc))?.[0];
+          const v = Number(c.ConteudoNumerico) || Number(String(c.Conteudo || "").replace(",", ".")) || 0;
+          if (chave && v > 0 && !(chave in m)) m[chave] = v;
+        }
+        cacheMedidas.set(id, Object.keys(m).length ? m : null);
+      } catch {
+        /* sem medidas para este item: a tela mostra só o produto */
+      }
+    }));
+  }
+  return new Map(ids.map((id) => [id, cacheMedidas.get(id) ?? null]));
+}
+
 async function buscarFicha(parte: string, cliente: string) {
   type L = Record<string, unknown>;
   if (parte === "pedidos") {
-    const r = (await api(odata(`comercial/fa/Pedido/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataPedido desc&$top=100&$expand=Itens($expand=Material)`))) as L[];
-    return (r || []).map((p) => ({
-      codigo: txt(p.Codigo), data: txt(p.DataPedido), situacao: txt(p.Situacao), situacao_descricao: txt(p.SituacaoDescricao),
-      prazo_entrega: txt(p.PrazoEntrega), prazo_programado: txt(p.PrazoProgramado),
-      total: Number(p.TotalPedido) || 0, faturado: Number(p.TotalFaturamento) || 0,
-      tipo: txt(p.TipoNotaDescricao), representante: txt(p.CodigoRepresentante),
-      itens: ((p.Itens as L[]) || []).map((i) => ({
-        seq: i.Sequencia, material: txt(i.CodigoMaterial), descricao: txt((i.Material as L)?.Descricao) || txt(i.CodigoMaterial),
-        un: txt(i.CodigoUnidadeMedida), qtd: Number(i.Quantidade) || 0, preco: Number(i.PrecoUnitario) || 0,
-        desconto: Number(i.PercentualDesconto) || 0, total: Number(i.TotalItemLiquido) || 0,
-        situacao: txt(i.Situacao), prazo: txt(i.PrazoEntrega),
-      })),
-    }));
+    const pedidos = await buscarPedidos(cliente);
+    // Medidas do item vêm do configurador (identificador = CodigoEspecificacao1 do item).
+    const ids = [...new Set(pedidos.flatMap((p) => p.itens.map((i) => i.identificador)).filter((x): x is string => !!x))];
+    const medidas = await buscarMedidas(ids);
+    for (const p of pedidos) for (const i of p.itens as Record<string, unknown>[]) {
+      i.medidas = medidas.get(String(i.identificador)) || null;
+      delete i.identificador;
+    }
+    return pedidos;
   }
   if (parte === "notas") {
     const r = (await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataEmissao desc&$top=200`))) as L[];

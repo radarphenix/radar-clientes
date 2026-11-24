@@ -267,7 +267,7 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
     <section className="painel acomp-painel">
       <div className="acomp-topo">
         <div>
-          <span className="acomp-sobretitulo">{abas.length > 1 ? "Ficha CIGAM" : "Acompanhamentos CIGAM"}</span>
+          {abas.length === 1 && <span className="acomp-sobretitulo">Acompanhamentos</span>}
           <h2>{cliente.cliente || "Cliente sem nome"}</h2>
           <p className="acomp-sub">
             <span><strong>Código:</strong> {codigoCigam(cliente)}</span>

@@ -613,3 +613,12 @@
   .ficha-barra { grid-template-rows: 1fr auto; }
   .ficha-produto .ficha-valor { grid-column: 2; }
 }
+.ficha-medidas {
+  justify-self: start;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0b4fd6;
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 1px 7px;
+}

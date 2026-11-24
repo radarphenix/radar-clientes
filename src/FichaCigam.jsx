@@ -14,6 +14,20 @@ function data(d) {
 }
 
 const numero = (v) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+// Medidas do configurador do CIGAM: "2,95 × 42,49 m · CFM 350 · 1.750 g/m² · esp. 2,1 mm".
+function textoMedidas(m) {
+  if (!m) return "";
+  const n = (v) => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+  const partes = [];
+  if (m.largura && m.comprimento) partes.push(`${n(m.largura)} × ${n(m.comprimento)} m`);
+  else if (m.largura) partes.push(`larg. ${n(m.largura)} m`);
+  else if (m.comprimento) partes.push(`comp. ${n(m.comprimento)} m`);
+  if (m.cfm) partes.push(`CFM ${n(m.cfm)}`);
+  if (m.gramatura) partes.push(`${n(m.gramatura)} g/m²`);
+  if (m.espessura) partes.push(`esp. ${n(m.espessura)}`);
+  return partes.join(" · ");
+}
+
 const hojeISO = () => new Date().toISOString().slice(0, 10);
 
 function diasEntre(de, ate) {
@@ -85,6 +99,7 @@ function ItensPedido({ itens }) {
         <div key={i.seq} className="ficha-item">
           <div className="ficha-item-nome">
             <strong>{i.descricao}</strong>
+            {i.medidas && <span className="ficha-medidas">{textoMedidas(i.medidas)}</span>}
             <small>Cód. {i.material}{i.prazo ? ` · entrega ${data(i.prazo)}` : ""}</small>
           </div>
           <div className="ficha-item-num">
@@ -303,8 +318,10 @@ function calcular(pedidos, notas, abertos, pagos) {
   const prod = new Map();
   for (const p of pedidos)
     for (const i of p.itens || []) {
-      const k = i.material || i.descricao;
-      const a = prod.get(k) || { descricao: i.descricao, material: i.material, un: i.un, qtd: 0, valor: 0, pedidos: 0, ultima: "", preco: 0 };
+      // Mesmo produto em tamanho diferente é outra peça para o cliente: agrupa por produto + medidas.
+      const medidas = textoMedidas(i.medidas);
+      const k = `${i.material || i.descricao}|${medidas}`;
+      const a = prod.get(k) || { chave: k, descricao: i.descricao, medidas, material: i.material, un: i.un, qtd: 0, valor: 0, pedidos: 0, ultima: "", preco: 0 };
       a.qtd += i.qtd;
       a.valor += i.total;
       a.pedidos += 1;
@@ -330,6 +347,10 @@ function calcular(pedidos, notas, abertos, pagos) {
     r.vencido = venc.reduce((s, t) => s + t.saldo, 0);
     r.qtdVencidos = venc.length;
   }
+  // Sem título pago ainda: pontualidade fica vazia (antes saía "undefined% de undefined").
+  r.pontualidade = null;
+  r.atrasoMedio = 0;
+  r.qtdPagos = 0;
   if (pagos && pagos.length) {
     const atrasos = pagos.filter((t) => t.vencimento && t.pagamento).map((t) => diasEntre(t.vencimento, t.pagamento));
     const emDia = atrasos.filter((d) => d <= 0).length;
@@ -473,8 +494,8 @@ export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara })
                 </li>
                 <li>
                   <span>Pagou em dia</span>
-                  <strong className={r.pontualidade !== null && r.pontualidade < 70 ? "negativo" : "positivo"}>
-                    {r.pontualidade !== null ? `${r.pontualidade}% de ${r.qtdPagos}` : "-"}
+                  <strong className={r.pontualidade === null ? "" : r.pontualidade < 70 ? "negativo" : "positivo"}>
+                    {r.pontualidade !== null ? `${r.pontualidade}% de ${r.qtdPagos}` : "nenhum título pago ainda"}
                   </strong>
                 </li>
                 <li><span>Atraso médio quando atrasa</span><strong>{r.atrasoMedio ? `${r.atrasoMedio} dias` : "-"}</strong></li>
@@ -492,10 +513,11 @@ export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara })
         {r.produtos.length ? (
           <div className="ficha-produtos">
             {produtos.map((p, i) => (
-              <div key={p.material || p.descricao} className="ficha-produto">
+              <div key={p.chave} className="ficha-produto">
                 <span className="ficha-produto-pos">{i + 1}</span>
                 <div className="ficha-produto-nome">
                   <strong>{p.descricao}</strong>
+                  {p.medidas && <span className="ficha-medidas">{p.medidas}</span>}
                   <small>
                     {numero(p.qtd)} {p.un || ""} em {p.pedidos} pedido{p.pedidos === 1 ? "" : "s"} · último em {data(p.ultima)} a{" "}
                     {moeda(p.preco)}
