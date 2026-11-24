@@ -17,6 +17,9 @@ const moeda = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency",
 const cod6 = (c) => { const d = String(c || "").replace(/\D/g, ""); return d && !/^0+$/.test(d) ? d.padStart(6, "0") : ""; };
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const LIMITE = 8;
+// Cliente do exterior (UF "EX") mostra o país do cadastro do CIGAM no lugar de "EXTERIOR/EX".
+const local = (c) => (c.pais ? c.pais : `${c.cidade || "-"}${c.uf ? `/${c.uf}` : ""}`);
+const ORIGEM = { radar: "Radar", cigam: "CIGAM" };
 
 function Lista({ itens, vazio, colunaExtra, abrirFicha }) {
   const [todos, setTodos] = useState(false);
@@ -30,7 +33,7 @@ function Lista({ itens, vazio, colunaExtra, abrirFicha }) {
             <div className="dcart-cli">
               <strong title={c.cliente}>{c.cliente || "Cliente sem nome"}</strong>
               <small>
-                {c.cidade || "-"}{c.uf ? `/${c.uf}` : ""} · visita: {c.ultimaVisita ? `há ${c.diasVisita} d` : "nunca"}
+                {local(c)} · visita: {c.ultimaVisita ? `há ${c.diasVisita} d (${ORIGEM[c.origemVisita]})` : "nunca"}
                 {c.compra?.ultima && <> · compra: há {dias(c.compra.ultima)} d</>}
               </small>
             </div>
@@ -49,7 +52,9 @@ function Lista({ itens, vazio, colunaExtra, abrirFicha }) {
 }
 
 export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha }) {
-  const [visitas, setVisitas] = useState(null);
+  const [visitas, setVisitas] = useState(null); // Radar: cliente_id -> { em, quem }
+  const [visitasCigam, setVisitasCigam] = useState(new Map()); // codigo6 -> { em, quem, titulo }
+  const [detalhe, setDetalhe] = useState(null); // card aberto
   const [compras, setCompras] = useState(null);
   const [erroCompras, setErroCompras] = useState("");
   const [representante, setRepresentante] = useState("");
@@ -57,13 +62,21 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
 
   useEffect(() => {
     let vivo = true;
-    supabase.from("rota_clientes").select("cliente_id, visitado_em").eq("status", "VISITADO").not("visitado_em", "is", null)
-      .then(({ data }) => {
-        if (!vivo) return;
-        const m = new Map();
-        for (const v of data || []) if (!m.has(v.cliente_id) || v.visitado_em > m.get(v.cliente_id)) m.set(v.cliente_id, v.visitado_em);
-        setVisitas(m);
-      });
+    Promise.all([
+      supabase.from("rota_clientes").select("cliente_id, rota_id, visitado_em").eq("status", "VISITADO").not("visitado_em", "is", null),
+      supabase.from("rotas").select("id, usuario_responsavel, user_id"),
+      supabase.from("cigam_visitas_clientes").select("codigo_cliente, ultima_visita, usuario, titulo").not("ultima_visita", "is", null),
+    ]).then(([rc, ro, vc]) => {
+      if (!vivo) return;
+      const resp = new Map((ro.data || []).map((r) => [r.id, r.usuario_responsavel || r.user_id]));
+      const m = new Map();
+      for (const v of rc.data || []) {
+        const atual = m.get(v.cliente_id);
+        if (!atual || v.visitado_em > atual.em) m.set(v.cliente_id, { em: v.visitado_em, quem: resp.get(v.rota_id) || null });
+      }
+      setVisitas(m);
+      setVisitasCigam(new Map((vc.data || []).map((x) => [x.codigo_cliente, { em: x.ultima_visita, quem: x.usuario, titulo: x.titulo }])));
+    });
     return () => { vivo = false; };
   }, []);
 
@@ -90,12 +103,26 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
     return [...s].map((c) => [c, nomesRep.get(c) || `Representante ${c}`]).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
   }, [clientes, nomesRep]);
 
+  const nomeUsuario = useMemo(() => new Map(usuarios.map((u) => [u.user_id, u.nome])), [usuarios]);
+  // Visita mais recente entre o Radar (rota marcada como visitada) e o CIGAM (acompanhamento VISITA / VISITA TECNICA).
   const carteira = useMemo(() => (clientes || [])
     .filter((c) => !representante || cod6(c.codigo_representante) === representante)
     .map((c) => {
-      const ultimaVisita = visitas?.get(c.id) || null;
-      return { ...c, ultimaVisita, diasVisita: ultimaVisita ? dias(ultimaVisita) : null, compra: compras?.clientes?.[cod6(c.codigo_cliente)] || null };
-    }), [clientes, representante, visitas, compras]);
+      const codigo = cod6(c.codigo_cliente);
+      const r = visitas?.get(c.id);
+      const g = visitasCigam.get(codigo);
+      const dataR = r ? String(r.em).slice(0, 10) : "";
+      const dataG = g ? String(g.em).slice(0, 10) : "";
+      const usaCigam = dataG && dataG > dataR;
+      const ultimaVisita = usaCigam ? dataG : dataR || null;
+      return {
+        ...c, ultimaVisita, diasVisita: ultimaVisita ? dias(ultimaVisita) : null,
+        origemVisita: usaCigam ? "cigam" : dataR ? "radar" : null,
+        quemVisitou: usaCigam ? g.quem : r ? nomeUsuario.get(r.quem) || null : null,
+        pais: compras?.paises?.[codigo] || null,
+        compra: compras?.clientes?.[codigo] || null,
+      };
+    }), [clientes, representante, visitas, visitasCigam, compras, nomeUsuario]);
 
   const total = carteira.length;
   const visitadosEm = (d) => carteira.filter((c) => c.diasVisita !== null && c.diasVisita <= d).length;
@@ -136,18 +163,36 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
       </div>
 
       <div className="dcart-kpis">
-        <div className="dcart-kpi"><span>Clientes na carteira</span><strong>{total}</strong><small>{nunca} nunca visitados pelo Radar</small></div>
+        <button type="button" className="dcart-kpi" data-aberto={detalhe === "nunca"} onClick={() => setDetalhe(detalhe === "nunca" ? null : "nunca")}>
+          <span>Clientes na carteira</span><strong>{total}</strong><small>{nunca} nunca visitados · ver lista</small>
+        </button>
         {[[30, v30], [60, v60], [90, v90]].map(([d, v]) => (
-          <div key={d} className="dcart-kpi">
+          <button key={d} type="button" className="dcart-kpi" data-aberto={detalhe === d} onClick={() => setDetalhe(detalhe === d ? null : d)}>
             <span>Visitados em {d} dias</span>
             <strong>{pct(v, total)}%</strong>
             <div className="dcart-barra"><i style={{ width: `${pct(v, total)}%` }} /></div>
-            <small>{v} de {total}</small>
-          </div>
+            <small>{v} de {total} · ver quem</small>
+          </button>
         ))}
       </div>
+      {detalhe !== null && (
+        <section className="dcart-bloco dcart-detalhe">
+          <div className="dcart-bloco-topo">
+            <h4>{detalhe === "nunca" ? `Nunca visitados (${nunca})` : `Visitados nos últimos ${detalhe} dias (${visitadosEm(detalhe)})`}</h4>
+            <button type="button" className="dcart-mais" onClick={() => setDetalhe(null)}>fechar</button>
+          </div>
+          {detalhe === "nunca" ? (
+            <Lista itens={carteira.filter((c) => !c.ultimaVisita).sort(ordenarValor)} abrirFicha={abrirFicha} vazio="Todos os clientes já foram visitados."
+              colunaExtra={(c) => (c.compra?.total12 ? <><strong>{moeda(c.compra.total12)}</strong><small>em 12 meses</small></> : <small>sem compras</small>)} />
+          ) : (
+            <Lista itens={carteira.filter((c) => c.diasVisita !== null && c.diasVisita <= detalhe).sort((a, b) => b.ultimaVisita.localeCompare(a.ultimaVisita))}
+              abrirFicha={abrirFicha} vazio="Nenhuma visita no período."
+              colunaExtra={(c) => <><strong>{dataBR(c.ultimaVisita)}</strong><small>{c.quemVisitou || "—"} · {ORIGEM[c.origemVisita]}</small></>} />
+          )}
+        </section>
+      )}
       <p className="dcart-nota">
-        Visitas registradas no Radar (marcar "visitado" na rota). Visitas lançadas só no CIGAM ainda não entram nesta conta.
+        Visita = rota marcada como "visitado" no Radar ou acompanhamento VISITA / VISITA TECNICA no CIGAM (atualizado toda madrugada). Vale a mais recente.
       </p>
 
       <div className="dcart-grid">

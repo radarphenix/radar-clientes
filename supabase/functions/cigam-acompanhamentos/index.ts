@@ -114,10 +114,15 @@ async function aquecer() {
 }
 
 /** Chamada à API com uma nova tentativa (login refeito) se a sessão expirou. */
+// O servidor do CIGAM recusa HTTP/2 em algumas respostas ("endpoint requires HTTP/1.1", ex.: cliente
+// sem acompanhamentos). Todas as chamadas à API vão em HTTP/1.1.
+const http1 = Deno.createHttpClient({ http1: true, http2: false });
+
 async function api(caminho: string, corpo?: unknown): Promise<unknown> {
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     const s = await obterSessao(tentativa > 0);
     const r = await fetch(`${BASE}/API/api/${caminho}`, {
+      client: http1,
       method: corpo ? "POST" : "GET",
       headers: { Authorization: `Bearer ${s.token}`, Accept: "application/json", "Content-Type": "application/json" },
       body: corpo ? JSON.stringify(corpo) : undefined,
@@ -333,10 +338,63 @@ async function buscarFicha(parte: string, cliente: string) {
   }));
 }
 
+// ------------------------------------------------------------------ Sincronização das visitas do CIGAM
+// Acompanhamentos com título VISITA (C10) ou VISITA TECNICA (C15) contam como visita (decisão do usuário,
+// 24/11/2026). A API só busca por cliente, então cada chamada processa os clientes mais desatualizados
+// por ~100 s (o agendamento noturno chama de 10 em 10 min) e grava em cigam_visitas_clientes.
+// Autorização: cabeçalho x-sync-token = secret CIGAM_SYNC_TOKEN (agendamento) ou usuário com Administração.
+const TITULOS_VISITA = new Set(["VISITA", "VISITA TECNICA"]);
+
+async function sincronizarVisitas(req: Request) {
+  const token = Deno.env.get("CIGAM_SYNC_TOKEN");
+  let autorizado = !!token && req.headers.get("x-sync-token") === token;
+  if (!autorizado) {
+    const sbUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+    });
+    const { data } = await sbUser.rpc("radar_pode", { p_codigo: "administracao" });
+    autorizado = data === true;
+  }
+  if (!autorizado) throw Object.assign(new Error("Sem autorização para sincronizar."), { status: 403 });
+
+  const inicio = Date.now();
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: cli, error } = await sb.from("clientes").select("codigo_cliente").range(0, 9999);
+  if (error) throw new Error(error.message);
+  const codigos = [...new Set((cli || []).map((c) => String(c.codigo_cliente || "").replace(/D/g, "")).filter((d) => d && !/^0+$/.test(d)).map((d) => d.padStart(6, "0")))];
+  const { data: feitos } = await sb.from("cigam_visitas_clientes").select("codigo_cliente, atualizado_em").range(0, 9999);
+  const quando = new Map((feitos || []).map((x) => [x.codigo_cliente, x.atualizado_em as string]));
+  // Nunca sincronizados primeiro; depois os mais antigos.
+  const fila = codigos.sort((a, b) => String(quando.get(a) || "").localeCompare(String(quando.get(b) || "")));
+
+  let processados = 0, comVisita = 0, falhas = 0, i = 0;
+  const trabalhar = async () => {
+    while (i < fila.length && Date.now() - inicio < 100_000) {
+      const codigo = fila[i++];
+      try {
+        const itens = await listar(codigo);
+        const visitas = itens.filter((a) => TITULOS_VISITA.has(String(a.titulo || "").trim().toUpperCase()) && a.data)
+          .sort((a, b) => String(b.data).localeCompare(String(a.data)));
+        const v = visitas[0];
+        await sb.from("cigam_visitas_clientes").upsert({
+          codigo_cliente: codigo, ultima_visita: v ? String(v.data).slice(0, 10) : null,
+          titulo: v?.titulo || null, usuario: v?.usuario || null, atualizado_em: new Date().toISOString(),
+        });
+        processados++; if (v) comVisita++;
+      } catch {
+        falhas++;
+      }
+    }
+  };
+  await Promise.all([trabalhar(), trabalhar(), trabalhar()]);
+  return { processados, com_visita: comVisita, falhas, restantes: Math.max(0, fila.length - i), total: fila.length, segundos: Math.round((Date.now() - inicio) / 1000) };
+}
+
 // ------------------------------------------------------------------ Dashboard: compras da carteira
 // Uma consulta de notas (24 meses) para a carteira inteira; por cliente: última compra, ritmo (média dos
 // últimos 10 intervalos entre datas de compra), próxima compra prevista, total 12 meses e 12 anteriores.
 // Só clientes que o usuário enxerga no Radar (RLS de clientes) e só com acesso à Visão geral ou a Pedidos e notas.
+let cachePaises: { mapa: Map<string, string>; em: number } | null = null;
 async function dashboardCarteira(req: Request) {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
@@ -389,8 +447,22 @@ async function dashboardCarteira(req: Request) {
       total12: Math.round(a.total12 * 100) / 100, total24: Math.round(a.total24 * 100) / 100, notas12: a.notas12,
     };
   }
+  // País dos clientes do exterior (UF "EX"): Pessoa.CodigoPais + tabela Pais (cache 1 dia).
+  const paises: Record<string, string> = {};
+  try {
+    if (!cachePaises || Date.now() - cachePaises.em > 86400_000) {
+      const tab = (await api("genericos/ge/Pais/Buscar?$top=2000")) as L[];
+      cachePaises = { mapa: new Map((tab || []).map((p) => [String(p.CodigoPais).trim(), String(p.Descricao || "").trim()])), em: Date.now() };
+    }
+    const ex = (await api(odata("genericos/ge/Pessoa/Buscar?$filter=Uf eq 'EX'&$top=5000&$select=Codigo,CodigoPais"))) as L[];
+    for (const p of ex || []) {
+      const c = String(p.Codigo || "").trim();
+      const nome = cachePaises.mapa.get(String(p.CodigoPais || "").trim());
+      if (visiveis.has(c) && nome) paises[c] = nome;
+    }
+  } catch { /* sem país: a tela mostra a cidade do cadastro */ }
   const primeira = (notas || []).reduce((m, n) => { const d = String(n.DataEmissao || "").slice(0, 10); return d && (!m || d < m) ? d : m; }, "");
-  return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, clientes };
+  return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, clientes, paises };
 }
 
 // ------------------------------------------------------------------ BI Pagamentos (contas a pagar + fluxo)
@@ -507,6 +579,7 @@ servir(async (req) => {
   try {
     const url = new URL(req.url);
     if (url.searchParams.has("aquecer")) return json(await aquecer());
+    if (url.searchParams.get("sync") === "visitas") return json(await sincronizarVisitas(req));
     if (url.searchParams.get("dashboard") === "carteira") return json(await dashboardCarteira(req));
     if (url.searchParams.get("bi") === "financeiro") return json(await biFinanceiro(req));
     if (url.searchParams.has("alertas")) return json(await alertas(req, url.searchParams.get("alertas") || ""));
