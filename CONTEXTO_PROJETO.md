@@ -1601,6 +1601,13 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
 - **Visão geral** (`VisaoGeralCigam`): calculada no navegador a partir de pedidos (`$expand=Itens($expand=Material)`, até 100), notas (até 200), títulos abertos e **pagos** (`?ficha=pagos`: `Tipo eq 'c'`, o CIGAM troca R → c na liquidação). Cache de 5 min por cliente+parte em `FichaCigam.jsx`. NotaFiscal não tem `Itens` na API: produtos vêm dos itens dos pedidos.
 - **Títulos "vencidos" da Bragagnolo (24/11/2026)**: conferido no CIGAM pela API, as parcelas 10147/1-2, 10148/1-2, 10249/3 e 10286/1-3 são R01 com saldo cheio e **sem E01 de baixa** (as 10249/1-2 têm E01 e viraram tipo c). O Comissões (view `EX_MW_VW_RADAR_COMISSOES`, regra R01 + saldo do GFLANCAM ao vivo) mostra as mesmas como "Vencida": regra correta, falta baixa no financeiro do CIGAM. Usuário diz que o cliente não deve; acertar no CIGAM corrige Radar e Comissões juntos.
 
+## Painel BI separado: Faturamento, Recebimentos e Pagamentos (2026-11-24)
+
+- `PainelBIFaturamento.jsx` agora tem `modo` = `faturamento` (seção Comercial + lista de pedidos/notas) ou `recebimentos` (seção Caixa + "A receber nas próximas 8 semanas" + Pontualidade e alertas). Mesmos filtros e dados (`bi_*` do MWFaturamentoSync); recebimentos não lê `bi_pedidos_itens`.
+- `PainelBIPagamentos.jsx`: ao vivo do CIGAM pela função `cigam-acompanhamentos?bi=financeiro` (permissão `bi_pagamentos` conferida no servidor). A função lê todo o GFLANCAM (`LancamentoFinanceiro/BuscarLancamentos?$top=100000`, ~2 mil linhas em <1 s) e devolve Tipo **P** (pagar em aberto), **d** (pago, o CIGAM troca P → d na baixa) e **R** (receber em aberto, para o fluxo), com nome do fornecedor (`Pessoa/Buscar` em lotes, cache), histórico e conta (cache 1 h). Valores do pagar vêm negativos na API: tratados em módulo. `Previsao=true` (ex.: P60 "previsão para fluxo de caixa") pode ser incluída ou não no fluxo.
+- Fluxo de caixa projetado: 12 semanas a partir de hoje, entradas = R em aberto, saídas = P em aberto, por vencimento; vencidos ficam fora e aparecem à parte. Não usa saldo bancário.
+- **Achado (24/11/2026)**: a baixa no CIGAM é feita com atraso também no contas a pagar (0% "pago em dia", atraso médio de 180 dias; R$ 1,07 mi "vencido em aberto"). Pontualidade e pago/recebido usam a data da baixa; avisos na tela.
+
 ## Segurança: revisão de 2026-11-24
 
 Fechamento das pendências da auditoria de 2026-08 e dos alertas do `supabase db advisors --type security`:

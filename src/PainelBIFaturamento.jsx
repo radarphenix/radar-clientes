@@ -128,7 +128,10 @@ function agruparTop(linhas, chaveDe, rotuloDe, valorDe, limite = 10) {
   return [...mapa.values()].filter((x) => x.valor > 0).sort((a, b) => b.valor - a.valor).slice(0, limite);
 }
 
-export default function PainelBIFaturamento({ perfil }) {
+// Um componente, dois painéis (24/11/2026): modo "faturamento" (comercial) e modo "recebimentos"
+// (contas a receber). Mesmos filtros e dados; cada modo mostra a sua parte. Pagamentos é PainelBIPagamentos.
+export default function PainelBIFaturamento({ modo = "faturamento" }) {
+  const recebimentos = modo === "recebimentos";
   const [[inicio, fim], setPeriodo] = useState(() => atalho("mes"));
   const [cliente, setCliente] = useState("");
   const [representante, setRepresentante] = useState("");
@@ -155,8 +158,9 @@ export default function PainelBIFaturamento({ perfil }) {
     let ativo = true;
     async function carregar() {
       setCarregando(true); setErro("");
+      // Recebimentos não lê pedidos (a regra de acesso de pedidos é só do BI de Faturamento).
       const [p, no, f, dv] = await Promise.all([
-        buscarTodas(() => supabase.from("bi_pedidos_itens").select("*")),
+        recebimentos ? Promise.resolve({ data: [] }) : buscarTodas(() => supabase.from("bi_pedidos_itens").select("*")),
         buscarTodas(() => supabase.from("bi_notas_itens").select("*")),
         buscarTodas(() => supabase.from("bi_lancamentos_financeiros").select("*")),
         buscarTodas(() => supabase.from("bi_devolucoes_itens").select("*")),
@@ -172,7 +176,7 @@ export default function PainelBIFaturamento({ perfil }) {
     }
     carregar();
     return () => { ativo = false; };
-  }, []);
+  }, [recebimentos]);
 
   const ultimaSincronizacao = useMemo(() => [...pedidos, ...notas, ...financeiro]
     .reduce((maior, x) => (x.sincronizado_em > maior ? x.sincronizado_em : maior), ""), [pedidos, notas, financeiro]);
@@ -305,6 +309,30 @@ export default function PainelBIFaturamento({ perfil }) {
       mapa.set(x.cd_empresa, atual);
     });
     return [...mapa.values()].sort((a, b) => b.valor - a.valor);
+  })();
+
+  // ---- Recebimentos: semanas à frente, pontualidade e títulos sem baixa ----
+  const semanasReceber = Array.from({ length: 8 }, (_, i) => {
+    const de = deslocarDias(referencia, i * 7);
+    const ate = deslocarDias(referencia, i * 7 + 6);
+    return { chave: i, de, ate, rotulo: `${dataBR(de).slice(0, 5)} a ${dataBR(ate).slice(0, 5)}`,
+      valor: soma(emAberto.filter((x) => x.data_vencimento >= de && x.data_vencimento <= ate), (x) => n(x.valor_saldo)) };
+  });
+  const semBaixa = emAberto.filter((x) => x.data_vencimento && diasEntre(x.data_vencimento, referencia) > 90);
+  const pontuar = (lista) => lista.reduce((a, x) => {
+    if (!x.data_vencimento || !x.data_ultima_liquidacao) return a;
+    const atraso = diasEntre(x.data_vencimento, x.data_ultima_liquidacao);
+    a.total += 1; a.valor += n(x.valor);
+    if (atraso <= 0) a.emDia += 1; else { a.atrasados += 1; a.somaAtraso += atraso; }
+    if (x.data_emissao) a.somaPrazo += Math.max(0, diasEntre(x.data_emissao, x.data_ultima_liquidacao));
+    return a;
+  }, { total: 0, emDia: 0, atrasados: 0, somaAtraso: 0, somaPrazo: 0, valor: 0 });
+  const pontualidade = pontuar(periodo.r);
+  const pontualidadeClientes = (() => {
+    const grupos = new Map();
+    periodo.r.forEach((x) => grupos.set(x.cd_empresa, [...(grupos.get(x.cd_empresa) || []), x]));
+    return [...grupos.entries()].map(([codigo, lista]) => ({ codigo, nome: nomesClientes.get(codigo) || codigo, ...pontuar(lista) }))
+      .filter((x) => x.total).sort((a, b) => b.valor - a.valor);
   })();
 
   const anual = useMemo(() => meses.map((rotulo, i) => {
@@ -464,12 +492,11 @@ export default function PainelBIFaturamento({ perfil }) {
       Cliente: x.nome, Código: x.codigo, Títulos: x.titulos, "Valor vencido": x.valor, "Maior atraso (dias)": x.maiorAtraso, Recorte: `Vencidos ${rotuloRecorte}`,
     }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(linhasDocs), "Pedidos e notas");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(linhasReceber), "Vencidos por cliente");
-    XLSX.writeFile(wb, `bi_faturamento_${inicio}_a_${fim}.xlsx`);
+    if (recebimentos) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(linhasReceber), "Vencidos por cliente");
+    else XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(linhasDocs), "Pedidos e notas");
+    XLSX.writeFile(wb, `bi_${modo}_${inicio}_a_${fim}.xlsx`);
   }
 
-  if (perfil?.tipo_perfil !== "admin") return null;
   const filtroAtivo = cliente || representante || situacao !== "todas";
   const atalhoAtivo = ATALHOS.map(([t]) => t).find((t) => { const [a, b] = atalho(t); return a === inicio && b === fim; });
 
@@ -477,10 +504,13 @@ export default function PainelBIFaturamento({ perfil }) {
     <div className="bi-topo">
       <div>
         <span className="bi-sobretitulo">Área executiva</span>
-        <h2>Painel BI · Comercial e Caixa</h2>
-        <p>Previsão comercial, faturamento e caixa em competências distintas.</p>
+        <h2>{recebimentos ? "Painel BI · Recebimentos" : "Painel BI · Faturamento"}</h2>
+        <p>{recebimentos ? "Contas a receber: previsto × recebido, vencidos, devedores e pontualidade." : "Previsão comercial, faturamento, carteira e devoluções."}</p>
       </div>
-      <button type="button" className="bi-imprimir" onClick={() => window.print()}><Printer size={17} /> Imprimir painel</button>
+      <div className="bi-topo-acoes">
+        {recebimentos && <button type="button" className="bi-imprimir" onClick={exportarExcel} disabled={carregando}><FileSpreadsheet size={17} /> Exportar vencidos</button>}
+        <button type="button" className="bi-imprimir" onClick={() => window.print()}><Printer size={17} /> Imprimir painel</button>
+      </div>
     </div>
 
     <div className="bi-filtros bi-filtros-fat">
@@ -506,7 +536,7 @@ export default function PainelBIFaturamento({ perfil }) {
             {representantes.map(([c, nome]) => <option key={c} value={c}>{nome}</option>)}
           </select>
         </label>
-        <label>Situação na lista
+        {!recebimentos && <label>Situação na lista
           <select value={situacao} onChange={(e) => setSituacao(e.target.value)}>
             <option value="todas">Todas</option>
             <option value="negociacao">Em negociação</option>
@@ -517,7 +547,7 @@ export default function PainelBIFaturamento({ perfil }) {
             <option value="devolucao">Devolução</option>
             <option value="fora">Suspenso/cancelado</option>
           </select>
-        </label>
+        </label>}
         {filtroAtivo && <button type="button" className="bi-limpar" onClick={limparFiltros}>Limpar recortes</button>}
       </div>
       <span className="bi-ajuda-filtro">
@@ -528,6 +558,7 @@ export default function PainelBIFaturamento({ perfil }) {
 
     {erro && <div className="bi-aviso">{erro}</div>}
     {carregando ? <p className="bi-vazio">Carregando...</p> : <>
+      {!recebimentos && <>
       <h3 className="bi-secao-titulo">Comercial</h3>
       <div className="bi-kpis bi-kpis-5">
         <StatTile label="Previsão de faturamento" valor={moeda(previsao)} onClick={() => abrir("Previsão de faturamento", COL_PEDIDOS, linhasPedidos(periodo.previstos))} />
@@ -563,10 +594,6 @@ export default function PainelBIFaturamento({ perfil }) {
           { nome: "Previsão", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pf })) },
           { nome: "Faturado", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.fat })) },
         ]} formatarValor={moeda} />
-        <LineChart titulo={`Caixa anual ${ano} · previsto × recebido, por vencimento`} onSelecionarPonto={selecionarMes} series={[
-          { nome: "Previsto", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pr })) },
-          { nome: "Recebido", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.rec })) },
-        ]} formatarValor={moeda} />
       </div>
 
       <div className="bi-graficos-grid">
@@ -578,6 +605,17 @@ export default function PainelBIFaturamento({ perfil }) {
       {!representante && <BarChart titulo="Faturado líquido por representante" itens={rankingRepresentantes} corPadrao={CATEGORICAL.vendas} formatarValor={moeda}
         onSelecionarItem={(item) => abrir(`Faturado líquido · ${item.rotulo}`, COL_NOTAS, linhasNotas(periodo.no.filter(doRepresentante(item.chave)), periodo.dv.filter(doRepresentante(item.chave))))} />}
 
+      </>}
+
+      {recebimentos && <>
+      <div className="bi-graficos-grid">
+        <LineChart titulo={`Recebimentos ${ano} · previsto × recebido, por vencimento`} onSelecionarPonto={selecionarMes} series={[
+          { nome: "Previsto", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pr })) },
+          { nome: "Recebido", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.rec })) },
+        ]} formatarValor={moeda} />
+        <BarChart titulo={`A receber nas próximas 8 semanas · a partir de ${dataBR(referencia)}`} itens={semanasReceber} corPadrao={CATEGORICAL.vendas} formatarValor={moeda}
+          onSelecionarItem={(item) => abrir(`A receber · ${item.rotulo}`, COL_TITULOS, linhasTitulos(emAberto.filter((x) => x.data_vencimento >= item.de && x.data_vencimento <= item.ate)), "saldo", `Posição em ${dataBR(referencia)}`)} />
+      </div>
       <h3 className="bi-secao-titulo">Caixa</h3>
       <h4 className="bi-subtitulo">Títulos com vencimento no período</h4>
       <div className="bi-kpis">
@@ -629,7 +667,35 @@ export default function PainelBIFaturamento({ perfil }) {
         </div>
       </div>
 
-      <div className="bi-chart-card bi-detalhe-faturamento">
+      <h4 className="bi-subtitulo">Pontualidade e alertas</h4>
+      <div className="bi-kpis">
+        <StatTile label="Pagos em dia (pela data da baixa)" valor={pontualidade.total ? pct(pontualidade.emDia / pontualidade.total) : "—"}
+          onClick={() => abrir("Títulos liquidados no período", COL_TITULOS, linhasTitulos(periodo.r))} />
+        <StatTile label="Atraso médio quando atrasa" valor={pontualidade.atrasados ? `${Math.round(pontualidade.somaAtraso / pontualidade.atrasados)} dias` : "—"} />
+        <StatTile label="Prazo médio de recebimento" valor={pontualidade.total ? `${Math.round(pontualidade.somaPrazo / pontualidade.total)} dias` : "—"} />
+        <StatTile label="Vencidos há +90 dias sem baixa" valor={moeda(soma(semBaixa, (x) => n(x.valor_saldo)))}
+          onClick={() => abrir("Vencidos há mais de 90 dias sem baixa (conferir no financeiro)", COL_TITULOS, linhasTitulos(semBaixa), "saldo", `Posição em ${dataBR(referencia)}`)} />
+      </div>
+      <p className="bi-comparativo">
+        Pontualidade e prazo médio consideram os títulos liquidados de {dataBR(inicio)} a {dataBR(fim)} (prazo = emissão até a liquidação).
+        {" "}Vencidos há mais de 90 dias costumam ser recebimentos não baixados no CIGAM: vale conferir com o financeiro.
+      </p>
+      <div className="bi-chart-card">
+        <div className="bi-chart-cabecalho"><h3>Pontualidade por cliente · liquidados no período</h3><span className="bi-contagem">{pontualidadeClientes.length} cliente(s)</span></div>
+        {pontualidadeClientes.length ? <div className="bi-tabela-container"><table className="bi-tabela">
+          <thead><tr><th>Cliente</th><th>Títulos</th><th>Em dia</th><th title="Atraso médio quando atrasa">Atraso médio</th><th>Recebido</th></tr></thead>
+          <tbody>{pontualidadeClientes.slice(0, 15).map((x) => <tr key={x.codigo} className="bi-linha-clicavel" tabIndex={0} title="Ver títulos"
+            onClick={() => abrir(`Liquidados no período · ${x.nome}`, COL_TITULOS, linhasTitulos(periodo.r.filter((t) => t.cd_empresa === x.codigo)))}
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.click(); }}>
+            <td className="bi-celula-nome" title={x.nome}>{x.nome}</td><td>{x.total}</td>
+            <td className={x.emDia / x.total < 0.7 ? "bi-delta-ruim" : "bi-delta-bom"}>{pct(x.emDia / x.total)}</td>
+            <td>{x.atrasados ? `${Math.round(x.somaAtraso / x.atrasados)} d` : "—"}</td><td>{moeda(x.valor)}</td>
+          </tr>)}</tbody>
+        </table></div> : <p className="bi-vazio">Nenhum título liquidado no período.</p>}
+      </div>
+      </>}
+
+      {!recebimentos && <div className="bi-chart-card bi-detalhe-faturamento">
         <div className="bi-chart-cabecalho">
           <h3>Pedidos, notas e devoluções do período</h3>
           <div className="bi-acoes-lista">
@@ -664,7 +730,7 @@ export default function PainelBIFaturamento({ perfil }) {
         {documentosFiltrados.length > limiteLista && <button type="button" className="bi-mais" onClick={() => setPaginacao({ assinatura: assinaturaFiltros, limite: limiteLista + POR_PAGINA })}>
           Mostrar mais ({documentosFiltrados.length - limiteLista} restantes)
         </button>}
-      </div>
+      </div>}
     </>}
     {detalhe && <DetalheBI {...detalhe} onFechar={fecharDetalhe} />}
   </section>;

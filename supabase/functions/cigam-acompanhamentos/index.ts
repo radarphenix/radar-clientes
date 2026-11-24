@@ -333,6 +333,61 @@ async function buscarFicha(parte: string, cliente: string) {
   }));
 }
 
+// ------------------------------------------------------------------ BI Pagamentos (contas a pagar + fluxo)
+// Lê todos os lançamentos do GFLANCAM pela API (a base inteira cabe numa chamada: ~2 mil linhas em <1 s)
+// e devolve só o que o painel usa: pagar em aberto (Tipo P), pagos (Tipo d, o CIGAM troca P -> d na
+// liquidação) e receber em aberto (Tipo R) para o fluxo de caixa. Valores do pagar vêm negativos: vão em módulo.
+let cacheCadastrosFin: { historicos: Map<string, string>; contas: Map<string, string>; em: number } | null = null;
+const cacheNomes = new Map<string, string>();
+
+async function biFinanceiro(req: Request) {
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+  });
+  const { data: pode } = await sb.rpc("radar_pode", { p_codigo: "bi_pagamentos" });
+  if (pode !== true) throw Object.assign(new Error("Sem acesso ao BI de Pagamentos."), { status: 403 });
+
+  type L = Record<string, unknown>;
+  const [lanc, cad] = await Promise.all([
+    api("financas/gf/LancamentoFinanceiro/BuscarLancamentos?$top=100000") as Promise<L[]>,
+    (async () => {
+      if (cacheCadastrosFin && Date.now() - cacheCadastrosFin.em < 3600_000) return cacheCadastrosFin;
+      const [h, c] = await Promise.all([api("financas/gf/Historico/Buscar?$top=1000"), api("financas/gf/Conta/Buscar?$top=2000")]);
+      const mapa = (r: unknown) => new Map(((r as L[]) || []).map((x) => [String(x.Codigo).trim(), String(x.Descricao || "").trim()]));
+      cacheCadastrosFin = { historicos: mapa(h), contas: mapa(c), em: Date.now() };
+      return cacheCadastrosFin;
+    })(),
+  ]);
+
+  const uteis = (lanc || []).filter((x) => ["P", "d", "R"].includes(String(x.Tipo)));
+  // Nomes de fornecedores/clientes (cache na memória da função), em lotes de 60 códigos.
+  const faltam = [...new Set(uteis.map((x) => String(x.CodigoEmpresa || "").trim()).filter((c) => c && !cacheNomes.has(c)))];
+  for (let i = 0; i < faltam.length; i += 60) {
+    const lote = faltam.slice(i, i + 60);
+    const r = (await api(odata(`genericos/ge/Pessoa/Buscar?$filter=Codigo in (${lote.map((c) => `'${c}'`).join(",")})&$select=Codigo,NomeCompleto,Fantasia`)).catch(() => [])) as L[];
+    for (const p of r || []) {
+      const fantasia = String(p.Fantasia || "").trim();
+      cacheNomes.set(String(p.Codigo).trim(), fantasia || String(p.NomeCompleto || "").trim());
+    }
+    for (const c of lote) if (!cacheNomes.has(c)) cacheNomes.set(c, c);
+  }
+
+  const lancamentos = uteis.map((x) => {
+    const empresa = String(x.CodigoEmpresa || "").trim();
+    const hist = String(x.CodigoHistorico || "").trim();
+    const conta = String(x.CodigoContaFinanceira || "").trim();
+    return {
+      id: x.Codigo, tipo: x.Tipo, empresa, nome: cacheNomes.get(empresa) || empresa,
+      historico: hist, historico_desc: cad.historicos.get(hist) || hist,
+      conta, conta_desc: cad.contas.get(conta) || conta,
+      emissao: txt(x.Emissao), vencimento: txt(x.Vencimento), pagamento: txt(x.DataUltimaLiquidacao),
+      valor: Math.abs(Number(x.Valor) || 0), saldo: Math.abs(Number(x.Saldo) || 0),
+      previsao: x.Previsao === true, nf: Number(x.Nf) || null, documento: txt(x.Documento), obs: txt(x.Historico),
+    };
+  });
+  return { gerado_em: new Date().toISOString(), lancamentos };
+}
+
 // ------------------------------------------------------------------ alertas da rota (vários clientes de uma vez)
 // ?alertas=000123,002040,... → { alertas: { "002040": { vencido, vencidos, maior_atraso, ultima_compra } } }
 // Duas consultas no CIGAM para a rota toda ($filter ... in (...) e $apply groupby). Só clientes que o
@@ -392,6 +447,7 @@ servir(async (req) => {
   try {
     const url = new URL(req.url);
     if (url.searchParams.has("aquecer")) return json(await aquecer());
+    if (url.searchParams.get("bi") === "financeiro") return json(await biFinanceiro(req));
     if (url.searchParams.has("alertas")) return json(await alertas(req, url.searchParams.get("alertas") || ""));
     const bruto = (url.searchParams.get("cliente") || "").trim();
     const digitos = bruto.replace(/\D/g, "");
@@ -419,6 +475,6 @@ servir(async (req) => {
     if (arquivo) return await baixar(cliente, arquivo);
     return json({ cliente, acompanhamentos: await listar(cliente) });
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: (e as Error).message }, (e as { status?: number }).status || 500);
   }
 });

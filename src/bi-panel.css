@@ -224,3 +224,17 @@
   body.modo-impressao-bi .bi-stat-tile { break-inside:avoid; box-shadow:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   body.modo-impressao-bi .bi-graficos-grid { grid-template-columns:1fr; }
 }
+
+.bi-topo-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* BI Pagamentos: fluxo de caixa projetado */
+.bi-check { display: flex; align-items: center; gap: 6px; flex-direction: row !important; }
+.bi-fluxo td, .bi-fluxo th { white-space: nowrap; }
+.bi-fluxo-barras { width: 28%; min-width: 120px; }
+td.bi-fluxo-barras { display: grid; gap: 3px; padding-top: 8px; padding-bottom: 8px; }
+.bi-fluxo-entrada, .bi-fluxo-saida { display: block; height: 7px; border-radius: 4px; min-width: 2px; }
+.bi-fluxo-entrada { background: #16a34a; }
+.bi-fluxo-saida { background: #dc2626; }
+@media (max-width: 700px) { .bi-fluxo-barras { display: none !important; } }
+.bi-check input[type="checkbox"] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: 0 0 auto; }
+.bi-check { align-self: end; padding-bottom: 8px; }

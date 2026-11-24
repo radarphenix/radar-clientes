@@ -1213,9 +1213,14 @@ Clicar num indicador ou numa barra abre uma janela com o que forma aquele númer
 
 Botão **Imprimir painel** no topo gera uma versão para impressão/PDF só com os indicadores e gráficos, sem o menu nem os filtros.
 
-## 24. Painel BI - Faturamento (somente admin)
+## 24. Painel BI - Faturamento, Recebimentos e Pagamentos
 
-No grupo **Gestão e Análise**, o submenu **Painel BI** reúne **Comissões** e **Faturamento**. A visão de Faturamento é exclusiva de administradores.
+No grupo **Gestão e Análise**, o submenu **Painel BI** reúne **Comissões**, **Faturamento**, **Recebimentos** e **Pagamentos** (desde 24/11/2026 separados; cada um com seu acesso em Administração → Acessos, no início só admin).
+
+- **Faturamento**: parte comercial (previsão × faturado, etapas, rankings, pedidos e notas do período).
+- **Recebimentos**: contas a receber (previsto × recebido por vencimento, a receber nas próximas 8 semanas, títulos do período, carteira vencida por faixa, maiores devedores) e **Pontualidade e alertas**: % pago em dia, atraso médio, prazo médio de recebimento (emissão até a baixa), **vencidos há mais de 90 dias sem baixa** (conferir com o financeiro) e pontualidade por cliente. Botão **Exportar vencidos**.
+- **Pagamentos** (dados ao vivo do CIGAM, botão **Atualizar**): a pagar no período, pago no período, vencido em aberto, vence nos próximos 30 dias, pontualidade, **fluxo de caixa projetado** das próximas 12 semanas (a receber × a pagar em aberto, saldo da semana e acumulado; opção de incluir ou não as previsões lançadas no CIGAM), maiores fornecedores em aberto e gasto por conta financeira. Filtro por fornecedor, histórico ou conta.
+- Atenção: pontualidade e "pago/recebido" usam a **data da baixa no CIGAM**. Pagamento ou recebimento ainda não baixado aparece como vencido.
 
 ### Ver os documentos de cada número
 

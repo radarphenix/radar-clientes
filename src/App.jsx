@@ -24,6 +24,7 @@ import ImpressaoPesquisaRotas from "./ImpressaoPesquisaRotas.jsx";
 import ComissoesRepresentante from "./ComissoesRepresentante.jsx";
 import PainelBI from "./PainelBI.jsx";
 import PainelBIFaturamento from "./PainelBIFaturamento.jsx";
+import PainelBIPagamentos from "./PainelBIPagamentos.jsx";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
@@ -111,6 +112,8 @@ const TELAS_PERSISTIDAS = new Set([
   "clientesEmPauta",
   "painelBI",
   "painelBIFaturamento",
+  "painelBIRecebimentos",
+  "painelBIPagamentos",
   "inspecao",
   "acessos",
   "maquinas",
@@ -5446,7 +5449,7 @@ function App() {
           </MenuGrupo>
           )}
 
-          {(pode("dashboard") || pode("bi_comissoes") || pode("bi_faturamento") || pode("comissoes") || pode("amostras")) && (
+          {(pode("dashboard") || pode("bi_comissoes") || pode("bi_faturamento") || pode("bi_recebimentos") || pode("bi_pagamentos") || pode("comissoes") || pode("amostras")) && (
           <MenuGrupo
             titulo="Gestão e Análise"
             icone={BarChart3}
@@ -5469,7 +5472,7 @@ function App() {
             </button>
             )}
 
-            {(pode("bi_comissoes") || pode("bi_faturamento")) && (
+            {(pode("bi_comissoes") || pode("bi_faturamento") || pode("bi_recebimentos") || pode("bi_pagamentos")) && (
               <div className="menu-subgrupo">
                 <span>Painel BI</span>
                 {pode("bi_comissoes") && (
@@ -5480,6 +5483,16 @@ function App() {
                 {pode("bi_faturamento") && (
                 <button type="button" className={telaAtual === "painelBIFaturamento" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIFaturamento"); setMenuMobileAberto(false); }}>
                   <LineChart size={18} /> Faturamento
+                </button>
+                )}
+                {pode("bi_recebimentos") && (
+                <button type="button" className={telaAtual === "painelBIRecebimentos" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIRecebimentos"); setMenuMobileAberto(false); }}>
+                  <LineChart size={18} /> Recebimentos
+                </button>
+                )}
+                {pode("bi_pagamentos") && (
+                <button type="button" className={telaAtual === "painelBIPagamentos" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIPagamentos"); setMenuMobileAberto(false); }}>
+                  <LineChart size={18} /> Pagamentos
                 </button>
                 )}
               </div>
@@ -7323,8 +7336,14 @@ function App() {
           <PainelBI perfil={perfil} usuariosPerfis={usuariosPerfis} />
         )}
 
+        {pode("bi_recebimentos") && telaAtual === "painelBIRecebimentos" && (
+          <PainelBIFaturamento key="recebimentos" modo="recebimentos" />
+        )}
+        {pode("bi_pagamentos") && telaAtual === "painelBIPagamentos" && (
+          <PainelBIPagamentos />
+        )}
         {pode("bi_faturamento") && telaAtual === "painelBIFaturamento" && (
-          <PainelBIFaturamento perfil={perfil} />
+          <PainelBIFaturamento key="faturamento" modo="faturamento" />
         )}
 
         {telaAtual === "clientesEmPauta" && (

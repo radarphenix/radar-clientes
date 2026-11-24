@@ -51,6 +51,16 @@ essa compatibilidade pode sair de `radar_pode`.
 Aplicada com `supabase db query -f` (fora do histórico de migrations, como a da Inspeção). Ao oficializar,
 o `db push` roda de novo sem efeito (idempotente).
 
+## Painel BI separado (24/11/2026)
+
+| Código | O que libera | Padrão |
+|---|---|---|
+| `bi_faturamento` | Painel BI · Faturamento (comercial); RLS de `bi_pedidos_itens` | só admin |
+| `bi_recebimentos` | Painel BI · Recebimentos; RLS de `bi_lancamentos_financeiros`, `bi_notas_itens` e `bi_devolucoes_itens` aceita `bi_faturamento` OU `bi_recebimentos` | só admin |
+| `bi_pagamentos` | Painel BI · Pagamentos (ao vivo do CIGAM, função `cigam-acompanhamentos?bi=financeiro`, conferido no servidor) | só admin |
+
+Migration: `20261124240000_bi_recebimentos_pagamentos.sql`.
+
 ## Ficha CIGAM (24/11/2026)
 
 | Código | O que libera | Padrão |
