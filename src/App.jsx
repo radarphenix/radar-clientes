@@ -25,6 +25,7 @@ import ComissoesRepresentante from "./ComissoesRepresentante.jsx";
 import PainelBI from "./PainelBI.jsx";
 import PainelBIFaturamento from "./PainelBIFaturamento.jsx";
 import PainelBIPagamentos from "./PainelBIPagamentos.jsx";
+import DashboardCarteira from "./DashboardCarteira.jsx";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
@@ -7088,7 +7089,15 @@ function App() {
             <SecaoContexto
               icone={BarChart3}
               titulo="Dashboard"
-              descricao="Indicadores de rotas e clientes."
+              descricao="Cobertura da carteira, oportunidades do CIGAM e indicadores de rotas."
+            />
+
+            <DashboardCarteira
+              clientes={clientes}
+              usuarios={usuariosPerfis}
+              verTodos={pode("rotas.todas")}
+              podeCompras={pode("clientes.cigam_visao") || pode("clientes.cigam_vendas")}
+              abrirFicha={abrirAcompanhamento}
             />
 
             <div className="dashboard-grupo">

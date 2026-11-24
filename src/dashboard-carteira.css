@@ -1,0 +1,51 @@
+/* Dashboard · Carteira (cobertura de visitas e oportunidades do CIGAM) */
+.dcart { display: grid; gap: 14px; text-align: left; margin-bottom: 22px; }
+.dcart-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dcart-topo h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.dcart-filtro { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; }
+.dcart-filtro select { min-width: 200px; }
+.dcart-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.dcart-kpi { display: grid; gap: 4px; padding: 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: #fff; }
+.dcart-kpi span { font-size: 0.8rem; color: #64748b; }
+.dcart-kpi strong { font-size: 1.4rem; color: #0f172a; }
+.dcart-kpi small { font-size: 0.78rem; color: #64748b; }
+.dcart-barra { height: 6px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+.dcart-barra i { display: block; height: 100%; background: linear-gradient(90deg, #3b82f6, #0b4fd6); }
+.dcart-nota { margin: -4px 0 0; font-size: 0.78rem; color: #94a3b8; }
+.dcart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+.dcart-bloco { padding: 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: #fff; min-width: 0; }
+.dcart-destaque { border-left: 4px solid #f59e0b; }
+.dcart-bloco h4 { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; font-size: 0.95rem; }
+.dcart-bloco-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.dcart-bloco-topo small { color: #94a3b8; font-size: 0.78rem; }
+.dcart-lista { list-style: none; margin: 0; padding: 0; display: grid; }
+.dcart-lista li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.dcart-lista li:last-child { border-bottom: none; }
+.dcart-cli { display: grid; gap: 2px; min-width: 0; }
+.dcart-cli strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; }
+.dcart-cli small { color: #64748b; font-size: 0.76rem; }
+.dcart-extra { display: grid; justify-items: end; gap: 1px; white-space: nowrap; font-size: 0.85rem; }
+.dcart-extra small { color: #94a3b8; font-size: 0.74rem; }
+.dcart-ruim { color: #b91c1c; display: inline-flex; align-items: center; gap: 3px; }
+.dcart-ficha {
+  padding: 5px 12px; border-radius: 999px; border: 1px solid #bfdbfe; background: #eff6ff; color: #0b4fd6;
+  font-weight: 600; font-size: 0.8rem; cursor: pointer; box-shadow: none;
+}
+.dcart-mais { margin-top: 6px; background: none; border: none; box-shadow: none; padding: 2px 0; color: #0b4fd6; font-weight: 600; font-size: 0.85rem; cursor: pointer; text-decoration: underline; }
+.dcart-vazio { color: #94a3b8; font-size: 0.88rem; margin: 6px 0; }
+.dcart-abas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.dcart-abas button {
+  padding: 6px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #334155;
+  font-weight: 600; font-size: 0.82rem; cursor: pointer; box-shadow: none;
+}
+.dcart-abas button[data-active="true"] { background: #0b4fd6; border-color: #0b4fd6; color: #fff; }
+.dcart-abas button span { opacity: 0.75; margin-left: 4px; }
+@media (max-width: 900px) { .dcart-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .dcart-grid { grid-template-columns: 1fr; }
+  .dcart-lista li { grid-template-columns: minmax(0, 1fr) auto; }
+  .dcart-extra { grid-column: 1; justify-items: start; }
+  .dcart-ficha { grid-row: 1 / span 2; grid-column: 2; }
+  .dcart-filtro { width: 100%; }
+  .dcart-filtro select { flex: 1; min-width: 0; }
+}

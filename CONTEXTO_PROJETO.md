@@ -1601,6 +1601,14 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
 - **Visão geral** (`VisaoGeralCigam`): calculada no navegador a partir de pedidos (`$expand=Itens($expand=Material)`, até 100), notas (até 200), títulos abertos e **pagos** (`?ficha=pagos`: `Tipo eq 'c'`, o CIGAM troca R → c na liquidação). Cache de 5 min por cliente+parte em `FichaCigam.jsx`. NotaFiscal não tem `Itens` na API: produtos vêm dos itens dos pedidos.
 - **Títulos "vencidos" da Bragagnolo (24/11/2026)**: conferido no CIGAM pela API, as parcelas 10147/1-2, 10148/1-2, 10249/3 e 10286/1-3 são R01 com saldo cheio e **sem E01 de baixa** (as 10249/1-2 têm E01 e viraram tipo c). O Comissões (view `EX_MW_VW_RADAR_COMISSOES`, regra R01 + saldo do GFLANCAM ao vivo) mostra as mesmas como "Vencida": regra correta, falta baixa no financeiro do CIGAM. Usuário diz que o cliente não deve; acertar no CIGAM corrige Radar e Comissões juntos.
 
+## Dashboard · Carteira (2026-11-24)
+
+- `src/DashboardCarteira.jsx` no topo do Dashboard: cobertura (visitados em 30/60/90 dias), "Compram e não são visitados há +90 dias", "Sem visita há +90 dias" e Oportunidades no CIGAM (compra atrasada, parados +90 dias, queda vs ano anterior). Botão Ficha usa `abrirAcompanhamento`.
+- **Data da visita**: até 24/11/2026 o Radar não gravava quando o cliente foi visitado (só o status). Migration `20261124250000_rota_clientes_visitado_em.sql`: coluna `rota_clientes.visitado_em` + gatilho que grava `now()` quando o status vira VISITADO (e limpa se sair); as 25 visitas antigas receberam `data_prevista_visita`/data da rota. Tabela `visitas` está vazia (legada).
+- Compras: função `cigam-acompanhamentos?dashboard=carteira` (acesso `clientes.cigam_visao` ou `clientes.cigam_vendas`): uma consulta `NotaFiscal/Buscar?$filter=DataEmissao ge <24 meses>`, agrupada por cliente visível (RLS de `clientes`): última compra, nº de datas de compra, ritmo (média dos últimos 10 intervalos), próxima prevista, total 12 meses e 12 anteriores.
+- "Compra atrasada" exige 3+ compras e última compra há no máximo 90 dias (com 2 compras próximas o ritmo saía "a cada 3 dias" e o cliente parado aparecia como atrasado).
+- Acompanhamentos do CIGAM não servem para a cobertura hoje: a API só busca por cliente (POST `Acompanhamentos/Buscar` por `CodigoEmpresa`; sem cliente devolve 204). Próximo passo possível: sincronização noturna.
+
 ## Painel BI separado: Faturamento, Recebimentos e Pagamentos (2026-11-24)
 
 - `PainelBIFaturamento.jsx` agora tem `modo` = `faturamento` (seção Comercial + lista de pedidos/notas) ou `recebimentos` (seção Caixa + "A receber nas próximas 8 semanas" + Pontualidade e alertas). Mesmos filtros e dados (`bi_*` do MWFaturamentoSync); recebimentos não lê `bi_pedidos_itens`.

@@ -327,6 +327,13 @@ Regras:
 
 Tela: indicadores de negocio e produtividade.
 
+**Carteira (topo, desde 24/11/2026)** - representante ve so a carteira dele; quem tem "Rotas de todos" (admin) ve tudo e pode filtrar por representante:
+- **Cobertura**: clientes na carteira, % visitados em 30, 60 e 90 dias e quantos nunca foram visitados pelo Radar. Conta as visitas marcadas como "visitado" na rota (a data da visita e gravada automaticamente desde 24/11/2026; as antigas receberam a data da rota). Visitas registradas so no CIGAM ainda nao entram.
+- **Compram e nao sao visitados ha +90 dias** (com acesso a Visao geral ou a Pedidos e notas do CIGAM): clientes que compraram nos ultimos 12 meses, ordenados pelo valor.
+- **Sem visita ha +90 dias**: os demais clientes sem visita recente.
+- **Oportunidades no CIGAM**: **Compra atrasada** (cliente com 3 ou mais compras, que comprou nos ultimos 90 dias e ja passou da proxima compra prevista pelo ritmo dele), **Parados +90 dias** e **Queda vs ano anterior** (quando houver 2 anos de notas no CIGAM).
+- Cada cliente tem o botao **Ficha**, que abre a ficha do cliente; o Voltar retorna ao Dashboard.
+
 - Indicadores organizados em cards horizontais compactos, com icone, rotulo e valor.
 - No desktop, os indicadores sao distribuidos em ate cinco colunas; no mobile, em duas colunas.
 - Ranking por responsavel e rotas com pendencias aparecem em listas compactas na area inferior.

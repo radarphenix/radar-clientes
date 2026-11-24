@@ -333,6 +333,66 @@ async function buscarFicha(parte: string, cliente: string) {
   }));
 }
 
+// ------------------------------------------------------------------ Dashboard: compras da carteira
+// Uma consulta de notas (24 meses) para a carteira inteira; por cliente: última compra, ritmo (média dos
+// últimos 10 intervalos entre datas de compra), próxima compra prevista, total 12 meses e 12 anteriores.
+// Só clientes que o usuário enxerga no Radar (RLS de clientes) e só com acesso à Visão geral ou a Pedidos e notas.
+async function dashboardCarteira(req: Request) {
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+  });
+  const [{ data: visao }, { data: vendas }] = await Promise.all([
+    sb.rpc("radar_pode", { p_codigo: "clientes.cigam_visao" }),
+    sb.rpc("radar_pode", { p_codigo: "clientes.cigam_vendas" }),
+  ]);
+  if (visao !== true && vendas !== true) throw Object.assign(new Error("Sem acesso às compras do CIGAM."), { status: 403 });
+
+  const visiveis = new Set<string>();
+  for (let de = 0; ; de += 1000) {
+    const { data, error } = await sb.from("clientes").select("codigo_cliente").range(de, de + 999);
+    if (error) throw new Error(error.message);
+    for (const c of data || []) {
+      const d = String(c.codigo_cliente || "").replace(/D/g, "");
+      if (d && !/^0+$/.test(d)) visiveis.add(d.padStart(6, "0"));
+    }
+    if (!data || data.length < 1000) break;
+  }
+
+  const hoje = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const menos = (dias: number) => iso(new Date(hoje.getTime() - dias * 86400000));
+  const ha12 = menos(365), ha24 = menos(730);
+  type L = Record<string, unknown>;
+  const notas = (await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=DataEmissao ge ${ha24}&$top=20000`))) as L[];
+
+  const por = new Map<string, { datas: Set<string>; total12: number; total24: number; notas12: number }>();
+  for (const n of notas || []) {
+    const c = String(n.CodigoCliente || "").trim();
+    if (!visiveis.has(c)) continue;
+    const data = String(n.DataEmissao || "").slice(0, 10);
+    if (!data) continue;
+    const a = por.get(c) || { datas: new Set<string>(), total12: 0, total24: 0, notas12: 0 };
+    a.datas.add(data);
+    const v = Number(n.TotalNF) || 0;
+    if (data >= ha12) { a.total12 += v; a.notas12 += 1; } else a.total24 += v;
+    por.set(c, a);
+  }
+  const clientes: Record<string, unknown> = {};
+  for (const [c, a] of por) {
+    const datas = [...a.datas].sort();
+    const ult = datas[datas.length - 1];
+    const inter = datas.slice(1).map((d, i) => Math.round((Date.parse(d) - Date.parse(datas[i])) / 86400000)).slice(-10);
+    const freq = inter.length ? Math.round(inter.reduce((x, y) => x + y, 0) / inter.length) : null;
+    clientes[c] = {
+      ultima: ult, compras: datas.length, frequencia: freq,
+      proxima: freq ? iso(new Date(Date.parse(ult) + freq * 86400000)) : null,
+      total12: Math.round(a.total12 * 100) / 100, total24: Math.round(a.total24 * 100) / 100, notas12: a.notas12,
+    };
+  }
+  const primeira = (notas || []).reduce((m, n) => { const d = String(n.DataEmissao || "").slice(0, 10); return d && (!m || d < m) ? d : m; }, "");
+  return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, clientes };
+}
+
 // ------------------------------------------------------------------ BI Pagamentos (contas a pagar + fluxo)
 // Lê todos os lançamentos do GFLANCAM pela API (a base inteira cabe numa chamada: ~2 mil linhas em <1 s)
 // e devolve só o que o painel usa: pagar em aberto (Tipo P), pagos (Tipo d, o CIGAM troca P -> d na
@@ -447,6 +507,7 @@ servir(async (req) => {
   try {
     const url = new URL(req.url);
     if (url.searchParams.has("aquecer")) return json(await aquecer());
+    if (url.searchParams.get("dashboard") === "carteira") return json(await dashboardCarteira(req));
     if (url.searchParams.get("bi") === "financeiro") return json(await biFinanceiro(req));
     if (url.searchParams.has("alertas")) return json(await alertas(req, url.searchParams.get("alertas") || ""));
     const bruto = (url.searchParams.get("cliente") || "").trim();
