@@ -1,10 +1,11 @@
+import { servir } from "../_shared/cors.ts";
 // Inspeção de Qualidade - "Do celular" (QR Code), sem login: o código aleatório da sessão é a
 // autorização, e só vale enquanto a janela está aberta no computador (encerrada/expirada = recusa).
 //   GET  ?t=<token>          -> dados para a página do celular (número, cliente, item)
 //   POST ?t=<token> (multipart: arquivo, largura?, altura?) -> grava a foto no item da sessão
 import { admin, cors, gravarFoto, json } from "../_shared/inspecao.ts";
 
-Deno.serve(async (req) => {
+servir(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const sb = admin();
   const t = new URL(req.url).searchParams.get("t") || "";

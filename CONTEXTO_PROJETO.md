@@ -1588,6 +1588,18 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
   - `supabase/functions/agenda-geral-ics/`
   - `supabase/config.toml`
 
+## Segurança: revisão de 2026-11-24
+
+Fechamento das pendências da auditoria de 2026-08 e dos alertas do `supabase db advisors --type security`:
+
+- **CORS restrito**: `supabase/functions/_shared/cors.ts` (`servir()` substitui `Deno.serve`) devolve `Access-Control-Allow-Origin` só para `radarphenix.pages.dev` (e prévias `*.radarphenix.pages.dev`), `campanha.phenixfiltros.com.br` (Veste Phenix) e localhost/rede local. Aplicado em todas as funções chamadas pelo navegador; os feeds `.ics` ficam abertos (lidos por apps de calendário). **Function nova chamada pelo navegador usa `servir()`; domínio novo entra na lista `PERMITIDAS`.**
+- **EXECUTE das funções** (migration `20261124210000_seguranca_execute_funcoes.sql`): `anon` não executa nenhuma função do schema public, exceto `inscrever_veste_phenix_completo` e `registrar_evento_veste_phenix` (formulário público); default privileges também revogados (função nova não nasce aberta ao anon). Funções de gatilho sem EXECUTE para authenticated. Todas as policies RLS que usam funções são `TO authenticated`, por isso nada quebrou.
+- **`usuario_admin()`** (legada, tabela `perfis_usuarios`) sem EXECUTE para ninguém além de service_role; não foi apagada.
+- **search_path fixo** em `geocodificacao_endereco_mudou`, `usuario_admin`, `inspecao_nivel`, `validar_cpf`.
+- **`geocodificar-clientes`** (legada: a geocodificação real roda no banco pelo cron `geocodificar-clientes` → `geocodificar_clientes_passo()`) agora exige chave de serviço ou `radar_pode('administracao')`.
+- **Drift**: as 11 Edge Functions de produção conferidas contra o repositório (download --use-api) - nenhuma à frente do repo.
+- **Não feito**: proteção de senha vazada (HaveIBeenPwned) só existe no plano Pro; `pg_net` no schema public (mover exige recriar a extensão e quebraria o cron de geocodificação; risco baixo).
+
 ## Proximo Foco Sugerido
 
 - [Concluido em 2026-07-14] Integracao da tela Amostras com acompanhamentos GEACOMP:
@@ -1860,6 +1872,7 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
   - validado com `curl` direto no REST (anon não lê mais `clientes`; representante rebaixado só vê a própria carteira, não lê token de outro usuário, não vê amostras do grupo sem a flag) e função `agenda-tecnico-ics` testada ponta a ponta (token válido → 200, token inválido → 404) após o redeploy
   - descoberta lateral: function `inscrever-veste-phenix` implantada em produção (versão 9, RPC `inscrever_veste_phenix_completo` de 10 números da sorte) estava à frente do código local (versão antiga de 1 número) - baixada com `supabase functions download --use-api` e commitada junto com a correção de segurança, a pedido do usuário. Function `geocodificar-clientes`, que rodava em produção sem nenhum arquivo correspondente no repo, também foi baixada e commitada - mas continua sem checagem de autorização própria no código (só depende do `verify_jwt` do projeto, não verifica admin/tipo de perfil); ainda vale revisar isso especificamente
   - pendente (registrado, não corrigido): CORS `Access-Control-Allow-Origin: '*'` em todas as Edge Functions, incluindo `criar-usuario` (já exige Bearer token + reverifica admin no servidor, então não é explorável hoje porque o token não viaja sozinho entre origens como cookie viajaria) - restringir ao(s) domínio(s) reais do site quando alguma function passar a depender de sessão via cookie
+  - **resolvido em 2026-11-24**: ver seção "Segurança: revisão de 2026-11-24".
 
 - [Concluído em 2026-08-25] Nova feature "Clientes em Pauta", pedida pelo usuário a partir de uma necessidade trazida por um técnico de campo:
   - cadastro manual de cliente com nível de criticidade (Urgente > Crítico > Importante > Aproveitamento de rota, mesma lista ordenada); qualquer perfil pode cadastrar (representante só dentro da própria carteira); lista compartilhada com a mesma regra de visibilidade que `clientes`/`comissoes` já usam

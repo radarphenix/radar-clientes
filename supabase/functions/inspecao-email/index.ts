@@ -1,3 +1,4 @@
+import { servir } from "../_shared/cors.ts";
 // Inspeção de Qualidade - envio do PDF por e-mail (individual ou várias num e-mail só).
 // POST { para: string[], assunto, html, anexos: [{ nome, base64 }], inspecoes: [{ id, revisao }] }
 // Mesma conta Gmail do Radar (segredos PROMO_SMTP_*), nome "Qualidade Phenix", como o desktop.
@@ -8,7 +9,7 @@ import { admin, cors, json, papel, pode } from "../_shared/inspecao.ts";
 const LIMITE_ANEXOS = 18 * 1024 * 1024; // Gmail recusa acima de 25 MB codificado
 const emailValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-Deno.serve(async (req) => {
+servir(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
   try {

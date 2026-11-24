@@ -1,10 +1,11 @@
+import { servir } from "../_shared/cors.ts";
 // Inspeção de Qualidade - fotos no Google Drive, para quem está logado.
 //   POST (multipart: inspecao_id, detalhamento_id, arquivo, largura?, altura?, legenda?)  -> grava a foto (inspetor+)
 //   GET  ?foto=<id da linha em inspecao_fotos>                                         -> devolve a imagem (qualquer papel)
 //   GET  ?saude=1                                                                      -> { ok } ou { ok:false, error } da autorização do Drive (aprovador+)
 import { admin, baixarArquivo, cors, doUsuario, gravarFoto, json, papel, pode, testarDrive } from "../_shared/inspecao.ts";
 
-Deno.serve(async (req) => {
+servir(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const p = await papel(req);

@@ -1,3 +1,4 @@
+import { servir } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const cors = { 'Access-Control-Allow-Origin':'*', 'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type' }
@@ -29,7 +30,7 @@ function produtoDaLinha(papel:string|null,i:Item):string|Record<string,unknown>{
   return linha
 }
 
-Deno.serve(async req => {
+servir(async req => {
   if(req.method==='OPTIONS') return new Response('ok',{headers:cors})
   if(req.method!=='POST') return json({ok:false,mensagem:'Método não permitido.'},405)
   try {

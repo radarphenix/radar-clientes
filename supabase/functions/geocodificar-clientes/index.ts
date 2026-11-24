@@ -26,7 +26,27 @@ function montarEnderecoBusca(cliente: any) {
     .trim();
 }
 
-serve(async () => {
+// Legada: a geocodificação hoje roda no banco (cron "geocodificar-clientes" -> geocodificar_clientes_passo()).
+// Mantida só para disparo manual; exige a chave de serviço ou um usuário com acesso à Administração.
+async function autorizado(req: Request): Promise<boolean> {
+  const auth = req.headers.get("Authorization") || "";
+  const servico = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (servico && auth === `Bearer ${servico}`) return true;
+  if (!auth.startsWith("Bearer ")) return false;
+  const usuario = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: auth } },
+  });
+  const { data, error } = await usuario.rpc("radar_pode", { p_codigo: "administracao" });
+  return !error && data === true;
+}
+
+serve(async (req: Request) => {
+  if (!(await autorizado(req))) {
+    return new Response(JSON.stringify({ sucesso: false, erro: "Acesso restrito à Administração." }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,

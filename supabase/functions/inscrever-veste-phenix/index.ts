@@ -1,3 +1,4 @@
+import { servir } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import nodemailer from 'npm:nodemailer@7.0.11';
 import { emailContemplado, whatsappContemplado, enviarWhatsApp, CONTATO_PHENIX } from './contemplado.ts';
@@ -166,7 +167,7 @@ async function reenviarEmails(req:Request){
  return json({ok:true,enviados,falharam,restantes:count??0});
 }
 
-Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});if(req.method!=='POST')return json({ok:false,mensagem:'Método não permitido.'},405);
+servir(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});if(req.method!=='POST')return json({ok:false,mensagem:'Método não permitido.'},405);
  try{const b=await req.json();if(b?.acao==='reenviar_emails')return await reenviarEmails(req);if(b?.acao==='comunicar_contemplado')return await comunicarContemplado(req,b);if(b?.acao==='previa_contemplado')return await previaContemplado(req,b);const cpf=String(b.cpf||'').replace(/\D/g,'');const cnpj=String(b.cnpj||'').replace(/\D/g,'');const agora=Date.now();const inicio=Date.parse('2026-10-06T00:00:00-03:00'),fim=Date.parse('2026-10-20T23:59:59-03:00');
   // O modo teste só vale antes da abertura: em 06/10 00:00 as inscrições passam a ser oficiais sozinhas,
   // e o cron limpar-testes-veste-phenix apaga as de teste no mesmo horário.

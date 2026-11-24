@@ -1,3 +1,4 @@
+import { servir } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -38,7 +39,7 @@ function mensagemAmigavelCriacaoAuth(erroMensagem: string) {
   return "Nao foi possivel criar o usuario no momento.";
 }
 
-Deno.serve(async (req) => {
+servir(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

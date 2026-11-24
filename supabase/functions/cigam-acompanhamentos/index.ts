@@ -1,3 +1,4 @@
+import { servir } from "../_shared/cors.ts";
 // Acompanhamentos do CIGAM (somente leitura) para o botão "Acompanhamento" do cliente.
 //   GET ?cliente=000046                    -> { acompanhamentos: [...] }
 //   GET ?cliente=000046&arquivo=<nome.ext> -> o anexo (via portal, a CDN exige token próprio)
@@ -243,7 +244,7 @@ function variantes(codigo: string) {
   return [...new Set([codigo, d, d.padStart(6, "0"), s, s.padStart(6, "0")].filter(Boolean))];
 }
 
-Deno.serve(async (req) => {
+servir(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "GET") return json({ error: "Método não permitido." }, 405);
   try {

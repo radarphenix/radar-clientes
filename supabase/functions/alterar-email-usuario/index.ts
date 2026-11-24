@@ -1,3 +1,4 @@
+import { servir } from "../_shared/cors.ts";
 // Troca o e-mail de LOGIN (Supabase Auth) de um usuário e o e-mail do perfil, juntos.
 // Editar só a tabela perfis deixava o login no e-mail antigo: o "Atualizar senha" ia para um
 // endereço sem login e o Supabase não mandava nada (sem erro). Só quem tem o menu Administração.
@@ -16,7 +17,7 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
+servir(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "Metodo nao permitido." }, 405);
 
