@@ -75,7 +75,7 @@ export default function PainelBIPagamentos() {
         if (!r.ok) throw new Error(j.error || `Erro ${r.status}`);
         if (vivo) { setDados(j); setErro(""); }
       })
-      .catch((e) => vivo && setErro(e.message || "Falha ao consultar o CIGAM."));
+      .catch((e) => vivo && setErro(e.message || "Falha na consulta."));
     return () => { vivo = false; };
   }, [tentativa]);
 
@@ -143,7 +143,7 @@ export default function PainelBIPagamentos() {
       <div>
         <span className="bi-sobretitulo">Área executiva</span>
         <h2>Painel BI · Pagamentos</h2>
-        <p>Contas a pagar e fluxo de caixa projetado, direto do CIGAM.</p>
+        <p>Contas a pagar e fluxo de caixa projetado, com dados ao vivo do ERP.</p>
       </div>
       <div className="bi-topo-acoes">
         <button type="button" className="bi-imprimir" onClick={() => { setDados(null); setTentativa((t) => t + 1); }}><RefreshCw size={17} /> Atualizar</button>
@@ -168,13 +168,13 @@ export default function PainelBIPagamentos() {
         <label className="bi-check"><input type="checkbox" checked={comPrevisoes} onChange={(e) => setComPrevisoes(e.target.checked)} /> Incluir previsões de fluxo</label>
       </div>
       <span className="bi-ajuda-filtro">
-        Clique nos cards, barras e linhas para ver os lançamentos. Dados ao vivo do CIGAM
+        Clique nos cards, barras e linhas para ver os lançamentos. Dados ao vivo do ERP
         {dados?.gerado_em && <> (consultado às {new Date(dados.gerado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })})</>}.
       </span>
     </div>
 
-    {erro && <div className="bi-aviso">Não foi possível consultar o CIGAM: {erro} <button type="button" className="bi-link" onClick={() => { setErro(""); setTentativa((t) => t + 1); }}>Tentar de novo</button></div>}
-    {!dados && !erro ? <p className="bi-vazio">Buscando no CIGAM...</p> : dados && <>
+    {erro && <div className="bi-aviso">Não foi possível carregar: {erro} <button type="button" className="bi-link" onClick={() => { setErro(""); setTentativa((t) => t + 1); }}>Tentar de novo</button></div>}
+    {!dados && !erro ? <p className="bi-vazio">Buscando...</p> : dados && <>
       <h3 className="bi-secao-titulo">Contas a pagar</h3>
       <div className="bi-kpis">
         <StatTile label="A pagar no período (por vencimento)" valor={moeda(soma(doPeriodo, (x) => x.valor))} onClick={() => abrir("A pagar no período", doPeriodo)} />
@@ -183,7 +183,7 @@ export default function PainelBIPagamentos() {
         <StatTile label="Vence nos próximos 30 dias" valor={moeda(soma(prox30, (x) => x.saldo))} onClick={() => abrir("Vence nos próximos 30 dias", prox30, "saldo", `${dataBR(ref)} a ${dataBR(somarDias(ref, 30))}`)} />
       </div>
       <p className="bi-comparativo">
-        Pagos em dia no período (pela data da baixa no CIGAM): <strong>{pontualidade.total ? `${Math.round((pontualidade.emDia / pontualidade.total) * 100)}% de ${pontualidade.total}` : "—"}</strong>
+        Pagos em dia no período (pela data da baixa no ERP): <strong>{pontualidade.total ? `${Math.round((pontualidade.emDia / pontualidade.total) * 100)}% de ${pontualidade.total}` : "—"}</strong>
         {pontualidade.atrasados > 0 && <>{" · "}atraso médio quando atrasa: <strong>{Math.round(pontualidade.somaAtraso / pontualidade.atrasados)} dias</strong></>}
         {" · "}Total em aberto: <button type="button" className="bi-link" onClick={() => abrir("Todo o contas a pagar em aberto", abertos, "saldo", `Posição em ${dataBR(ref)}`)}>{moeda(soma(abertos, (x) => x.saldo))} em {abertos.length} lançamento(s)</button>
       </p>
@@ -212,8 +212,8 @@ export default function PainelBIPagamentos() {
         </table></div>
         <p className="bi-comparativo">
           Entradas = títulos a receber em aberto pelo vencimento; saídas = contas a pagar em aberto pelo vencimento
-          {comPrevisoes ? ", incluindo as previsões lançadas no CIGAM" : ", sem as previsões"}. Não considera o saldo bancário atual.
-          {" "}Atenção: lançamento pago mas ainda não baixado no CIGAM aparece como vencido e fica fora da projeção.
+          {comPrevisoes ? ", incluindo as previsões lançadas no ERP" : ", sem as previsões"}. Não considera o saldo bancário atual.
+          {" "}Atenção: lançamento pago mas ainda não baixado no ERP aparece como vencido e fica fora da projeção.
         </p>
       </div>
 

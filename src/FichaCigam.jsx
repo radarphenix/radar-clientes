@@ -58,7 +58,7 @@ function useFicha(cliente, parte, ativo = true) {
     let vivo = true;
     buscar(cliente, parte, tentativa > 0)
       .then((itens) => vivo && setEstado({ itens, erro: "" }))
-      .catch((e) => vivo && setEstado({ itens: null, erro: e.message || "Falha ao consultar o CIGAM." }));
+      .catch((e) => vivo && setEstado({ itens: null, erro: e.message || "Falha na consulta." }));
     return () => {
       vivo = false;
     };
@@ -74,7 +74,7 @@ function Estado({ estado, repetir, vazio, children }) {
   if (estado.erro)
     return (
       <div className="acomp-aviso erro">
-        <p>Não foi possível consultar o CIGAM: {estado.erro}</p>
+        <p>Não foi possível carregar: {estado.erro}</p>
         <div>
           <button type="button" onClick={repetir}>Tentar de novo</button>
         </div>
@@ -84,7 +84,7 @@ function Estado({ estado, repetir, vazio, children }) {
     return (
       <div className="acomp-carregando">
         <span className="acomp-spinner" aria-hidden="true" />
-        <div><strong>Buscando no CIGAM…</strong></div>
+        <div><strong>Buscando…</strong></div>
       </div>
     );
   if (!estado.itens.length) return <div className="acomp-vazio">{vazio}</div>;
@@ -92,7 +92,7 @@ function Estado({ estado, repetir, vazio, children }) {
 }
 
 function ItensPedido({ itens }) {
-  if (!itens.length) return <div className="ficha-itens vazio">Pedido sem itens no CIGAM.</div>;
+  if (!itens.length) return <div className="ficha-itens vazio">Pedido sem itens.</div>;
   return (
     <div className="ficha-itens" onClick={(e) => e.stopPropagation()}>
       {itens.map((i) => (
@@ -123,7 +123,7 @@ export function PedidosCigam({ cliente }) {
   const hoje = hojeISO();
 
   return (
-    <Estado estado={estado} repetir={repetir} vazio="Nenhum pedido deste cliente no CIGAM.">
+    <Estado estado={estado} repetir={repetir} vazio="Nenhum pedido deste cliente.">
       <div className="acomp-resumo">
         <div><strong>{abertos.length}</strong><span>Em aberto</span></div>
         <div><strong>{moeda(abertos.reduce((s, p) => s + p.total, 0))}</strong><span>Total em aberto</span></div>
@@ -190,7 +190,7 @@ export function NotasCigam({ cliente }) {
   }, [itens]);
 
   return (
-    <Estado estado={estado} repetir={repetir} vazio="Nenhuma nota fiscal deste cliente no CIGAM.">
+    <Estado estado={estado} repetir={repetir} vazio="Nenhuma nota fiscal deste cliente.">
       <div className="acomp-resumo">
         <div><strong>{moeda(resumo.total12)}</strong><span>Comprado em 12 meses</span></div>
         <div><strong>{resumo.qtd12}</strong><span>Notas em 12 meses</span></div>
@@ -407,7 +407,7 @@ export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara })
     );
   if (!r) return <Estado estado={{ itens: null, erro: "" }} />;
   if (!ped.itens.length && !nf.itens.length)
-    return <div className="acomp-vazio">Este cliente ainda não tem pedidos nem notas no CIGAM.</div>;
+    return <div className="acomp-vazio">Este cliente ainda não tem pedidos nem notas.</div>;
 
   const atrasadaProxima = r.proxima && r.proxima < hojeISO();
   const produtos = todosProdutos ? r.produtos : r.produtos.slice(0, 6);
@@ -423,7 +423,7 @@ export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara })
               {r.variacao >= 0 ? "▲" : "▼"} {Math.abs(r.variacao).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}% vs. 12 meses anteriores
             </small>
           ) : (
-            <small>{r.primeiraNota ? `Histórico no CIGAM desde ${data(r.primeiraNota)}` : "Sem notas"}</small>
+            <small>{r.primeiraNota ? `Histórico desde ${data(r.primeiraNota)}` : "Sem notas"}</small>
           )}
         </div>
         <div className="ficha-kpi">
@@ -528,7 +528,7 @@ export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara })
             ))}
           </div>
         ) : (
-          <p className="ficha-nota">Pedidos sem itens no CIGAM.</p>
+          <p className="ficha-nota">Pedidos sem itens.</p>
         )}
         {r.produtos.length > 6 && (
           <button type="button" className="ficha-link" onClick={() => setTodosProdutos(!todosProdutos)}>

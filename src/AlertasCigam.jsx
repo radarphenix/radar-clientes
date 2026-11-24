@@ -26,7 +26,7 @@ export default function AlertasCigam({ alertas, codigo }) {
   }
   if ("ultima_compra" in a) {
     const dias = diasDesde(a.ultima_compra);
-    if (dias === null) selos.push(<span key="c" className="alerta-cigam compra">Sem compras no CIGAM</span>);
+    if (dias === null) selos.push(<span key="c" className="alerta-cigam compra">Sem compras</span>);
     else if (dias >= DIAS_SEM_COMPRA_ALERTA)
       selos.push(
         <span key="c" className="alerta-cigam compra" title={`Última nota em ${a.ultima_compra.split("-").reverse().join("/")}`}>

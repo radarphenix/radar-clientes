@@ -19,7 +19,8 @@ const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const LIMITE = 8;
 // Cliente do exterior (UF "EX") mostra o país do cadastro do CIGAM no lugar de "EXTERIOR/EX".
 const local = (c) => (c.pais ? c.pais : `${c.cidade || "-"}${c.uf ? `/${c.uf}` : ""}`);
-const ORIGEM = { radar: "Radar", cigam: "CIGAM" };
+// Origem da visita, como o usuário pediu: "Rota" (marcada como visitado) ou "Acompanhamento" (VISITA/VISITA TECNICA).
+const ORIGEM = { radar: "Rota", cigam: "Acompanhamento" };
 
 function Lista({ itens, vazio, colunaExtra, abrirFicha }) {
   const [todos, setTodos] = useState(false);
@@ -89,7 +90,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
         if (!r.ok) throw new Error(j.error || `Erro ${r.status}`);
         if (vivo) setCompras(j);
       })
-      .catch((e) => vivo && setErroCompras(e.message || "Falha ao consultar o CIGAM."));
+      .catch((e) => vivo && setErroCompras(e.message || "Falha na consulta."));
     return () => { vivo = false; };
   }, [podeCompras]);
 
@@ -192,7 +193,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
         </section>
       )}
       <p className="dcart-nota">
-        Visita = rota marcada como "visitado" no Radar ou acompanhamento VISITA / VISITA TECNICA no CIGAM (atualizado toda madrugada). Vale a mais recente.
+        Visita = rota marcada como "visitado" ou acompanhamento VISITA / VISITA TÉCNICA (acompanhamentos atualizados às 7h, 12h e 17h). Vale a mais recente.
       </p>
 
       <div className="dcart-grid">
@@ -202,7 +203,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
             {compras ? (
               <Lista itens={compramSemVisita} abrirFicha={abrirFicha} vazio="Nenhum cliente comprador sem visita. 👍"
                 colunaExtra={(c) => <><strong>{moeda(c.compra.total12)}</strong><small>em 12 meses</small></>} />
-            ) : <p className="dcart-vazio">{erroCompras ? `CIGAM: ${erroCompras}` : "Buscando compras no CIGAM…"}</p>}
+            ) : <p className="dcart-vazio">{erroCompras ? `Não foi possível buscar as compras: ${erroCompras}` : "Buscando compras…"}</p>}
           </section>
         )}
 
@@ -217,7 +218,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
       {podeCompras && (
         <section className="dcart-bloco">
           <div className="dcart-bloco-topo">
-            <h4><CalendarClock size={18} /> Oportunidades no CIGAM</h4>
+            <h4><CalendarClock size={18} /> Oportunidades de compra</h4>
             {compras?.historico_desde && <small>Notas desde {dataBR(compras.historico_desde)}</small>}
           </div>
           <div className="dcart-abas" role="tablist">
@@ -227,14 +228,14 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
               </button>
             ))}
           </div>
-          {!compras ? <p className="dcart-vazio">{erroCompras ? `CIGAM: ${erroCompras}` : "Buscando compras no CIGAM…"}</p> : (
+          {!compras ? <p className="dcart-vazio">{erroCompras ? `Não foi possível buscar as compras: ${erroCompras}` : "Buscando compras…"}</p> : (
             <>
               {aba === "atrasada" && <Lista itens={atrasada} abrirFicha={abrirFicha} vazio="Nenhum cliente com compra atrasada."
                 colunaExtra={(c) => <><strong className="dcart-ruim">{dias(c.compra.proxima)} d de atraso</strong><small>compra a cada {c.compra.frequencia} d</small></>} />}
               {aba === "parados" && <Lista itens={parados} abrirFicha={abrirFicha} vazio="Nenhum cliente parado há mais de 90 dias."
                 colunaExtra={(c) => <><strong>{moeda(c.compra.total12)}</strong><small>últ. compra {dataBR(c.compra.ultima)}</small></>} />}
               {aba === "queda" && <Lista itens={queda} abrirFicha={abrirFicha}
-                vazio={compras.historico_desde && dias(compras.historico_desde) < 395 ? "Ainda não há 2 anos de notas no CIGAM para comparar." : "Nenhum cliente com queda relevante."}
+                vazio={compras.historico_desde && dias(compras.historico_desde) < 395 ? "Ainda não há 2 anos de notas para comparar." : "Nenhum cliente com queda relevante."}
                 colunaExtra={(c) => <><strong className="dcart-ruim"><TrendingDown size={14} /> {pct(c.compra.total24 - c.compra.total12, c.compra.total24)}%</strong><small>{moeda(c.compra.total12)} vs {moeda(c.compra.total24)}</small></>} />}
             </>
           )}

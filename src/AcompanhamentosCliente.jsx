@@ -67,7 +67,7 @@ function Acompanhamento({ item, cliente }) {
   const [baixando, setBaixando] = useState("");
   const longo = item.historico.length > LIMITE_TEXTO;
   const texto = longo && !aberto ? `${item.historico.slice(0, LIMITE_TEXTO).trimEnd()}…` : item.historico;
-  const titulo = item.titulo || item.assunto || (item.automatico ? "Registro automático do CIGAM" : "Acompanhamento");
+  const titulo = item.titulo || item.assunto || (item.automatico ? "Registro automático" : "Acompanhamento");
   const assuntoExtra = item.titulo && item.assunto ? item.assunto : "";
 
   async function baixar(nome) {
@@ -210,7 +210,7 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
         if (recebidos.length && !recebidos.some((a) => !a.automatico)) setFiltro("todos");
         setLista(recebidos);
       })
-      .catch((e) => ativo && setErro(e.message || "Falha ao consultar o CIGAM."));
+      .catch((e) => ativo && setErro(e.message || "Falha na consulta."));
     return () => {
       ativo = false;
     };
@@ -323,7 +323,7 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
             >
               Tentar de novo
             </button>
-            <a href={urlPortal(cliente)} target="_blank" rel="noreferrer">Abrir no portal CIGAM</a>
+            <a href={urlPortal(cliente)} target="_blank" rel="noreferrer">Abrir no portal</a>
           </div>
         </div>
       )}
@@ -332,8 +332,8 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
         <div className="acomp-carregando">
           <span className="acomp-spinner" aria-hidden="true" />
           <div>
-            <strong>Buscando no CIGAM…</strong>
-            <p>Se a conexão com o CIGAM tiver expirado, pode levar até 20 segundos.</p>
+            <strong>Buscando acompanhamentos…</strong>
+            <p>Se a conexão tiver expirado, pode levar até 20 segundos.</p>
           </div>
         </div>
       )}
@@ -399,7 +399,7 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
           {grupos.length === 0 ? (
             <div className="acomp-vazio">
               {contagem.total === 0
-                ? "Este cliente ainda não tem acompanhamentos no CIGAM."
+                ? "Este cliente ainda não tem acompanhamentos."
                 : "Nenhum acompanhamento com esse filtro."}
             </div>
           ) : (

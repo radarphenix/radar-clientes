@@ -552,7 +552,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
       </div>
       <span className="bi-ajuda-filtro">
         Clique nos cards, nas barras e nos clientes para ver os documentos; num mês do gráfico para filtrar o período.
-        {ultimaSincronizacao && <> Dados do CIGAM sincronizados em {dataHoraBR(ultimaSincronizacao)}.</>}
+        {ultimaSincronizacao && <> Dados do ERP sincronizados em {dataHoraBR(ultimaSincronizacao)}.</>}
       </span>
     </div>
 
@@ -648,8 +648,8 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
         <small>{inicioVencidos ? `Vencimento de ${dataBR(inicioVencidos)} até ${dataBR(referencia)}` : `Todo o histórico até ${dataBR(referencia)}`}</small>
       </div>
       <div className="bi-aviso-pendente">
-        Em validação: o saldo dos títulos vem do CIGAM (R01 com saldo em aberto). Títulos baixados por outro meio,
-        fora do CIGAM, ainda aparecem como vencidos. Use o recorte para olhar só o período controlado.
+        Em validação: o saldo dos títulos vem do ERP (título com saldo em aberto). Títulos baixados por outro meio,
+        fora do ERP, ainda aparecem como vencidos. Use o recorte para olhar só o período controlado.
       </div>
       <div className="bi-graficos-grid">
         <BarChart titulo={`Vencidos ${rotuloRecorte} por faixa de atraso · posição em ${dataBR(referencia)}`} itens={faixas} formatarValor={moeda}
@@ -678,7 +678,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
       </div>
       <p className="bi-comparativo">
         Pontualidade e prazo médio consideram os títulos liquidados de {dataBR(inicio)} a {dataBR(fim)} (prazo = emissão até a liquidação).
-        {" "}Vencidos há mais de 90 dias costumam ser recebimentos não baixados no CIGAM: vale conferir com o financeiro.
+        {" "}Vencidos há mais de 90 dias costumam ser recebimentos não baixados no ERP: vale conferir com o financeiro.
       </p>
       <div className="bi-chart-card">
         <div className="bi-chart-cabecalho"><h3>Pontualidade por cliente · liquidados no período</h3><span className="bi-contagem">{pontualidadeClientes.length} cliente(s)</span></div>
