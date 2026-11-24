@@ -18,6 +18,7 @@ import Rotas from "./Rotas.jsx";
 import RotasPesquisa from "./RotasPesquisa.jsx";
 import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
 import HistoricoCliente from "./HistoricoCliente.jsx";
+import AcompanhamentosCliente from "./AcompanhamentosCliente.jsx";
 import ImpressaoPesquisaRotas from "./ImpressaoPesquisaRotas.jsx";
 import ComissoesRepresentante from "./ComissoesRepresentante.jsx";
 import PainelBI from "./PainelBI.jsx";
@@ -26,6 +27,7 @@ import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
 import "./historico-cliente.css";
+import "./acompanhamentos-cliente.css";
 import "./impressao-pesquisa-rotas.css";
 import "./comissoes-representante.css";
 import "./pauta.css";
@@ -103,6 +105,7 @@ const TELAS_PERSISTIDAS = new Set([
   "promocaoVestePhenix",
   "pesquisaRotas",
   "historicoCliente",
+  "acompanhamentosCliente",
   "comissoes",
   "clientesEmPauta",
   "painelBI",
@@ -588,6 +591,7 @@ function App() {
     FILTROS_PESQUISA_ROTAS_INICIAIS,
   );
   const [clienteHistorico, setClienteHistorico] = useState(null);
+  const [clienteAcompanhamento, setClienteAcompanhamento] = useState(null);
   const [amostrasHistoricoCliente, setAmostrasHistoricoCliente] = useState(
     [],
   );
@@ -2183,10 +2187,9 @@ function App() {
       return;
     }
 
-    window.open(
-      `https://phenixportais.cigam.cloud/portalrepresentante/ge/acompanhamento/pesquisa/${codigo}`,
-      "_blank",
-    );
+    // Lista os acompanhamentos do CIGAM dentro do Radar (função cigam-acompanhamentos).
+    setClienteAcompanhamento(item);
+    setTelaAtual("acompanhamentosCliente");
   }
 
   function fecharSeletorContatosWhatsApp() {
@@ -6772,16 +6775,7 @@ function App() {
                           <button
                             type="button"
                             className="botao-acao"
-                            onClick={() => {
-                              const codigo = String(
-                                item.codigo_cliente || "",
-                              ).padStart(6, "0");
-
-                              window.open(
-                                `https://phenixportais.cigam.cloud/portalrepresentante/ge/acompanhamento/pesquisa/${codigo}`,
-                                "_blank",
-                              );
-                            }}
+                            onClick={() => abrirAcompanhamento(item)}
                           >
                             Acomp.
                           </button>
@@ -7349,6 +7343,22 @@ function App() {
             inspecoes={pode("inspecao.ver") ? inspecoesHistoricoCliente : null}
             abrirInspecao={abrirInspecaoDoHistorico}
           />
+        )}
+
+        {telaAtual === "acompanhamentosCliente" && clienteAcompanhamento && (
+          <AcompanhamentosCliente
+            key={clienteAcompanhamento.codigo_cliente}
+            cliente={clienteAcompanhamento}
+          />
+        )}
+
+        {telaAtual === "acompanhamentosCliente" && !clienteAcompanhamento && (
+          <section className="painel">
+            <p>Nenhum cliente selecionado.</p>
+            <button type="button" onClick={() => setTelaAtual("clientes")}>
+              Voltar para Clientes
+            </button>
+          </section>
         )}
 
         {telaAtual === "historicoCliente" && !clienteHistorico && (

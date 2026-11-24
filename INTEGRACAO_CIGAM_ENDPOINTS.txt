@@ -1,0 +1,491 @@
+PUT    api/bpm/pj/TarefasProjeto/AtualizarSituacao  — Atualizar situacao da tarefa da atividade do projeto
+POST   api/bpm/pj/Gantt/BuscarDependencias  — Buscar dependências do projeto para o Gantt
+GET    api/bpm/pj/AgendaTecnico/BuscarAnotacoes  — Buscar as anotações do calendário do técnico
+GET    api/bpm/pj/AgendaTecnico/BuscarAtividadesOrdemServicoProjeto  — Buscar atividades de projetos que tenham Ordem de Serviço por técnico
+GET    api/bpm/pj/AgendaTecnico/BuscarAtividadesProjeto  — Buscar atividades de projetos por técnico
+GET    api/bpm/pj/AgendaTecnico/BuscarCalendario  — Buscar o calendário do técnico
+GET    api/bpm/pj/AgendaTecnico/BuscarConfiguracaoOrdemServico  — Buscar configurações de OS do projeto
+GET    api/bpm/pj/AgendaTecnico/BuscarReservas  — Buscar apontamentos de projeto por técnico
+GET    api/bpm/pj/AgendaTecnico/BuscarTecnicos  — Buscar técnicos cadastrados nos projetos
+GET    api/bpm/pj/AgendaTecnico/VerificarSituacaoTarefas  — Buscar configurações de OS do projeto
+GET    api/bpm/pj/Gantt/BuscarDadosGantt  — Buscar dados do projeto para o Gantt
+GET    api/bpm/pj/Gantt/BuscarDadosGanttVersao  — Buscar dados do projeto para o Gantt
+GET    api/bpm/pj/Gantt/BuscarDependencias  — Buscar dependências do projeto para o Gantt
+GET    api/bpm/pj/Gantt/BuscarProjetoPrincipal  — Buscar o código do projeto principal
+GET    api/bpm/pj/Projeto/Buscar  — Buscar dados referente ao projeto
+GET    api/bpm/pj/ProjetoPapel/Buscar  — Buscar dados referente ao papel
+GET    api/bpm/pj/TarefasProjeto/BuscarTarefasProjeto  — Buscar tarefas de uma atividade do projeto
+GET    api/bpm/pj/TarefasProjeto/VerificarSituacaoTarefas  — Buscar a situação das tarefas do projeto
+PUT    api/comercial/fa/ItemPedido/AtualizarControle  — 
+PUT    api/comercial/fa/LiberacaoDesconto/Salvar  — 
+PUT    api/comercial/fa/Pedido/AtualizarControlePedido  — Atualizar o controle do pedido
+PUT    api/comercial/fa/Pedido/Salvar  — Modifica um pedido
+PUT    api/comercial/fa/Pedido/SalvarItemPedido  — Modifica um item de pedido
+POST   api/comercial/fa/LiberacaoDesconto/Salvar  — 
+POST   api/comercial/fa/NotaFiscal/ImprimirConferenciaFaturamento  — Gerar relatório Conferência de Faturamento para Cliente.
+POST   api/comercial/fa/NotaFiscal/ImprimirMapaGeralMensal  — Gerar relatório Mapa Geral Mensal para Cliente.
+POST   api/comercial/fa/NotaFiscal/ImprimirVendasCondicaoPagamento  — Gerar relatório Vendas por Condição de Pagamento para Cliente.
+POST   api/comercial/fa/NotaFiscal/Reenviar  — Reenvia a nota fiscal conforme a Model ReenviarNotaFiscalDTO
+POST   api/comercial/fa/Pedido/CalcularImposto  — Calcular impostos do pedido
+POST   api/comercial/fa/Pedido/Efetivar  — 
+POST   api/comercial/fa/Pedido/ImprimirCurvaABCFaturamento  — Gerar relatório Curva ABC Faturamento para Cliente
+POST   api/comercial/fa/Pedido/ImprimirListagemFaturamento  — Gerar relatório de Produtos Vendidos
+POST   api/comercial/fa/Pedido/ImprimirMapaFaturamento  — Gerar relatório Mapa de Faturamento
+POST   api/comercial/fa/Pedido/ImprimirPedidosControle  — Gerar relatório de pedidos por controle
+POST   api/comercial/fa/Pedido/ImprimirPosicaoPedidos  — Gerar relatório da Posição dos Pedidos
+POST   api/comercial/fa/Pedido/ImprimirProdutosVendidos  — Gerar relatório de Produtos Vendidos
+POST   api/comercial/fa/Pedido/ImprimirRelacaoPedidos  — Gerar relatório da Relação de Pedidos
+POST   api/comercial/fa/Pedido/ImprimirRelacaoPedidosMat  — Gerar relatório da Relação de Pedidos Materiais
+POST   api/comercial/fa/Pedido/ImprimirSituacaoPedidos  — Gerar relatório da Situação dos Pedidos
+POST   api/comercial/fa/Pedido/RepetirPedido  — Repete um pedido já existente no sistema
+POST   api/comercial/fa/Pedido/Salvar  — Cria um novo pedido
+POST   api/comercial/fa/Pedido/SalvarItemPedido  — Cria um novo item de pedido
+POST   api/comercial/fa/Pedido/ValidarUsuarioSenhaDesconto  — 
+GET    api/comercial/fa/ControlePedido/Buscar  — Pesquisar controles de pedidos.
+GET    api/comercial/fa/ControlePedido/BuscarControlePedido  — Pesquisa um controle de pedido pelo código
+GET    api/comercial/fa/ControlePedido/BuscarControlesRestritos  — Pesquisa controles de pedidos que podem ser utilizados conforme config 1133. Suporta filtros OData
+GET    api/comercial/fa/HubPedido/Buscar  — 
+GET    api/comercial/fa/LiberacaoDesconto/Buscar  — 
+GET    api/comercial/fa/NotaFiscal/Buscar  — Metodo para pesquisa geral de notas fiscais. Suporta filtros OData
+GET    api/comercial/fa/NotaFiscal/BuscarDetalhes  — Pesquisa uma lista de notas pelo seu código. Suporta filtros OData.
+GET    api/comercial/fa/NotaFiscal/BuscarDetalhesNotaFiscal  — Pesquisa os dados de gerenciamento de somente uma nota pelo seu código. Suporta filtros OData.
+GET    api/comercial/fa/NotaFiscal/BuscarNotaFiscal  — Pesquisa os dados de somente uma nota pelo seu código. Suporta filtros OData.
+GET    api/comercial/fa/Pedido/Buscar  — Pesquisa os pedidos cadastrados no sistema. Suporta filtros OData.
+GET    api/comercial/fa/Pedido/BuscarImpostosItemPedido  — Pesquisa os impostos de um item de pedido
+GET    api/comercial/fa/Pedido/BuscarItemPedido  — Pesquisa um item específico de um pedido. Suporta filtros OData.
+GET    api/comercial/fa/Pedido/BuscarItensPedido  — Pesquisa itens de um pedido. Suporta filtros OData.
+GET    api/comercial/fa/Pedido/BuscarPedido  — Pesquisa um pedido pelo seu código. Suporta filtros OData.
+GET    api/comercial/fa/Pedido/BuscarRegrasComissaoRepetir  — Regras de comissão
+GET    api/comercial/fa/Pedido/DescontoPorConfigAtivo  — 
+GET    api/comercial/fa/SerieNF/Buscar  — 
+GET    api/comercial/fa/TipoFrete/Buscar  — Pesquisa tipo de frete
+GET    api/comercial/fa/TipoNota/Buscar  — Pesquisa os tipos de nota fiscal. Suporta filtros OData
+GET    api/comercial/fa/ViaTransporte/Buscar  — Pesquisa as vias de transporte
+DELETE api/comercial/fa/LiberacaoDesconto/Excluir  — 
+DELETE api/comercial/fa/Pedido/Excluir  — Exclui um pedido
+DELETE api/comercial/fa/Pedido/ExcluirItemPedido  — Exclui um item de pedido
+PUT    api/comercial/ve/Oportunidade/Atualizar  — Atualiza Oportunidade
+POST   api/comercial/ve/Oportunidade/Criar  — Criar Oportunidade
+POST   api/comercial/ve/Oportunidade/CriarPedido  — Criar Pedido
+GET    api/comercial/ve/Mercado/Buscar  — Pesquisa os Mercados cadastrados no sistema
+GET    api/comercial/ve/Mercado/BuscarMercado  — Pesquisa um Mercado pelo seu código
+GET    api/comercial/ve/Oportunidade/Buscar  — Pesquisa as oportunidades de contatos de telemarketing cadastrados no sistema
+GET    api/comercial/ve/Oportunidade/BuscarFases  — Buscar Fases Oportunidades
+GET    api/comercial/ve/Oportunidade/FiltrarPorFase  — Buscar Oportunidades por Fases
+DELETE api/comercial/ve/Oportunidade/Excluir  — Excluir Oportunidade
+PUT    api/contabil/cc/RateioAuxiliar/AlterarRateioAuxiliar  — Alterar Rateio Auxiliar
+POST   api/contabil/cc/PlanoContas/GravarElementosTG  — Gravar Elementos TG
+POST   api/contabil/cc/RateioAuxiliar/BuscarTotalPercRateioAuxiliar  — Busca o percentual total de rateio auxiliar
+POST   api/contabil/cc/RateioAuxiliar/InserirRateioAuxiliar  — Inserir Rateio Auxiliar
+POST   api/contabil/cc/RateioAuxiliar/ValidarRateioAuxiliarCompleto  — Validar 100% Rateio Auxiliar
+POST   api/contabil/cc/RateioAuxiliar/ValidarRegistro  — Validar Rateio Auxiliar
+GET    api/contabil/cc/PlanoContas/Buscar  — Buscar Contas
+GET    api/contabil/cc/PlanoContas/BuscarContasContabeis  — Buscar Contas Contábeis
+GET    api/contabil/cc/PlanoContas/BuscarContasGerenciais  — Buscar Contas Gerenciais
+GET    api/contabil/cc/PlanoContas/BuscarContasTGContabeis  — Buscar Contas TG Contábeis
+GET    api/contabil/cc/PlanoContas/BuscarContasTGGerenciais  — Buscar Contas TG Gerenciais
+GET    api/contabil/cc/RateioAuxiliar/BuscarRateiosPreLancamento  — Buscar Pré-Lançametos por usuário
+GET    api/contabil/cc/RateioAuxiliar/ValidarRelacionamentoCtbXGerRateioAuxiliar  — Validar relacionamento Contábil X Gerencial
+DELETE api/contabil/cc/RateioAuxiliar/ExcluirRateioAuxiliar  — Excluir Rateio Auxiliar
+GET    api/financas/ct/Contrato/Buscar  — Buscar contratos
+GET    api/financas/ct/Contrato/BuscarContratosContato  — Buscar contratos por empresa
+GET    api/financas/ct/Contrato/BuscarItensParcelasContrato  — Buscar itens das parcelas do contrato
+GET    api/financas/ct/Contrato/BuscarParcelas  — Buscar todas as parcelas do contrato
+GET    api/financas/ct/Contrato/BuscarParcelasContrato  — Buscar parcelas geradas
+GET    api/financas/ct/Contrato/BuscarParcelasRenegociadas  — Buscar parcelas renegociadas
+GET    api/financas/ct/Contrato/BuscarParcelasUnificadas  — Buscar parcelas unificadas
+GET    api/financas/ct/Contrato/BuscarQuantidadeParcelas  — Buscar quantidade de parcelas pagas
+GET    api/financas/ct/Contrato/BuscarRenegociadasLancamento  — Buscar renegociadas por lançamento
+GET    api/financas/ct/Contrato/BuscarTotalAbertoParcelas  — Buscar total das parcelas em aberto.
+GET    api/financas/ct/Contrato/VerificarParcelaRenegociada  — Verificar se a Parcela foi renegociada.
+PUT    api/financas/gf/AutorizacaoPagamento/AprovarReprovarPagamentos  — Autorizar Pagamentos
+POST   api/financas/gf/AutorizacaoPagamento/AprovarReprovarPagamentos  — Autorizar Pagamentos
+POST   api/financas/gf/LancamentoFinanceiro/CalcularSaldoPortadores  — Calcular saldo dos portadores
+POST   api/financas/gf/LancamentoFinanceiro/CriarPreLancamentoConformeModelo  — Criar Pré-Lançamento
+POST   api/financas/gf/LancamentoFinanceiro/EfetivarPreLancamentoConformeModelo  — Efetivar Pré-Lançamento
+POST   api/financas/gf/LancamentoFinanceiro/GerarBoleto  — Gerar boleto bancário
+POST   api/financas/gf/LancamentoFinanceiro/ImprimirAbertosCliente  — Gerar relatório Abertos Por Cliente
+POST   api/financas/gf/LancamentoFinanceiro/ImprimirContasPagar  — Gerar relatório Contas a Pagar
+POST   api/financas/gf/LancamentoFinanceiro/ImprimirContasReceber  — Gerar relatório Contas a Receber
+POST   api/financas/gf/LancamentoFinanceiro/ImprimirEfetivos  — Gerar relatório Efetivos
+POST   api/financas/gf/LancamentoFinanceiro/ImprimirEfetivosConta  — Gerar relatório Efetivos Por Conta
+POST   api/financas/gf/LancamentoFinanceiro/ImprimirNotasFiscais  — Imprimir Notas Fiscais
+POST   api/financas/gf/LancamentoFinanceiro/ImprimirRelacaoRetencoes  — Gerar relatório Relação Retenções
+POST   api/financas/gf/Portador/ImprimirSaldoPortadores  — Gerar relatório de Saldo de Portadores
+GET    api/financas/gf/AutorizacaoPagamento/BuscarLancamentos  — Buscar lançamentos
+GET    api/financas/gf/AutorizacaoPagamento/BuscarPagamentosAprovados  — Buscar lançamentos aprovados
+GET    api/financas/gf/AutorizacaoPagamento/BuscarPagamentosPendentes  — Buscar lançamentos pendentes
+GET    api/financas/gf/AutorizacaoPagamento/BuscarPagamentosPreAprovados  — Buscar lançamentos pré-aprovados
+GET    api/financas/gf/AutorizacaoPagamento/BuscarPagamentosReprovados  — Buscar lançamentos reprovados
+GET    api/financas/gf/AutorizacaoPagamento/BuscarRateio  — Buscar rateio contábil e gerencial
+GET    api/financas/gf/AutorizacaoPagamento/BuscarRegraParticipacao  — Buscar Regra Participação
+GET    api/financas/gf/AutorizacaoPagamento/BuscarStatusPagamento  — Buscar Status do Pagamento
+GET    api/financas/gf/AutorizacaoPagamento/BuscarTotalParticipacao  — Buscar Total Participação
+GET    api/financas/gf/AutorizacaoPagamento/BuscarUltimasCompras  — Buscar compras por empresa
+GET    api/financas/gf/AutorizacaoPagamento/BuscarUltimosPagamentos  — Buscar pagamentos por empresa
+GET    api/financas/gf/CondicaoPagamento/Buscar  — Buscar condições de pagamento.
+GET    api/financas/gf/CondicaoPagamento/BuscarCondicaoPagamento  — Buscar condição de pagamento pelo código
+GET    api/financas/gf/Conta/Buscar  — Buscar contas financeiras
+GET    api/financas/gf/Conta/BuscarConta  — Buscar conta financeira pelo código
+GET    api/financas/gf/Historico/Buscar  — Buscar históricos financeiros
+GET    api/financas/gf/LancamentoFinanceiro/BuscarLancamentos  — Buscar lançamentos
+GET    api/financas/gf/LancamentoFinanceiro/BuscarLancamentosContato  — Buscar lançamentos por empresas (CNPJ/CPF)
+GET    api/financas/gf/LancamentoFinanceiro/BuscarLancamentosEmpresa  — Buscar lançamentos por empresa
+GET    api/financas/gf/LancamentoFinanceiro/BuscarLiquidacoes  — Buscar liquidações
+GET    api/financas/gf/LancamentoFinanceiro/BuscarModelos  — Buscar Modelos de Lançamentos
+GET    api/financas/gf/LancamentoFinanceiro/BuscarPreLancamentosUsuario  — Buscar Pré-Lançametos por usuário
+GET    api/financas/gf/LancamentoFinanceiro/BuscarSomaLancamentos  — Buscar soma dos lançamentos
+GET    api/financas/gf/LancamentoFinanceiro/DebitarCreditar  — Debitar ou Creditar
+GET    api/financas/gf/LancamentoFinanceiro/ListarLancamentos  — Listagem lançamentos financeiros.
+GET    api/financas/gf/Portador/Buscar  — Buscar portadores
+GET    api/financas/gf/Portador/BuscarPortador  — Buscar portador pelo código
+DELETE api/financas/gf/LancamentoFinanceiro/ExcluirPreLancamento  — Excluir Pré-Lançamento
+DELETE api/financas/gf/LancamentoFinanceiro/ExcluirPreLancamentosUsuario  — Excluir Pré-Lançamentos por usuário
+PUT    api/genericos/ge/Acompanhamentos/Salvar  — Salvar acompanhamento
+PUT    api/genericos/ge/Contato/Salvar  — Salvar um contato.
+PUT    api/genericos/ge/ContatoBloqueado/Salvar  — Salvar contato bloqueado
+PUT    api/genericos/ge/MenuUsuario/AtualizarFavorito  — Atualizar um favorito.
+PUT    api/genericos/ge/ModeloRelatorio/Salvar  — Salvar modelo de relatório
+PUT    api/genericos/ge/Padrao/Atualizar  — Atualizar um padrão
+PUT    api/genericos/ge/Pessoa/Salvar  — Salvar empresa/pessoa
+POST   api/genericos/ge/Acompanhamentos/Buscar  — Buscar acompanhamentos
+POST   api/genericos/ge/Acompanhamentos/MontarTituloAcompanhamento  — Montar título acompanhamento
+POST   api/genericos/ge/Acompanhamentos/Salvar  — Salvar acompanhamento
+POST   api/genericos/ge/Alerta/Salvar  — Salvar um alerta
+POST   api/genericos/ge/Ambiente/BuscarAplicacoesWeb  — Buscar os endereços das aplicações web.
+POST   api/genericos/ge/Ambiente/Sobre  — Buscar as informações do ambiente.
+POST   api/genericos/ge/Calendario/Buscar  — Buscar acompanhamentos
+POST   api/genericos/ge/Configuracao/CarregarConfiguracoes  — Carregar configurações.
+POST   api/genericos/ge/Contato/Salvar  — Salvar um contato.
+POST   api/genericos/ge/ContatoBloqueado/Salvar  — Salvar contato bloqueado
+POST   api/genericos/ge/ControleAcessoMenu/Salvar  — Salvar controle de acesso
+POST   api/genericos/ge/Customizacao/MetodoCustomizado  — Chamada de método customizado
+POST   api/genericos/ge/Direito/Buscar  — Buscar dados do direito.
+POST   api/genericos/ge/Direito/CarregarDireitos  — Carregar direitos.
+POST   api/genericos/ge/Email/SendEmail  — Enviar e-mail
+POST   api/genericos/ge/Email/SetCredencialEmail  — Gravar credencial de e-mail
+POST   api/genericos/ge/Limites/VerificarLimites  — Verificar limites permitidos
+POST   api/genericos/ge/Login/Autenticar  — Autenticar um usuário no sistema
+POST   api/genericos/ge/LoginContato/GeraCodigoVerificacao  — Gerar código de verificacao acesso externo
+POST   api/genericos/ge/MenuUsuario/SalvarFavorito  — Salvar um favorito.
+POST   api/genericos/ge/ModeloRelatorio/Salvar  — Salvar modelo de relatório
+POST   api/genericos/ge/NomeLogicoUsuario/CarregarNomesLogicos  — Carregar nomes lógicos.
+POST   api/genericos/ge/OAuth/RefreshOAuthToken  — Atualiza o token OAuth
+POST   api/genericos/ge/Padrao/Gravar  — Gravar um padrão
+POST   api/genericos/ge/ParametrosPortal/BuscarValor  — Buscar valores perfil
+POST   api/genericos/ge/Pessoa/CadastrarEmpresaPM  — Salvar empresa PM
+POST   api/genericos/ge/Pessoa/ConsultarCepGestor  — Consultar CEP informado
+POST   api/genericos/ge/Pessoa/Salvar  — Salvar empresa/pessoa
+POST   api/genericos/ge/Pessoa/ValidarCnpjCpf  — Validar CNPJ ou CPF informado
+POST   api/genericos/ge/Questionario/BuscarInfoQuestionario  — Buscar informações do questionário
+POST   api/genericos/ge/Questionario/Salvar  — Salvar questionário
+POST   api/genericos/ge/Sessao/VerificarSessao  — Verificar sessão
+POST   api/genericos/ge/SessaoResposta/Buscar  — Buscar perguntas
+POST   api/genericos/ge/SessaoResposta/Salvar  — Salvar respostas
+POST   api/genericos/ge/TemporariaSessaoResposta/Salvar  — Salvar respostas temporário
+POST   api/genericos/ge/Usuario/DesativarAutenticacaoA2F  — Desativar parametrização de autenticação em duas etapas
+POST   api/genericos/ge/Usuario/GravarAutenticacaoA2F  — Gravar parametrização de autenticação em duas etapas
+POST   api/genericos/ge/Usuario/RecuperarSenhaUsuario  — Recuperar senha de usuário
+POST   api/genericos/ge/Usuario/SolicitarConfirmacaoA2F  — Solicitar código de verificação para autentição em duas etapas.
+POST   api/genericos/ge/Usuario/ValidarCodigoVerificaoA2F  — Validar código de verificação para autentição em duas etapas.
+POST   api/genericos/ge/Usuario/ValidarSenhaUsuario  — Validar senha usuario
+POST   api/genericos/ge/Usuario/ValidarToken  — Validar token para alteração de senha
+POST   api/genericos/ge/Usuario/ValidarVariacaoAmbiente  — Validar variação de ambiente do usuário
+GET    api/genericos/ge/Acompanhamentos/ValidarUrl  — Validar Url
+GET    api/genericos/ge/Ambiente/VerificarConectividade  — Verificar se a URL é valida e está disponível
+GET    api/genericos/ge/Ambiente/Versao  — Buscar a versão da API.
+GET    api/genericos/ge/AtividadeEmpresa/Buscar  — Buscar os dados das atividades de empresas
+GET    api/genericos/ge/Cep/Buscar  — Buscar dados referente ao CEP
+GET    api/genericos/ge/Cep/BuscarEndereco  — Buscar dados de endereço através do CEP
+GET    api/genericos/ge/Configuracao/Buscar  — Buscar informações de configuração.
+GET    api/genericos/ge/Contato/Buscar  — Buscar dados do contato
+GET    api/genericos/ge/ContatoBloqueado/Buscar  — Buscar informações de contato bloqueado
+GET    api/genericos/ge/Customizacao/MetodoCustomizado  — Chamada de método customizado
+GET    api/genericos/ge/Divisao/Buscar  — Buscar dados de divisão
+GET    api/genericos/ge/ElementoQuestionario/Buscar  — Buscar dados de elementos de questionário
+GET    api/genericos/ge/Email/HasCredencialEmail  — Verificar credenciais de e-mail
+GET    api/genericos/ge/Estado/Buscar  — Buscar dados de estados
+GET    api/genericos/ge/FuncaoFuncionario/Buscar  — Buscar dados de função de funcionários
+GET    api/genericos/ge/MenuUsuario/Buscar  — Buscar os favoritos para todos os usuários.
+GET    api/genericos/ge/MenuUsuario/BuscarFavoritos  — Buscar os favoritos para o usuário informado.
+GET    api/genericos/ge/ModeloFiltro/Buscar  — Buscar dados do modelo de filtros
+GET    api/genericos/ge/ModeloRelatorio/Buscar  — Buscar dados modelo de relatório
+GET    api/genericos/ge/Municipio/Buscar  — Buscar dados referente ao município
+GET    api/genericos/ge/OAuth/GetAuthorizeUrl  — Gera URL de autenticação do OAuth
+GET    api/genericos/ge/OAuth/GetOAuthToken  — Busca o token OAuth
+GET    api/genericos/ge/OAuth/OAuthRedirect  — Endpoint de redirecionamento do OAuth
+GET    api/genericos/ge/Padrao/Buscar  — Buscar padrão
+GET    api/genericos/ge/Pais/Buscar  — Buscar dados referente ao país
+GET    api/genericos/ge/ParametrosPortal/BuscarPerfil  — Buscar Id perfil
+GET    api/genericos/ge/Pergunta/Buscar  — Buscar dados referente as perguntas
+GET    api/genericos/ge/Pessoa/Buscar  — Buscar empresa/pessoa
+GET    api/genericos/ge/Pessoa/BuscarCadastroSefaz  — Buscar dados de cadastro da SEFAZ e da API CIGAM
+GET    api/genericos/ge/Pessoa/BuscarPessoaRepresentante  — Buscar empresa/pessoa por representante
+GET    api/genericos/ge/PessoaFisica/Buscar  — Buscar dados referente a pessoa física
+GET    api/genericos/ge/PosicaoGeografica/Buscar  — Buscar dados referente a posição geográfica
+GET    api/genericos/ge/PrecosTabela/Buscar  — Buscar preços de tabela
+GET    api/genericos/ge/Questionario/BuscarModelos  — Buscar modelos de questionários
+GET    api/genericos/ge/Questionario/BuscarRespondidos  — Buscar questionários respondidos
+GET    api/genericos/ge/Ramal/BuscarAniversariantes  — Buscar as informações dos aniversariantes do mês
+GET    api/genericos/ge/Resposta/Buscar  — Buscar dados referente as respostas
+GET    api/genericos/ge/RespostaPossivel/Buscar  — Buscar dados referente as respostas possíveis
+GET    api/genericos/ge/TabelaPreco/BuscarTabelasPedido  — Pesquisa as tabelas de preço que podem ser usadas em um pedido
+GET    api/genericos/ge/TecnologiaGrupo/Buscar  — Buscar dados referente as tecnologias de grupos
+GET    api/genericos/ge/TecnologiaGrupo/BuscarCategoriasTG  — Buscar dados referente as categorias da tecnologias de grupos
+GET    api/genericos/ge/TecnologiaGrupo/BuscarElementosTG  — Buscar dados referente aos elementos da tecnologias de grupos
+GET    api/genericos/ge/TipoEmpresa/Buscar  — Buscar tipos de empresa
+GET    api/genericos/ge/TipoOperacao/Buscar  — Buscar tipos de operação
+GET    api/genericos/ge/TituloAcompanhamento/Buscar  — Buscar título de acompanhamento.
+GET    api/genericos/ge/UnidadeNegocio/Buscar  — Pesquisa as unidades de negócio. Suporta filtros OData.
+GET    api/genericos/ge/UnidadeNegocio/BuscarUnidadeNegocio  — Pesquisa uma unidade de negócio pelo seu código
+GET    api/genericos/ge/Usuario/Buscar  — Buscar dados de usuário
+GET    api/genericos/ge/Usuario/VerificarAutenticacaoA2F  — Verificar se um usuário possui autenticação em duas etapas
+GET    api/genericos/ge/UsuarioXContato/Buscar  — Buscar dados referente aos contatos de usuários
+DELETE api/genericos/ge/Acompanhamentos/Excluir  — Excluir acompanhamento
+DELETE api/genericos/ge/Contato/Excluir  — Excluir um contato
+DELETE api/genericos/ge/ContatoBloqueado/Excluir  — Excluir um contato bloqueado
+DELETE api/genericos/ge/MenuUsuario/ExcluirFavorito  — Excluir um favorito.
+DELETE api/genericos/ge/ModeloRelatorio/Excluir  — Excluir modelo de relatório
+DELETE api/genericos/ge/Padrao/Excluir  — Excluir um padrão
+DELETE api/genericos/ge/Pessoa/Excluir  — Excluir empresa/pessoa
+DELETE api/genericos/ge/Sessao/Logout  — Realizar logout
+PUT    api/servicos/gs/AtividadeFreqEquipeTecnico/Salvar  — Salvar as atividades frequentes de equipe x tecnico.
+PUT    api/servicos/gs/AtividadeFrequenteEquipe/Salvar  — Salvar as atividades frequentes de equipe.
+PUT    api/servicos/gs/ItemOrdemServico/EditarItemOS  — Edutar Item da Ordem de Serviço
+PUT    api/servicos/gs/MateriaisOrdemServico/Salvar  — Salvar materiais Ordem Serviço
+PUT    api/servicos/gs/Tarefas/AtualizarFase  — Atualizar fases Kanban
+PUT    api/servicos/gs/Tarefas/AtualizarObservacao  — Atualizar observação da tarefa Kanban
+POST   api/servicos/gs/Apontamento/CriarEditarApontamentoProjeto  — Criar apontamento para o técnico
+POST   api/servicos/gs/AtividadeFreqEquipeTecnico/Salvar  — Salvar as atividades frequentes de equipe x tecnico.
+POST   api/servicos/gs/AtividadeFrequenteEquipe/Salvar  — Salvar as atividades frequentes de equipe.
+POST   api/servicos/gs/Atividades/Finalizar  — Finalizar atividade
+POST   api/servicos/gs/ItemOrdemServico/CriarItemOS  — Criar Item da Ordem de Serviço. Caso a OS não seja informada, o serviço também cria a OS.
+POST   api/servicos/gs/LogTarefasKanban/Salvar  — Salvar Log Kanban
+POST   api/servicos/gs/MateriaisOrdemServico/Salvar  — Salvar materiais Ordem Serviço
+POST   api/servicos/gs/TecnicosTarefaKanban/Adicionar  — Adicionar técnico Tarefa Kanban
+GET    api/servicos/gs/Apontamento/BuscarApontamentos  — Buscar os apontamentos de horas
+GET    api/servicos/gs/Apontamento/CalcularHorasApontamento  — Calcular as horas do apontamento considerando ou não o calendário
+GET    api/servicos/gs/AtividadeFreqEquipeTecnico/Buscar  — Buscar atividades por equipe
+GET    api/servicos/gs/AtividadeFrequente/Buscar  — Busca Atividades Frequentes
+GET    api/servicos/gs/AtividadeFrequenteEquipe/Buscar  — Buscar atividades por equipe
+GET    api/servicos/gs/Atividades/Buscar  — Buscar atividades view por técnico
+GET    api/servicos/gs/Atividades/Get  — Buscar atividades por técnico
+GET    api/servicos/gs/DefeitoSolucao/BuscarDefeitoSolucao  — Buscar as causas de OS
+GET    api/servicos/gs/Equipe/Buscar  — Buscar Equipes
+GET    api/servicos/gs/ItemOrdemServico/BuscarItemOS  — Busca detalhes do Item da OS
+GET    api/servicos/gs/LogTarefasKanban/Buscar  — Buscar logs Kanban
+GET    api/servicos/gs/OrdemServico/BuscarDadosOrdemServico  — Buscar dados da OS
+GET    api/servicos/gs/OrdemServico/BuscarOrdemServicoCliente  — Buscar dados da OS/Item do Cliente
+GET    api/servicos/gs/OrdemServico/BuscarTipoItemOrdemServico  — Buscar dados dos Tipos de OS
+GET    api/servicos/gs/Papel/Buscar  — Buscar papel Scrum
+GET    api/servicos/gs/Produto/BuscarProdutos  — Busca Produtos
+GET    api/servicos/gs/Sprint/Get  — Buscar SprintDTO
+GET    api/servicos/gs/Sprints/Get  — Buscar Sprints
+GET    api/servicos/gs/Tarefas/Get  — Buscar tarefas Ordem Serviço
+GET    api/servicos/gs/TecnicosTarefaKanban/Buscar  — Buscar técnicos Tarefa Kanban
+GET    api/servicos/gs/TemplateKanban/Get  — Buscar Template Kanban
+GET    api/servicos/gs/TipoAtividade/BuscarTipoAtividade  — Buscar o cadastro de tipos de atividades
+GET    api/servicos/gs/UsuariosEquipe/Buscar  — Buscar dados do usuário da equipe
+DELETE api/servicos/gs/AtividadeFreqEquipeTecnico/Excluir  — Excluir as atividades frequentes de equipe x tecnico.
+DELETE api/servicos/gs/AtividadeFrequenteEquipe/Excluir  — Excluir as atividades frequentes de equipe.
+DELETE api/servicos/gs/MateriaisOrdemServico/Deletar  — Deletar materiais Ordem Serviço
+DELETE api/servicos/gs/TecnicosTarefaKanban/Remover  — Remover técnico Tarefa Kanban
+POST   api/suprimentos/co/ControleSolicitacao/AlterarControleSolicitacao  — Alterar controle Solicitação
+POST   api/suprimentos/co/Entrada/AplicarFiltrosQuantidadeNotasFornecedor  — Método usado para aplicar os filtros na busca das quantidade de notas de entrada.
+POST   api/suprimentos/co/OrdemCompra/AplicarFiltrosQuantidadeOrdensCompraSituacao  — Aplicar os filtros na busca das quantidade de notas de entrada.
+POST   api/suprimentos/co/OrdemCompra/ImprimirOrdensCompraAberto  — Gerar relatório Ordem de Compra em Aberto
+POST   api/suprimentos/co/Solicitacao/AplicarFiltrosQuantidadeItensSolicitacao  — Método usado para aplicar os filtros na busca das quantidade de notas de entrada.
+POST   api/suprimentos/co/Solicitacao/ImprimirEmissaoSolicitacoes  — Gerar relatório Emissão de Solicitações
+POST   api/suprimentos/co/Solicitacao/ImprimirMapaComparativoTomadaPreco  — Gerar relatório Mapa Comparativo de Tomada de Preço
+GET    api/suprimentos/co/ComplementoPreNota/Buscar  — Buscar complementos de Pré-Notas
+GET    api/suprimentos/co/ComplementoPreNota/BuscarComplementoPreNota  — Buscar complemento de uma Pré-Nota
+GET    api/suprimentos/co/ControleOrdemCompra/Buscar  — Buscar controles da Ordem de Compra
+GET    api/suprimentos/co/ControleOrdemCompra/BuscarControleOrdemCompra  — Buscar controle da Ordem de Compra
+GET    api/suprimentos/co/ControleOrdemCompra/ListarControles  — Listar os controles de Ordem de Compra
+GET    api/suprimentos/co/ControlePreNota/Buscar  — Buscar controles da Pré-Nota
+GET    api/suprimentos/co/ControlePreNota/BuscarControlePreNota  — Buscar controle da Pré-Nota
+GET    api/suprimentos/co/ControlePreNota/ListarControles  — Listar controles da Pré-Nota
+GET    api/suprimentos/co/ControleSolicitacao/Buscar  — Buscar controles da Solicitaçãoa
+GET    api/suprimentos/co/ControleSolicitacao/BuscarControleSolicitacao  — Buscar controle de Solicitação
+GET    api/suprimentos/co/ControleSolicitacao/ListarControles  — Listar controles da Solicitação
+GET    api/suprimentos/co/CotacaoCompra/Buscar  — Buscar cotações de compra
+GET    api/suprimentos/co/CotacaoCompra/BuscarCotacaoCompra  — Buscar cotações de compra de item de Solicitação
+GET    api/suprimentos/co/CotacaoCompra/BuscarCotacoes  — Buscar cotações de compra de Solicitação
+GET    api/suprimentos/co/Entrada/Buscar  — Buscar notas de entrada.
+GET    api/suprimentos/co/Entrada/BuscarFiltrosQuantidadeNotasFornecedor  — Método usado para buscar os filtros da busca das quantidade de notas de entrada.
+GET    api/suprimentos/co/Entrada/BuscarQuantidadeNotasFornecedor  — Buscar top 10 fornecedores em quantidade de notas de entrada
+GET    api/suprimentos/co/GerenciamentoXml/Buscar  — Buscar registros Gerenciamento XML
+GET    api/suprimentos/co/GerenciamentoXml/BuscarQuantidadeXmlSituacaoUltimosMeses  — Buscar quantidade de registros Gerenciamento XML últimos 6 meses
+GET    api/suprimentos/co/GerenciamentoXml/BuscarRegistroGerenciamentoXml  — Buscar registro Gerenciamento XML
+GET    api/suprimentos/co/ItemEntrada/BuscarItemNotaEntrada  — Buscar itens nota fiscal de entrada
+GET    api/suprimentos/co/ItemOrdem/Buscar  — Buscar itens ordens de compra
+GET    api/suprimentos/co/ItemOrdem/BuscarItemOrdem  — Buscar item ordem de compra
+GET    api/suprimentos/co/ItemPreNota/Buscar  — Buscar itens Pré-Notas
+GET    api/suprimentos/co/ItemPreNota/BuscarItemPreNota  — Buscar item Pré-Nota
+GET    api/suprimentos/co/ItemSolicitacao/Buscar  — Buscar itens de Solicitação
+GET    api/suprimentos/co/ItemSolicitacao/BuscarItemSolicitacao  — Buscar item de Solicitação
+GET    api/suprimentos/co/NegociacaoCotacao/Buscar  — Buscar negociações das cotações de compra
+GET    api/suprimentos/co/NegociacaoCotacao/BuscarNegociacaoCotacao  — Buscar negociações cotação de compra
+GET    api/suprimentos/co/OrdemCompra/Buscar  — Buscar ordens de compra
+GET    api/suprimentos/co/OrdemCompra/BuscarFiltrosQuantidadeOrdensCompraSituacao  — Buscar os filtros na busca das quantidade de notas de entrada.
+GET    api/suprimentos/co/OrdemCompra/BuscarQuantidadeOrdensCompraSituacao  — Buscar ordens de compra conforme situação.
+GET    api/suprimentos/co/PreNota/Buscar  — Buscar Pré-Notas
+GET    api/suprimentos/co/PreNota/BuscarPreNota  — Buscar Pré-Nota
+GET    api/suprimentos/co/Solicitacao/Buscar  — Buscar Solicitações de Compra
+GET    api/suprimentos/co/Solicitacao/BuscarFiltrosQuantidadeItensSolicitacao  — Método usado para buscar os filtros da busca das quantidade de notas de entrada.
+GET    api/suprimentos/co/Solicitacao/BuscarQuantidadeItensSolicitacao  — Buscar quantidade de itens de Solicitação conforme situação
+GET    api/suprimentos/co/Solicitacao/BuscarSolicitacao  — Buscar Solicitação de Compra
+GET    api/suprimentos/co/SolicitacaoXFornecedor/Buscar  — Buscar cotações de solicitação versus fornecedores
+GET    api/suprimentos/co/SolicitacaoXFornecedor/BuscarSolicitacaoXFornecedor  — Buscar cotações de uma solicitação por fornecedor
+POST   api/suprimentos/cp/ConfiguraItem/BuscarConteudosValidos  — Buscar conteúdos pré-definidos válidos que pertencem a uma característica de um identificador.
+POST   api/suprimentos/cp/ConfiguraItem/ResolverExpressao  — Calcular conteúdos por expressão de uma característica.
+POST   api/suprimentos/cp/ConfiguraItem/Salvar  — Gravar/atualizar um identificador de produto.
+POST   api/suprimentos/cp/ConfiguraItem/ValidarRegra  — Validar características de um identificador com base nas regras de um configurador de produto.
+GET    api/suprimentos/cp/ConfiguraItem/BuscarCaracteristicas  — Buscar características que compõem um configurdor de produto.
+GET    api/suprimentos/cp/ConfiguraItem/BuscarIdentificador  — Buscar relação das características e conteúdos que compõem um identificador.
+POST   api/suprimentos/es/Disponibilidade/Buscar  — Buscar disponibilidade de um material em estoque.
+POST   api/suprimentos/es/Estoque/BuscarDatasFabricacaoValidade  — Buscar datas de fabricação e validade de um material em estoque.
+POST   api/suprimentos/es/Estoque/ValidarDatasFabricacaoValidade  — Validar datas de fabricação e validade de um material em estoque.
+POST   api/suprimentos/es/GradeMaterial/BuscarGradeNumeracaoProd  — Listar numerações de um material baseado em filtros.
+POST   api/suprimentos/es/HubMateriais/Integrar  — Integrar materiais ao hub.
+POST   api/suprimentos/es/Materiais/BuscarDescricaoMaterial  — Buscar descrição completa do material.
+POST   api/suprimentos/es/Materiais/BuscarIdentMaterial  — Buscar descrição do identificador.
+POST   api/suprimentos/es/Movimento/ImprimirComprasFornecedor  — Gerar relatório Compras por Fornecedor
+POST   api/suprimentos/es/Movimento/ImprimirConferenciaNotasDigitadas  — Gerar relatório Conferência Notas Digitadas
+POST   api/suprimentos/es/Movimento/ImprimirRankingVendas  — Gerar relatório Ranking de Vendas para Cliente.
+POST   api/suprimentos/es/NumeroSerie/ManipularNSAuxIndividual  — Manipular número de série auxiliar de forma individual.
+POST   api/suprimentos/es/NumeroSerie/ManipularNSAuxQuantidade  — Manipular números de série de uma quantidade sequencial.
+POST   api/suprimentos/es/NumeroSerie/ManipularNSAuxSequencial  — Manipular números de série de um intervalo de sequências.
+POST   api/suprimentos/es/NumeroSerie/VincularNSOrdemProducao  — Vincular número de série pai a um número de série filho.
+GET    api/suprimentos/es/CentroArmazenagem/Buscar  — Buscar centros de armazenagem.
+GET    api/suprimentos/es/Estoque/Buscar  — Buscar estoque do material.
+GET    api/suprimentos/es/Estoque/Buscar  — Buscar disponibilidade de um material em estoque.
+GET    api/suprimentos/es/GradeMaterial/Buscar  — Buscar grades de numeração.
+GET    api/suprimentos/es/GradeMaterial/BuscarGradeNumeracao  — Buscar grades de numeração por grade, código do material e pedido.
+GET    api/suprimentos/es/Grupo/Buscar  — Buscar grupos de materiais.
+GET    api/suprimentos/es/Materiais/Buscar  — Buscar dados do material.
+GET    api/suprimentos/es/Materiais/BuscarEspecificacoesMaterial  — Buscar descrição da especificação do material.
+GET    api/suprimentos/es/Materiais/BuscarLotesMaterial  — Buscar lotes do material.
+GET    api/suprimentos/es/Materiais/BuscarSemElaboracao  — Buscar lista dos materiais sem item de elaboração.
+GET    api/suprimentos/es/Materiais/PesquisarMateriais  — Buscar lista de registros da pesquisa de materiais.
+GET    api/suprimentos/es/Movimento/Buscar  — Buscar movimentos de estoque
+GET    api/suprimentos/es/NumeroSerie/BuscarMovimentosNS  — Buscar movimentos de números de série.
+GET    api/suprimentos/es/NumeroSerie/BuscarNS  — Buscar números de série.
+GET    api/suprimentos/es/NumeroSerie/BuscarNSAuxiliarUsuario  — Buscar números de série auxiliares do usuário logado.
+GET    api/suprimentos/es/NumeroSerie/BuscarNSDemandas  — Buscar números de série disponíveis para vincular a uma demanda de ordem de produção.
+GET    api/suprimentos/es/NumeroSerie/BuscarNSOrdemProducao  — Buscar números de série produzidos de uma ordem de produção.
+GET    api/suprimentos/es/NumeroSerie/ValidarNSSaldoABaixar  — Validar o saldo a baixar comparando com os números de série auxiliares informados.
+GET    api/suprimentos/es/SubGrupo/Buscar  — Buscar subgrupos de materiais.
+GET    api/suprimentos/es/UnidadeMedida/Buscar  — Buscar unidades de medida.
+DELETE api/suprimentos/es/NumeroSerie/ExcluirNSAuxiliarDemanda  — Excluir todos os números de série auxiliares de uma demanda.
+DELETE api/suprimentos/es/NumeroSerie/ExcluirNSAuxiliarProduto  — Excluir todos os registros de NS auxiliar do produto pronto para o usuário requisitante pelo tipo do movimento de produção
+PUT    api/suprimentos/me/ItemDocumentoNSEnderecamento/Buscar  — Buscar números de série vinculados ao item do documento do multiendereçamento pelos dados do documento/item.
+PUT    api/suprimentos/me/ItemDocumentoNSEnderecamento/VerificarExisteNS  — Indica se existem ou não números de série vinculados a um item de documento do multiendereçamento pelos dados do documento/item.
+PUT    api/suprimentos/me/ItemListaMateriaisEnderecamento/ConferirListaMateriais  — Buscar e movimentar itens de lista de materiais do multiendereçamento.s
+PUT    api/suprimentos/me/ItemPedidoEnderecamento/ConferirPedido  — Buscar e movimentar itens de pedido do multiendereçamento por código de barras.
+PUT    api/suprimentos/me/ListaMateriaisEnderecamento/SalvarEmLote  — Salva em lote os itens da lista de materiais.
+PUT    api/suprimentos/me/ListaMateriaisEnderecamento/Transferir  — Efetuar transferência da lista de materiais.
+PUT    api/suprimentos/me/MovimentoEnderecamento/Salvar  — Salvar movimentação do multiendereçamento.
+PUT    api/suprimentos/me/Reserva/Liberar  — Liberar reservas de um item de documento do multiendereçamento.
+POST   api/suprimentos/me/ItemDocumentoNSEnderecamento/Buscar  — Buscar números de série vinculados ao item do documento do multiendereçamento pelos dados do documento/item.
+POST   api/suprimentos/me/ItemDocumentoNSEnderecamento/VerificarExisteNS  — Indica se existem ou não números de série vinculados a um item de documento do multiendereçamento pelos dados do documento/item.
+POST   api/suprimentos/me/ItemListaMateriaisEnderecamento/ConferirListaMateriais  — Buscar e movimentar itens de lista de materiais do multiendereçamento.s
+POST   api/suprimentos/me/ItemPedidoEnderecamento/ConferirPedido  — Buscar e movimentar itens de pedido do multiendereçamento por código de barras.
+POST   api/suprimentos/me/ListaMateriaisEnderecamento/SalvarEmLote  — Salva em lote os itens da lista de materiais.
+POST   api/suprimentos/me/ListaMateriaisEnderecamento/Transferir  — Efetuar transferência da lista de materiais.
+POST   api/suprimentos/me/MovimentoEnderecamento/Salvar  — Salvar movimentação do multiendereçamento.
+POST   api/suprimentos/me/Reserva/Liberar  — Liberar reservas de um item de documento do multiendereçamento.
+GET    api/suprimentos/me/EnderecoEnderecamento/Buscar  — Buscar endereços físicos do multiendereçamento.
+GET    api/suprimentos/me/ItemDocumentoNSEnderecamento/Buscar  — Buscar números de série vinculados ao item do documento do multiendereçamento.
+GET    api/suprimentos/me/ItemListaMateriaisEnderecamento/Buscar  — Buscar os materiais de listas de materiais disponíveis para movimentações via Multiendereçamento
+GET    api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarAglutinado  — Buscar os materiais de listas de materiais disponíveis para movimentações via multiendereçamento de forma aglutinada.
+GET    api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarComplementoDetalhamento  — Realizar busca do detalhamento de um item de uma lista de materiais.
+GET    api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarItem  — Buscar item de lista de materiais disponível para movimentação/movimentadas no multiendereçamento pela hash.
+GET    api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarItemAglutinado  — Buscar um item de lista de materiais disponível para movimentação/movimentadas no multiendereçamento pelos dados do material.
+GET    api/suprimentos/me/ItemListaMateriaisEnderecamento/Iniciar  — Iniciar itens de lista de materiais disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/ItemNotaFiscalEntradaEnderecamento/Buscar  — Buscar itens de notas fiscais de entrada disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/ItemNotaFiscalEntradaEnderecamento/BuscarItem  — Buscar item de nota fiscal de entrada disponível para movimentação/movimentadas no multiendereçamento pela hash.
+GET    api/suprimentos/me/ItemNotaFiscalEntradaEnderecamento/Iniciar  — Iniciar itens de nota fiscal de entrada disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/ItemOrdemProducaoEnderecamento/Buscar  — Buscar itens de ordens de produção disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/ItemOrdemProducaoEnderecamento/BuscarItem  — Buscar item de ordem de produção disponível para movimentação/movimentadas no multiendereçamento pela hash.
+GET    api/suprimentos/me/ItemOrdemProducaoEnderecamento/Iniciar  — Iniciar itens de ordens de produção disponível para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/ItemPedidoEnderecamento/Buscar  — Buscar itens de pedidos disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/ItemPedidoEnderecamento/BuscarItem  — Buscar item de pedido disponível para movimentação/movimentadas no multiendereçamento pela hash.
+GET    api/suprimentos/me/ItemPedidoEnderecamento/Iniciar  — Iniciar itens de pedidos disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/ListaMateriaisEnderecamento/Buscar  — Buscar os registros de listas de materiais disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/MovimentoEnderecamento/Buscar  — Buscar movimentos do multiendereçamento.
+GET    api/suprimentos/me/MovimentoEnderecamento/BuscarMovimento  — Buscar movimentos do multiendereçamento pelos dados do movimento.
+GET    api/suprimentos/me/NotaFiscalEntradaEnderecamento/Buscar  — Buscar notas fiscais de entrada disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/OrdemProducaoEnderecamento/Buscar  — Buscar ordens de produção disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/PedidoEnderecamento/Buscar  — Buscar pedidos disponíveis para movimentação/movimentadas no multiendereçamento.
+GET    api/suprimentos/me/Reserva/Buscar  — Buscar reservas do multiendereçamento.
+PUT    api/suprimentos/pc/DemandaOrdemProducaoAuxiliar/Atualizar  — Atualizar/processar demanda auxiliar.
+PUT    api/suprimentos/pc/EdicaoSubstituicaoDemanda/Salvar  — Salvar demanda editada/substituída.
+PUT    api/suprimentos/pc/Inspecao/Salvar  — Salvar inspeção de uma ordem de produção.
+PUT    api/suprimentos/pc/LoteDemandaAuxiliar/Salvar  — Gravar lote de uma demanda auxiliar.
+PUT    api/suprimentos/pc/RecursoProducao/Salvar  — Salvar recurso de uma ordem de produção.
+POST   api/suprimentos/pc/DemandaOrdemProducaoAuxiliar/Atualizar  — Atualizar/processar demanda auxiliar.
+POST   api/suprimentos/pc/DemandaOrdemProducaoAuxiliar/BuscarPosicaoDemandaAuxiliar  — Buscar posição de estoque de uma demanda da ordem de produção.
+POST   api/suprimentos/pc/DemandaOrdemProducaoAuxiliar/BuscarSaldo  — Buscar saldo de uma demanda da ordem de produção lida.
+POST   api/suprimentos/pc/EdicaoSubstituicaoDemanda/Salvar  — Salvar demanda editada/substituída.
+POST   api/suprimentos/pc/Etiqueta/Imprimir  — Imprimir as etiquetas da ordem de produção.
+POST   api/suprimentos/pc/Inspecao/Salvar  — Salvar inspeção de uma ordem de produção.
+POST   api/suprimentos/pc/LoteDemandaAuxiliar/Salvar  — Gravar lote de uma demanda auxiliar.
+POST   api/suprimentos/pc/MovimentoProducao/AplicarFiltrosArea  — Aplicar filtros no gráfico de movimentos de produção por área.
+POST   api/suprimentos/pc/MovimentoProducao/AvaliarLeituraPosteriorAutomatica  — Avaliar se é possível ler ou não os talões seguintes à leitura do talão corrente automaticamente.
+POST   api/suprimentos/pc/MovimentoProducao/FinalizarLeituraOrdemProducao  — Finalizar a leitura de uma ordem de produção.
+POST   api/suprimentos/pc/MovimentoProducao/LerOrdemProducao  — Efetuar a leitura de uma ordem de produção.
+POST   api/suprimentos/pc/MovimentoProducao/ValidarOrdemProducao  — Validar a leitura de uma ordem de produção.
+POST   api/suprimentos/pc/MovimentoProducao/ValidarQuestionarioRespondido  — Valida o questionário de inspeção de uma ordem de produção.
+POST   api/suprimentos/pc/MovimentoProducao/VerificarExisteDemandaManual  — Excluir movimentos de produção de uma ordem de produção sem demandas criadas manualmente.
+POST   api/suprimentos/pc/OrdemProducao/AplicarFiltros  — Aplicar filtros na busca das ordens de produção.
+POST   api/suprimentos/pc/OrdemProducao/AplicarFiltrosKanbanProducao  — Aplicar filtros dos cards do kanban de produção.
+POST   api/suprimentos/pc/OrdemProducao/AplicarFiltrosPrazoProgramado  — Aplicar filtros nos cards de ordens de produção por prazo programado.
+POST   api/suprimentos/pc/OrdemProducao/ImprimirEmissaoOp  — Gerar relatório Emissão da OP
+POST   api/suprimentos/pc/OrdemProducao/ImprimirEmissaoTalao  — Gerar relatório Emissão de Talão
+POST   api/suprimentos/pc/OrdemProducao/ImprimirPrevistoRealizadoMat  — Gerar relatório Previsto x Realizado por Materiais
+POST   api/suprimentos/pc/OrdemProducao/ImprimirPrevistoRealizadoOp  — Gerar relatório Previsto x Realizado por OP
+POST   api/suprimentos/pc/OrdemProducao/ListarFaseOP  — Listar fases da OP.
+POST   api/suprimentos/pc/OrdemProducao/ListarFaseOPTalao  — Listar fases da OP e talão.
+POST   api/suprimentos/pc/RecursoProducao/Salvar  — Salvar recurso de uma ordem de produção.
+GET    api/suprimentos/pc/DemandaOrdemProducao/Buscar  — Buscar demandas de ordem de produção com base em um código de OP/Talão.
+GET    api/suprimentos/pc/EdicaoSubstituicaoDemanda/BuscarValidacaoQuantidadeZerada  — Retornar a validação de quantidade zerada na edição de demandas de acordo com a configuração 2834.
+GET    api/suprimentos/pc/Inspecao/Buscar  — Buscar inspeção com base na ordem de produção e talão.
+GET    api/suprimentos/pc/Inspecao/BuscarQuestionario  — Buscar inspeção com base no item, código da ordem de produção e número do talão
+GET    api/suprimentos/pc/LoteDemandaAuxiliar/Buscar  — Buscar lotes de uma demanda auxiliar.
+GET    api/suprimentos/pc/MovimentoProducao/Buscar  — Buscar movimentos de produção.
+GET    api/suprimentos/pc/MovimentoProducao/BuscarFiltrosArea  — Buscar filtros do gráfico de movimentos de produção por área.
+GET    api/suprimentos/pc/MovimentoProducao/BuscarProducaoPorArea  — Buscar movimentos de produção agrupados por área.
+GET    api/suprimentos/pc/MovimentoProducao/BuscarProducaoPorArea  — Buscar movimentos de produção agrupados por área dentro de um intervalo de datas.
+GET    api/suprimentos/pc/MovimentoProducaoAuxiliar/Buscar  — Buscar movimentos de produção auxiliar.
+GET    api/suprimentos/pc/MovimentoProducaoAuxiliar/BuscarDadosDemandaAuxiliar  — Buscar movimento de uma demanda auxiliar vinculada a um talão de uma ordem de produção, conforme o tipo.
+GET    api/suprimentos/pc/MovimentoProducaoAuxiliar/VerificarExisteDadosDemandaAuxiliar  — Verifica se existe ao menos um movimento de uma demanda auxiliar vinculada a um talão de uma ordem de produção.
+GET    api/suprimentos/pc/MovimentoXOrdemProducao/Buscar  — Buscar vínculos de movimentos de ordens de produção.
+GET    api/suprimentos/pc/ObservacaoOrdemProducao/Buscar  — Buscar observações da ordem de produção.
+GET    api/suprimentos/pc/OcorrenciaProducao/Buscar  — Buscar ocorrências de produção.
+GET    api/suprimentos/pc/OrdemProducao/Buscar  — Buscar ordens de produção.
+GET    api/suprimentos/pc/OrdemProducao/Buscar  — Buscar ordens de produção por código de barras ou QR Code.
+GET    api/suprimentos/pc/OrdemProducao/BuscarCentrosArmazenagemPadrao  — Busca centros de armazenagem conforme o código da ordem e tipos de operação sugeridos.
+GET    api/suprimentos/pc/OrdemProducao/BuscarDadosAlteracaoDataFabricacao  — Buscar dados de alteração com base na data de fabricação.
+GET    api/suprimentos/pc/OrdemProducao/BuscarDadosOrdemProducao  — Buscar ordem de produção com base no código e número de talão.
+GET    api/suprimentos/pc/OrdemProducao/BuscarDadosOrdemProducao  — Buscar ordem de produção com base no código e número de talão.
+GET    api/suprimentos/pc/OrdemProducao/BuscarFiltros  — Buscar filtros da busca das ordens de produção.
+GET    api/suprimentos/pc/OrdemProducao/BuscarFiltrosKanbanProducao  — Buscar filtros dos cards do kanban de produção.
+GET    api/suprimentos/pc/OrdemProducao/BuscarFiltrosPrazoProgramado  — Buscar filtros dos cards de ordens de produção por prazo programado.
+GET    api/suprimentos/pc/OrdemProducao/BuscarPrazoOrdemProducao  — Buscar prazos das ordens de produção.
+GET    api/suprimentos/pc/OrdemProducao/BuscarSomaOrdensProducao  — Buscar soma das quantidades das ordens de produção.
+GET    api/suprimentos/pc/OrdemProducao/CalcularDataValidade  — Calcular data de validade de uma ordem de produção.
+GET    api/suprimentos/pc/OrdemProducao/CalcularDataValidade  — Calcular data de validade de uma ordem de produção.
+GET    api/suprimentos/pc/OrdemProducao/FiltrarPorLiberacao  — Buscar ordens de produção por liberação.
+GET    api/suprimentos/pc/OrdemProducao/FiltrarPorOrdemProducao  — Buscar ordens de produção por código.
+GET    api/suprimentos/pc/OrdemProducao/FiltrarPorOrdemProducao  — Buscar ordens de produção com base no código e tipo de código.
+GET    api/suprimentos/pc/Organograma/Buscar  — Buscar organogramas/áreas.
+GET    api/suprimentos/pc/RecursoProcesso/Buscar  — Buscar recursos/processos.
+GET    api/suprimentos/pc/RecursoProcesso/BuscarProcessoCompleto  — Buscar processos completos com descrição.
+GET    api/suprimentos/pc/RecursoProcesso/BuscarRecursoCompleto  — Buscar recursos completos com descrição.
+GET    api/suprimentos/pc/RecursoProducao/Buscar  — Buscar recursos de uma ordem de produção.
+GET    api/suprimentos/pc/RecursoProducao/BuscarRecursosOrdemProducao  — Buscar recursos de um talão de uma ordem de produção.
+GET    api/suprimentos/pc/Talao/Buscar  — Buscar talões de ordens de produção.
+DELETE api/suprimentos/pc/LoteDemandaAuxiliar/Remover  — Excluir lote de uma demanda auxiliar.
+DELETE api/suprimentos/pc/MovimentoProducao/Excluir  — Excluir movimento de produção.
+DELETE api/suprimentos/pc/RecursoProducao/Remover  — Exclui um recurso de uma ordem de produção.

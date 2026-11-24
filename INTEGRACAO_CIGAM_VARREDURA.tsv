@@ -1,0 +1,283 @@
+404	api/bpm/pj/AgendaTecnico/BuscarAnotacoes	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Agen
+404	api/bpm/pj/AgendaTecnico/BuscarAtividadesOrdemServicoProjeto	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Agen
+404	api/bpm/pj/AgendaTecnico/BuscarAtividadesProjeto	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Agen
+404	api/bpm/pj/AgendaTecnico/BuscarCalendario	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Agen
+404	api/bpm/pj/AgendaTecnico/BuscarConfiguracaoOrdemServico	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Agen
+404	api/bpm/pj/AgendaTecnico/BuscarReservas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Agen
+200	api/bpm/pj/AgendaTecnico/BuscarTecnicos	lista(0) 
+404	api/bpm/pj/AgendaTecnico/VerificarSituacaoTarefas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Agen
+404	api/bpm/pj/Gantt/BuscarDadosGantt	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Gant
+404	api/bpm/pj/Gantt/BuscarDadosGanttVersao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Gant
+405	api/bpm/pj/Gantt/BuscarDependencias	msg: The requested resource does not support http method 'GET'.
+404	api/bpm/pj/Gantt/BuscarProjetoPrincipal	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Gant
+200	api/bpm/pj/Projeto/Buscar	lista(1) CodigoProjeto,NomeProjeto,Descricao,Verba,Ativo,Sessao,CodigoUsuarioCriacao,CodigoUsuarioModificacao,DataModificacao,DataInclusao,Gerente,CodigoCliente
+200	api/bpm/pj/ProjetoPapel/Buscar	lista(1) CodigoProjetoPapel,Origem,Descricao,Ativo,Descritivo,DataCriacao,HoraCriacao,UsuarioCriacao,DataModificacao,HoraModificacao,UsuarioModificacao
+404	api/bpm/pj/TarefasProjeto/BuscarTarefasProjeto	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Tare
+404	api/bpm/pj/TarefasProjeto/VerificarSituacaoTarefas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/bpm/pj/Tare
+200	api/comercial/fa/ControlePedido/Buscar	lista(0) 
+404	api/comercial/fa/ControlePedido/BuscarControlePedido	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+404	api/comercial/fa/ControlePedido/BuscarControlesRestritos	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+200	api/comercial/fa/HubPedido/Buscar	obj: message
+200	api/comercial/fa/LiberacaoDesconto/Buscar	lista(0) 
+200	api/comercial/fa/NotaFiscal/Buscar	lista(1) NF,CodigoSerie,CodigoUnidadeNegocio,CodigoTipoOperacao,TipoNota,TipoNotaDescricao,Cfop,CodigoTransportadora,TotalMercadoria,TotalNF,TotalFaturado,CodigoPedido
+200	api/comercial/fa/NotaFiscal/BuscarDetalhes	lista(1) Codigo,CodigoSerie,NF,CodigoCliente,CodigoUnidadeNegocio,Status,StatusDescricao,RetornoRecibo,DescricaoRetornoRecibo,RetornoProtocolo,DescricaoRetornoProtocolo,TipoEmissao
+404	api/comercial/fa/NotaFiscal/BuscarDetalhesNotaFiscal	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+404	api/comercial/fa/NotaFiscal/BuscarNotaFiscal	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+200	api/comercial/fa/Pedido/Buscar	lista(1) Codigo,DataPedido,Situacao,SituacaoDescricao,CodigoControle,CodigoCliente,CodigoRepresentante,CodigoUnidadeNegocio,PrazoEntrega,PrazoProgramado,TotalPedido,TotalFaturamento
+404	api/comercial/fa/Pedido/BuscarImpostosItemPedido	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+404	api/comercial/fa/Pedido/BuscarItemPedido	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+404	api/comercial/fa/Pedido/BuscarItensPedido	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+404	api/comercial/fa/Pedido/BuscarPedido	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/f
+200	api/comercial/fa/Pedido/BuscarRegrasComissaoRepetir	lista(1) Codigo,Descricao
+200	api/comercial/fa/Pedido/DescontoPorConfigAtivo	obj: DescontoPorConfig,Configs
+200	api/comercial/fa/SerieNF/Buscar	lista(1) Serie,CodigoUnidadeNegocio,SerieOficial,Ativo,DataModificacao
+200	api/comercial/fa/TipoFrete/Buscar	lista(1) Codigo,Descricao
+200	api/comercial/fa/TipoNota/Buscar	lista(1) Codigo,Descricao
+200	api/comercial/fa/ViaTransporte/Buscar	lista(1) Codigo,Descricao
+200	api/comercial/ve/Mercado/Buscar	lista(1) Codigo,Descricao
+404	api/comercial/ve/Mercado/BuscarMercado	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/v
+200	api/comercial/ve/Oportunidade/Buscar	lista(1) Codigo,PessoaContato,Data,Hora,CodigoPedido,Impresso,FechamentoDeFeira,Campo91,Campo92,Situacao,OrcamentoComposto,PrimeiroContato
+200	api/comercial/ve/Oportunidade/BuscarFases	lista(1) Descricao,Etapa,Qtd,CorGrafico,TotalVenda
+404	api/comercial/ve/Oportunidade/FiltrarPorFase	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/comercial/v
+200	api/contabil/cc/PlanoContas/Buscar	lista(1) CodigoReduzido,ClassificacaoContabil,NomeConta,OrigemContabil,Tipo,Ativo,GrupoConta
+200	api/contabil/cc/PlanoContas/BuscarContasContabeis	lista(1) CodigoReduzido,ClassificacaoContabil,NomeConta,OrigemContabil,Tipo,Ativo,GrupoConta
+200	api/contabil/cc/PlanoContas/BuscarContasGerenciais	lista(1) CodigoReduzido,ClassificacaoContabil,NomeConta,OrigemContabil,Tipo,Ativo,GrupoConta
+200	api/contabil/cc/PlanoContas/BuscarContasTGContabeis	lista(0) 
+200	api/contabil/cc/PlanoContas/BuscarContasTGGerenciais	lista(0) 
+404	api/contabil/cc/RateioAuxiliar/BuscarRateiosPreLancamento	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/contabil/cc
+200	api/contabil/cc/RateioAuxiliar/ValidarRelacionamentoCtbXGerRateioAuxiliar	msg: Sucesso no retorno.
+200	api/financas/ct/Contrato/Buscar	lista(0) 
+200	api/financas/ct/Contrato/BuscarContratosContato	lista(0) 
+404	api/financas/ct/Contrato/BuscarItensParcelasContrato	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+404	api/financas/ct/Contrato/BuscarParcelas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+404	api/financas/ct/Contrato/BuscarParcelasContrato	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+404	api/financas/ct/Contrato/BuscarParcelasRenegociadas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+404	api/financas/ct/Contrato/BuscarParcelasUnificadas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+404	api/financas/ct/Contrato/BuscarQuantidadeParcelas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+404	api/financas/ct/Contrato/BuscarRenegociadasLancamento	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+200	api/financas/ct/Contrato/BuscarTotalAbertoParcelas	msg: 
+404	api/financas/ct/Contrato/VerificarParcelaRenegociada	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/ct
+500	api/financas/gf/AutorizacaoPagamento/BuscarLancamentos	msg: Ocorreu uma falha.
+500	api/financas/gf/AutorizacaoPagamento/BuscarPagamentosAprovados	msg: Ocorreu uma falha.
+500	api/financas/gf/AutorizacaoPagamento/BuscarPagamentosPendentes	msg: Ocorreu uma falha.
+500	api/financas/gf/AutorizacaoPagamento/BuscarPagamentosPreAprovados	msg: Ocorreu uma falha.
+500	api/financas/gf/AutorizacaoPagamento/BuscarPagamentosReprovados	msg: Ocorreu uma falha.
+404	api/financas/gf/AutorizacaoPagamento/BuscarRateio	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+404	api/financas/gf/AutorizacaoPagamento/BuscarRegraParticipacao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+404	api/financas/gf/AutorizacaoPagamento/BuscarStatusPagamento	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+404	api/financas/gf/AutorizacaoPagamento/BuscarTotalParticipacao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+404	api/financas/gf/AutorizacaoPagamento/BuscarUltimasCompras	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+404	api/financas/gf/AutorizacaoPagamento/BuscarUltimosPagamentos	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+200	api/financas/gf/CondicaoPagamento/Buscar	lista(1) Codigo,Descricao,Forma,Periodicidade,CodigoFinanceira,UnidadeNegocio,CodigoTipoPagamento,ValidoPara,ContaSaida,PercentualDescontoAteVencimento,PercentualDescontoGeral,Ativo
+404	api/financas/gf/CondicaoPagamento/BuscarCondicaoPagamento	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+200	api/financas/gf/Conta/Buscar	lista(1) Codigo,Descricao,Ativo,TipoConta
+404	api/financas/gf/Conta/BuscarConta	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+200	api/financas/gf/Historico/Buscar	lista(1) Codigo,Descricao,Ativo
+200	api/financas/gf/LancamentoFinanceiro/BuscarLancamentos	lista(1) Codigo,Data,Vencimento,Emissao,DataModificacao,DataInclusao,DataUltimaLiquidacao,Nf,Serie,Fatura,Complemento,Contabilidade
+200	api/financas/gf/LancamentoFinanceiro/BuscarLancamentosContato	lista(0) 
+200	api/financas/gf/LancamentoFinanceiro/BuscarLancamentosEmpresa	lista(0) 
+404	api/financas/gf/LancamentoFinanceiro/BuscarLiquidacoes	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+200	api/financas/gf/LancamentoFinanceiro/BuscarModelos	lista(0) 
+500	api/financas/gf/LancamentoFinanceiro/BuscarPreLancamentosUsuario	msg: Ocorreu uma falha.
+404	api/financas/gf/LancamentoFinanceiro/BuscarSomaLancamentos	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+404	api/financas/gf/LancamentoFinanceiro/DebitarCreditar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+500	api/financas/gf/LancamentoFinanceiro/ListarLancamentos	msg: Ocorreu uma falha.
+200	api/financas/gf/Portador/Buscar	lista(1) Codigo,Nome,NumeroBanco,Agencia,ContaNumero,NumeroControle,CodigoEmpresa,Imprime,TipoControle,Ativo
+404	api/financas/gf/Portador/BuscarPortador	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/financas/gf
+404	api/genericos/ge/Acompanhamentos/ValidarUrl	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+404	api/genericos/ge/Ambiente/VerificarConectividade	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+200	api/genericos/ge/Ambiente/Versao	msg: 
+200	api/genericos/ge/AtividadeEmpresa/Buscar	lista(1) CodigoAtividade,Descricao,Ativa,Sessao,UsuarioModificacao,UsuarioCriacao,CodigoAtividadeServico,CodigoGiaEstadual,SituacaoTributaria,ComplementoAtividade,SubtotalizarNfCfop,CondicaoEspecial
+200	api/genericos/ge/Cep/Buscar	lista(1) Municipio,CepNovo,CepAntigo,NomeRua,Cidade,BairroInicial,BairroFinal,Estado,TipoLogradouro,Regiao,CodigoLocalidade,Id
+500	api/genericos/ge/Cep/BuscarEndereco	msg: Ocorreu uma falha.
+500	api/genericos/ge/Configuracao/Buscar	msg: Ocorreu uma falha.
+200	api/genericos/ge/Contato/Buscar	lista(1) Sequencia,CodigoPessoa,Nome,Telefone,Email,Ramal,IdProjetoPapel,Foto
+500	api/genericos/ge/ContatoBloqueado/Buscar	msg: Ocorreu uma falha.
+200	api/genericos/ge/Customizacao/MetodoCustomizado	obj: success,result
+200	api/genericos/ge/Divisao/Buscar	lista(1) CodigoDivisao,DescricaoDivisao,Inicio,Termino,Inicio2,Termino2,Data,Senha,GrupoDivisao,Classificacao,Inicio3,Termino3
+200	api/genericos/ge/ElementoQuestionario/Buscar	lista(1) CodigoPergunta,CodigoQuestionario,OrdemPergunta,PerguntaComposicao,ProximaOrdemPergunta,MultiplaEscolha,Campo9,Campo17,Memo
+200	api/genericos/ge/Email/HasCredencialEmail	obj: success,hash,messages,data,tipoLogin,messagesAttributes
+200	api/genericos/ge/Estado/Buscar	lista(1) CodigoEstado,UnidadeNegocio,NomeEstado,ValorEntradasTributadas,ValorEntradasIsentas,ValorEntradasOutras,ValorSaidasTributadas,ValorSaidasIsentas,ValorSaidasOutras,InscricaoSubstituicao,PercentualIcmsSaida,TemInscricao
+200	api/genericos/ge/FuncaoFuncionario/Buscar	lista(1) CodigoFuncao,Descricao,Cbo1994,CodigoVariavelIn,CodigoVariavelPe,Cbo2002
+200	api/genericos/ge/MenuUsuario/Buscar	lista(1) NSU,CodigoUsuario,Grupo,Tipo,Descricao,NomeComponenteComando,Icone,Ordem
+404	api/genericos/ge/MenuUsuario/BuscarFavoritos	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+404	api/genericos/ge/ModeloFiltro/Buscar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+200	api/genericos/ge/ModeloRelatorio/Buscar	lista(1) Codigo,Grupo,Tipo,Relatorio,Padrao,ArquivoModelo,ArquivoFinal,ArquivoAbrir,ArquivoModeloNome,Visualizador,TipoVisualizador,CodigoUsuario
+200	api/genericos/ge/Municipio/Buscar	lista(1) NomeMunicipio,UF,Codigo,CodigoGiaEstadual,CEPInicial,CEPFinal,CodigoPais
+404	api/genericos/ge/OAuth/GetAuthorizeUrl	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+404	api/genericos/ge/OAuth/GetOAuthToken	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+404	api/genericos/ge/OAuth/OAuthRedirect	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+500	api/genericos/ge/Padrao/Buscar	msg: Ocorreu uma falha.
+200	api/genericos/ge/Pais/Buscar	lista(1) CodigoPais,Descricao,MascaraCep,CodigoInternacional,Ddi,MascaraFone,UsuarioModificacao,Sessao,CodigoPaisGiaEstadual,CodigoPaisBacen,CodigoPaisGiaMunicipal,CodigoPaisGiaSiscoServ
+404	api/genericos/ge/ParametrosPortal/BuscarPerfil	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+200	api/genericos/ge/Pergunta/Buscar	lista(1) CodigoPergunta,MascaraResposta,ComplementoPergunta,Tipo,RespostaTipo,CampoVisual,FaixaValidacao,Minimo,Maximo,UnidadeMedida,RespostaObrigatoria
+200	api/genericos/ge/Pessoa/Buscar	lista(1) Codigo,NomeCompleto,Fantasia,Endereco,Numero,Bairro,Municipio,Uf,Telefone,Ativo,Divisao,CnpjCpf
+500	api/genericos/ge/Pessoa/BuscarCadastroSefaz	msg: Ocorreu uma falha.
+200	api/genericos/ge/Pessoa/BuscarPessoaRepresentante	lista(0) 
+200	api/genericos/ge/PessoaFisica/Buscar	lista(1) Tipo,CodigoPessoa,NomeConjuge,NomePai,NomeMae,CodigoConjuge,EstadoCivil,Sexo,CodigoEmpregoAtual,NomeEmpregoAtual,MunicipioEmpregoAtual,EnderecoEmpregoAtual
+200	api/genericos/ge/PosicaoGeografica/Buscar	lista(1) Identificacao,Latitude,Longitude,Tipo,Codigo,Sequencia,Endereco,Numero,Bairro,Cidade,Uf,Cep
+200	api/genericos/ge/PrecosTabela/Buscar	lista(1) CodigoTabela,DescricaoTabela,DescontoMaximoCalculado,Elemento,Regra,PrecoMaior,PrecoMenor,PrecoUnitario,PrecoDesconto,ValidadeInicial,ValidadeFinal
+500	api/genericos/ge/Questionario/BuscarModelos	msg: Ocorreu uma falha.
+500	api/genericos/ge/Questionario/BuscarRespondidos	msg: Ocorreu uma falha.
+500	api/genericos/ge/Ramal/BuscarAniversariantes	msg: Ocorreu uma falha.
+200	api/genericos/ge/Resposta/Buscar	lista(1) CodigoResposta,OrdemPergunta,OrdemResposta,LogResposta,ValorResposta,NumeroResposta,Campo19
+200	api/genericos/ge/RespostaPossivel/Buscar	lista(1) CodigoQuestionario,CodigoPergunta,Sequencia,Resposta
+404	api/genericos/ge/TabelaPreco/BuscarTabelasPedido	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+200	api/genericos/ge/TecnologiaGrupo/Buscar	lista(1) Codigo,Descricao,Tipo,TipoDescricao,UtilizaCategoria,CodigoUnico,VariaPorEmpresa
+200	api/genericos/ge/TecnologiaGrupo/BuscarCategoriasTG	lista(1) CodigoTG,Categoria,CodigoEmpresa,DescricaoCategoria,Valor1,Valor2,SimNao1,SimNao2,Alpha1_1,Alpha1_2,Alpha2_1,Alpha2_2
+200	api/genericos/ge/TecnologiaGrupo/BuscarElementosTG	lista(1) CodigoTG,Categoria,CodigoEmpresa,Elemento,Valor1,Valor2,SimNao1,SimNao2,TipoTG,Alpha1_2,Conceito,Alpha2_2
+200	api/genericos/ge/TipoEmpresa/Buscar	lista(1) CodigoTipoEmpresa,Descricao,Ativo,Sessao,UsuarioModificacao,UsuarioCriacao,ContaFinanceira,ContribuinteIpi
+200	api/genericos/ge/TipoOperacao/Buscar	lista(1) Codigo,Descricao,CodigoNatureza,CodigoCentroArmazenagem,DescricaoNatureza,CodigoEspecieEstoque,Ativo
+200	api/genericos/ge/TituloAcompanhamento/Buscar	lista(1) CodigoTitulo,DescricaoTitulo
+200	api/genericos/ge/UnidadeNegocio/Buscar	lista(1) Codigo,Nome,Fantasia,CodigoEmpresa
+404	api/genericos/ge/UnidadeNegocio/BuscarUnidadeNegocio	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+200	api/genericos/ge/Usuario/Buscar	lista(1) Codigo,NomeUsuario,Login,Nome,Senha,Empresa,Email,ImagemTemp
+404	api/genericos/ge/Usuario/VerificarAutenticacaoA2F	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/genericos/g
+200	api/genericos/ge/UsuarioXContato/Buscar	lista(0) 
+200	api/servicos/gs/Apontamento/BuscarApontamentos	lista(0) 
+404	api/servicos/gs/Apontamento/CalcularHorasApontamento	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/servicos/gs
+200	api/servicos/gs/AtividadeFreqEquipeTecnico/Buscar	lista(0) 
+200	api/servicos/gs/AtividadeFrequente/Buscar	lista(0) 
+200	api/servicos/gs/AtividadeFrequenteEquipe/Buscar	lista(0) 
+200	api/servicos/gs/Atividades/Buscar	lista(0) 
+200	api/servicos/gs/Atividades/Get	lista(0) 
+200	api/servicos/gs/DefeitoSolucao/BuscarDefeitoSolucao	lista(1) Tipo,Codigo,Descricao,TipoOs,Ativo,PublicarDadosWeb
+200	api/servicos/gs/Equipe/Buscar	lista(1) Codigo,Descricao,UsuarioModificacao,Sessao,CodigoUnidadeNegocio,CodigoTecnicoPadrao,CodigoObservacao,UsuarioCriacao,Ativo,PublicarDadosWeb
+404	api/servicos/gs/ItemOrdemServico/BuscarItemOS	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/servicos/gs
+403	api/servicos/gs/LogTarefasKanban/Buscar	msg: Usuário não possui permissão de acesso para esta operação.
+404	api/servicos/gs/OrdemServico/BuscarDadosOrdemServico	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/servicos/gs
+404	api/servicos/gs/OrdemServico/BuscarOrdemServicoCliente	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/servicos/gs
+200	api/servicos/gs/OrdemServico/BuscarTipoItemOrdemServico	lista(1) Codigo,Descricao,Ativo,DisponibilizarWeb
+403	api/servicos/gs/Papel/Buscar	msg: Usuário não possui permissão de acesso para esta operação.
+200	api/servicos/gs/Produto/BuscarProdutos	lista(1) Codigo,CodigoMaterial,CodigoCliente,DescricaoComplementar
+403	api/servicos/gs/Sprint/Get	msg: Usuário não possui permissão de acesso para esta operação.
+403	api/servicos/gs/Sprints/Get	msg: Usuário não possui permissão de acesso para esta operação.
+403	api/servicos/gs/Tarefas/Get	msg: Usuário não possui permissão de acesso para esta operação.
+403	api/servicos/gs/TecnicosTarefaKanban/Buscar	msg: Usuário não possui permissão de acesso para esta operação.
+403	api/servicos/gs/TemplateKanban/Get	msg: Usuário não possui permissão de acesso para esta operação.
+200	api/servicos/gs/TipoAtividade/BuscarTipoAtividade	lista(1) Codigo,Descricao,Faturar
+200	api/servicos/gs/UsuariosEquipe/Buscar	lista(0) 
+200	api/suprimentos/co/ComplementoPreNota/Buscar	lista(1) CodigoFornecedor,NumeroNota,CodigoSerie,CodigoUnidadeNegocio,Sequencia,IncidenciaInss,IncidenciaIrrf,IncidenciaCprb,MotivoReducao,CodigoUfDesembaraco,CstFornecedor,NumeroAdicao
+404	api/suprimentos/co/ComplementoPreNota/BuscarComplementoPreNota	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+500	api/suprimentos/co/ControleOrdemCompra/Buscar	msg: Ocorreu uma falha.
+404	api/suprimentos/co/ControleOrdemCompra/BuscarControleOrdemCompra	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+500	api/suprimentos/co/ControleOrdemCompra/ListarControles	msg: Ocorreu uma falha.
+500	api/suprimentos/co/ControlePreNota/Buscar	msg: Ocorreu uma falha.
+404	api/suprimentos/co/ControlePreNota/BuscarControlePreNota	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+500	api/suprimentos/co/ControlePreNota/ListarControles	msg: Ocorreu uma falha.
+200	api/suprimentos/co/ControleSolicitacao/Buscar	lista(1) Controle,Descricao,SituacaoSolicitacao,SituacaoSolicitacaoDescricao,SituacaoItemSolicitacao,SituacaoItemSolicitacaoDescricao,Faturar,Impedimento1,Impedimento2,Impedimento3,Impedimento4,CodigoUsuarioModificacao
+404	api/suprimentos/co/ControleSolicitacao/BuscarControleSolicitacao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/ControleSolicitacao/ListarControles	lista(4) Codigo,Sequencia,Controle,Descricao,SituacaoSolicitacao,SituacaoItemSolicitacao
+200	api/suprimentos/co/CotacaoCompra/Buscar	lista(1) CodigoMaterial,CodigoFornecedor,NomeFornecedor,Entrega,CodigoCondicaoPagamento,DescricaoCondicaoPagamento,Contato,Quantidade,PrecoUnitario,PercentualIpi,Observacao,CodigoSolicitacao
+404	api/suprimentos/co/CotacaoCompra/BuscarCotacaoCompra	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/co/CotacaoCompra/BuscarCotacoes	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/Entrada/Buscar	lista(1) CodigoSerie,NumeroNota,ValorPis,CodigoTipoOperacao,Cfop,DataEmissao,DataEntrada,ViaTransporte,DescricaoViaTransporte,DocumentoFiscal,CodigoFornecedor,BaseIcms
+200	api/suprimentos/co/Entrada/BuscarFiltrosQuantidadeNotasFornecedor	obj: UnidadeNegocio,Periodo,DataEntradaInicial,DataEntradaFinal
+200	api/suprimentos/co/Entrada/BuscarQuantidadeNotasFornecedor	lista(1) QuantidadeNotas,CodigoFornecedor,FantasiaFornecedor
+200	api/suprimentos/co/GerenciamentoXml/Buscar	lista(1) Id,CodigoUnidadeNegocio,CodigoFornecedor,NumeroNota,DataEmissao,TipoDocumento,DescricaoTipoDocumento,Status,DescricaoStatus,ValorDocumento,ChaveDocumento,GeradoNota
+200	api/suprimentos/co/GerenciamentoXml/BuscarQuantidadeXmlSituacaoUltimosMeses	lista(1) MesRegistros,MesDescricao,NFeImportadas,NFeImportar,NFeCanceladas,CTeImportadas,CTeImportar,CTeCanceladas
+404	api/suprimentos/co/GerenciamentoXml/BuscarRegistroGerenciamentoXml	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/co/ItemEntrada/BuscarItemNotaEntrada	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/ItemOrdem/Buscar	lista(1) CodigoOrdem,DataAprovacao,CodigoMaterial,CentroControle,Quantidade,QuantidadeSaldo,Especie,PrecoUnitario,Documento,CodigoSerie,NumeroNota,SequenciaPlanoMestre
+404	api/suprimentos/co/ItemOrdem/BuscarItemOrdem	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/ItemPreNota/Buscar	lista(1) IdPreNota,Sequencia,NumeroNota,CodigoSerie,CodigoUnidadeNegocio,CodigoFornecedor,CodigoMaterial,CodigoEspecieEstoque,Quantidade,PrecoUnitario,PrecoTotalItem,Pecas
+404	api/suprimentos/co/ItemPreNota/BuscarItemPreNota	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/ItemSolicitacao/Buscar	lista(1) CodigoSolicitacao,Data,CodigoMaterial,CodigoCentroArmazenagem,Quantidade,QuantidadeSaldo,Especie,PrecoUnitario,Documento,CodigoOrdemCompra,CodigoSerie,NotaFiscal
+404	api/suprimentos/co/ItemSolicitacao/BuscarItemSolicitacao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/NegociacaoCotacao/Buscar	lista(1) Id,CodigoSolicitacao,CodigoFornecedor,ItemSolicitacao,CodigoCondicaoPagamento,Quantidade,PrecoUnitario,TipoFrete,TipoFreteDescricao,PrazoEntrega,PercIPI,Enquadramento
+404	api/suprimentos/co/NegociacaoCotacao/BuscarNegociacaoCotacao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/OrdemCompra/Buscar	lista(1) Codigo,CodigoTipoOperacao,Cfop,DataEmissao,ViaTransporte,DescricaoViaTransporte,DocumentoFiscal,CodigoFornecedor,BaseIcms,PercentualIcms,ValorIcms,ValorIcmsNaoTributado
+200	api/suprimentos/co/OrdemCompra/BuscarFiltrosQuantidadeOrdensCompraSituacao	obj: UnidadeNegocio,Periodo,DataEmissaoInicial,DataEmissaoFinal
+500	api/suprimentos/co/OrdemCompra/BuscarQuantidadeOrdensCompraSituacao	msg: Ocorreu uma falha.
+200	api/suprimentos/co/PreNota/Buscar	lista(1) IdPreNota,NumeroNota,CodigoSerie,CodigoUnidadeNegocio,CodigoFornecedor,Especie,DataEmissao,Procedencia,DescricaoProcedencia,CodigoTipoOperacao,Cfop,CodigoTg
+404	api/suprimentos/co/PreNota/BuscarPreNota	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/Solicitacao/Buscar	lista(1) Codigo,UnidadeNegocio,CodigoTipoOperacao,Data,CodigoResponsavel,Contato,LocalEntrega,PlanoDeCompra,CodigoCliente,Situacao,DescricaoSituacao,CodigoCondicaoPagamento
+200	api/suprimentos/co/Solicitacao/BuscarFiltrosQuantidadeItensSolicitacao	obj: UnidadeNegocio,Periodo,DataSolicitacaoItemInicial,DataSolicitacaoItemFinal
+500	api/suprimentos/co/Solicitacao/BuscarQuantidadeItensSolicitacao	msg: Ocorreu uma falha.
+404	api/suprimentos/co/Solicitacao/BuscarSolicitacao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/co/SolicitacaoXFornecedor/Buscar	lista(1) Id,Codigo,CodigoFornecedor,CodigoCondicaoPagamento,TotalSeguro,TotalDesconto,TotalEncargos,TotalOutrasDespesas,TotalCotacao,TotalFrete,MaiorPrazoEntrega,TipoFrete
+404	api/suprimentos/co/SolicitacaoXFornecedor/BuscarSolicitacaoXFornecedor	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/cp/ConfiguraItem/BuscarCaracteristicas	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/cp/ConfiguraItem/BuscarIdentificador	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/es/CentroArmazenagem/Buscar	lista(1) Codigo,Descricao,Tipo,TipoDescricao,BloquearMvtoEstoque
+ERR	api/suprimentos/es/Estoque/Buscar	TimeoutError
+ERR	api/suprimentos/es/Estoque/Buscar	TimeoutError
+200	api/suprimentos/es/GradeMaterial/Buscar	lista(1) Codigo,Descricao,Ativo
+404	api/suprimentos/es/GradeMaterial/BuscarGradeNumeracao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/es/Grupo/Buscar	lista(1) Codigo,Descricao,ControleEspecificacao1,ControleEspecificacao2,ControleEspecificacao3,NomeEspecif1,NomeEspecif2,NomeEspecif3,NomeEspecif1Calculado,NomeEspecif2Calculado,NomeEspecif3Calculado
+200	api/suprimentos/es/Materiais/Buscar	lista(1) Material,Imagem,ImagemCDN,DescricaoCompleta
+404	api/suprimentos/es/Materiais/BuscarEspecificacoesMaterial	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/es/Materiais/BuscarLotesMaterial	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/es/Materiais/BuscarSemElaboracao	lista(1) Material,Imagem,ImagemCDN,DescricaoCompleta
+200	api/suprimentos/es/Materiais/PesquisarMateriais	lista(1) Codigo,Descricao,Referencia,CodigoGrupo,CodigoSubGrupo,CodigoUnidadeMedida,Imagem,ControlaEspecif1,ControlaEspecif2,ControlaEspecif3,CodigoConfigurador
+200	api/suprimentos/es/Movimento/Buscar	lista(1) Codigo,DataMovimento,CodigoMaterial,ValorSubstituicao,Quantidade,Pecas,CodigoEspecieEstoque,PrecoUnitario,TotalDespesasItem,PercentualIcms,IncidenciaIpi,PercentualIpi
+200	api/suprimentos/es/NumeroSerie/BuscarMovimentosNS	lista(1) CodigoMovimento,Pedido,OP,Sequencia,CodigoNumeroDeSerie,DataMovimento,SequenciaDia,CodigoMaterial,UsuarioCriacao,DataCriacao,UsuarioModificacao,Lote
+200	api/suprimentos/es/NumeroSerie/BuscarNS	lista(0) 
+200	api/suprimentos/es/NumeroSerie/BuscarNSAuxiliarUsuario	lista(0) 
+200	api/suprimentos/es/NumeroSerie/BuscarNSDemandas	lista(0) 
+404	api/suprimentos/es/NumeroSerie/BuscarNSOrdemProducao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/es/NumeroSerie/ValidarNSSaldoABaixar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/es/SubGrupo/Buscar	lista(1) Codigo,CodigoGrupo,Descricao
+200	api/suprimentos/es/UnidadeMedida/Buscar	lista(1) Codigo,Descricao,Mascara,Inteiro,NumeroDecimal
+200	api/suprimentos/me/EnderecoEnderecamento/Buscar	lista(0) 
+200	api/suprimentos/me/ItemDocumentoNSEnderecamento/Buscar	lista(0) 
+200	api/suprimentos/me/ItemListaMateriaisEnderecamento/Buscar	lista(0) 
+500	api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarAglutinado	msg: Ocorreu uma falha.
+404	api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarComplementoDetalhamento	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarItem	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/me/ItemListaMateriaisEnderecamento/BuscarItemAglutinado	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/me/ItemListaMateriaisEnderecamento/Iniciar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+500	api/suprimentos/me/ItemNotaFiscalEntradaEnderecamento/Buscar	msg: Ocorreu uma falha.
+404	api/suprimentos/me/ItemNotaFiscalEntradaEnderecamento/BuscarItem	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/me/ItemNotaFiscalEntradaEnderecamento/Iniciar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+500	api/suprimentos/me/ItemOrdemProducaoEnderecamento/Buscar	msg: Ocorreu uma falha.
+404	api/suprimentos/me/ItemOrdemProducaoEnderecamento/BuscarItem	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/me/ItemOrdemProducaoEnderecamento/Iniciar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/me/ItemPedidoEnderecamento/Buscar	lista(0) 
+404	api/suprimentos/me/ItemPedidoEnderecamento/BuscarItem	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/me/ItemPedidoEnderecamento/Iniciar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+500	api/suprimentos/me/ListaMateriaisEnderecamento/Buscar	msg: Ocorreu uma falha.
+200	api/suprimentos/me/MovimentoEnderecamento/Buscar	lista(0) 
+404	api/suprimentos/me/MovimentoEnderecamento/BuscarMovimento	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+500	api/suprimentos/me/NotaFiscalEntradaEnderecamento/Buscar	msg: Ocorreu uma falha.
+500	api/suprimentos/me/OrdemProducaoEnderecamento/Buscar	msg: Ocorreu uma falha.
+500	api/suprimentos/me/PedidoEnderecamento/Buscar	msg: Ocorreu uma falha.
+200	api/suprimentos/me/Reserva/Buscar	lista(0) 
+404	api/suprimentos/pc/DemandaOrdemProducao/Buscar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/pc/EdicaoSubstituicaoDemanda/BuscarValidacaoQuantidadeZerada	msg: 
+404	api/suprimentos/pc/Inspecao/Buscar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/pc/Inspecao/BuscarQuestionario	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/pc/LoteDemandaAuxiliar/Buscar	lista(0) 
+200	api/suprimentos/pc/MovimentoProducao/Buscar	lista(1) Codigo,Talao,DataFinal,HoraFinal,TipoCodigo,TipoDescricao,DataInicial,HoraInicial,CodigoAreaProcesso,CodigoMaterial,Quantidade,Liberacao
+200	api/suprimentos/pc/MovimentoProducao/BuscarFiltrosArea	obj: AreaInicial,AreaFinal,PrazoProgramadoInicial,PrazoProgramadoFinal,PrazoIniciarInicial,PrazoIniciarFinal,GrupoInicial,GrupoFinal,CodigoMaterialInicial,CodigoMaterialFinal
+200	api/suprimentos/pc/MovimentoProducao/BuscarProducaoPorArea	lista(0) 
+200	api/suprimentos/pc/MovimentoProducao/BuscarProducaoPorArea	lista(0) 
+200	api/suprimentos/pc/MovimentoProducaoAuxiliar/Buscar	lista(0) 
+404	api/suprimentos/pc/MovimentoProducaoAuxiliar/BuscarDadosDemandaAuxiliar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/pc/MovimentoProducaoAuxiliar/VerificarExisteDadosDemandaAuxiliar	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/pc/MovimentoXOrdemProducao/Buscar	lista(1) CodigoOrdemProducao,CodigoMovimento,Talao,DataFinal,HoraFinal,TipoCodigo
+200	api/suprimentos/pc/ObservacaoOrdemProducao/Buscar	lista(1) OrdemProducao,UsuarioCriacao,DataCriacao,UsuarioModificacao,Observacao
+200	api/suprimentos/pc/OcorrenciaProducao/Buscar	lista(1) Codigo,Descricao,Tipo,TipoDescricao
+200	api/suprimentos/pc/OrdemProducao/Buscar	lista(1) Material,Talao,Codigo,Liberacao,SequenciaPedido,CodigoMaterial,Quantidade,CodigoEspecificacao1,CodigoEspecificacao2,CodigoEspecificacao3,CodigoUnidadeNegocio,Situacao
+200	api/suprimentos/pc/OrdemProducao/Buscar	lista(1) Material,Talao,Codigo,Liberacao,SequenciaPedido,CodigoMaterial,Quantidade,CodigoEspecificacao1,CodigoEspecificacao2,CodigoEspecificacao3,CodigoUnidadeNegocio,Situacao
+404	api/suprimentos/pc/OrdemProducao/BuscarCentrosArmazenagemPadrao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/pc/OrdemProducao/BuscarDadosAlteracaoDataFabricacao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/pc/OrdemProducao/BuscarDadosOrdemProducao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/pc/OrdemProducao/BuscarDadosOrdemProducao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/pc/OrdemProducao/BuscarFiltros	obj: AreaInicial,AreaFinal,LiberacaoInicial,LiberacaoFinal,SequenciaInicial,SequenciaFinal,OpInicial,OpFinal,TalaoInicial,TalaoFinal
+200	api/suprimentos/pc/OrdemProducao/BuscarFiltrosKanbanProducao	obj: OpTalao,DescricaoMaterial,Liberacao,Sequencia,PrazoProgramado,DataIniciar,Processo,Recurso,IndicadoresVisuaisPrazo,PercentualRealizado
+200	api/suprimentos/pc/OrdemProducao/BuscarFiltrosPrazoProgramado	obj: AreaInicial,AreaFinal,LiberacaoInicial,LiberacaoFinal,SequenciaInicial,SequenciaFinal,OpInicial,OpFinal,TalaoInicial,TalaoFinal
+200	api/suprimentos/pc/OrdemProducao/BuscarPrazoOrdemProducao	lista(1) DataPrazoProgramado,Atrasadas,NoPrazo,Futuras
+400	api/suprimentos/pc/OrdemProducao/BuscarSomaOrdensProducao	msg: The query specified in the URI is not valid. The requested resource is not a collection. Query options $filter
+404	api/suprimentos/pc/OrdemProducao/CalcularDataValidade	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/pc/OrdemProducao/CalcularDataValidade	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/pc/OrdemProducao/FiltrarPorLiberacao	lista(1) Codigo,Liberacao,SequenciaPedido,CodigoMaterial,Quantidade,CodigoEspecificacao1,CodigoEspecificacao2,CodigoEspecificacao3,CodigoUnidadeNegocio,Situacao,SituacaoDescricao,Lote
+404	api/suprimentos/pc/OrdemProducao/FiltrarPorOrdemProducao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+404	api/suprimentos/pc/OrdemProducao/FiltrarPorOrdemProducao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/pc/Organograma/Buscar	lista(1) Codigo,Descricao
+200	api/suprimentos/pc/RecursoProcesso/Buscar	lista(1) Codigo,Descricao,CodigoContaGerencial,Valor,IndiceReajuste,GrupoReajuste,CapacidadeHora,CapacidadeDia,CapacidadePeso,Tipo,TipoDescricao,CodigoUnidadeNegocio
+200	api/suprimentos/pc/RecursoProcesso/BuscarProcessoCompleto	lista(1) CodigoOrdemProducao,CodigoProcesso,EmiteTalao,ProcessoItem,CodigoTipoPCP,DescricaoProcesso,ClasseHierarquica,AreaProcesso,Talao
+200	api/suprimentos/pc/RecursoProcesso/BuscarRecursoCompleto	lista(0) 
+200	api/suprimentos/pc/RecursoProducao/Buscar	lista(0) 
+404	api/suprimentos/pc/RecursoProducao/BuscarRecursosOrdemProducao	msg: No HTTP resource was found that matches the request URI 'https://phenixportais.cigam.cloud/API/api/suprimentos
+200	api/suprimentos/pc/Talao/Buscar	lista(1) CodigoOrdemProducao,NumeroTalao,Liberacao,Sequencia,Quantidade,QuantidadeFabricada,CodigoProcesso,UltimaEtapa,Situacao,SituacaoDescricao,ClasseHierarquicaIni,CodigoAreaProcesso

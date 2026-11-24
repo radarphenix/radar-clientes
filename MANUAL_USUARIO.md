@@ -258,8 +258,13 @@ Botoes principais:
 
 5. Acomp. (card de cliente)
 
-- Funcao: abre acompanhamento no portal externo.
-- Regra: usa codigo do cliente padronizado com 6 digitos.
+- Funcao: abre a tela **Acompanhamentos CIGAM** do cliente, dentro do Radar (somente consulta).
+- Mostra a linha do tempo dos acompanhamentos lancados no CIGAM: data/hora, quem registrou, contato, assunto, texto, datas prevista/realizada e anexos.
+- Filtros: **Comerciais** (padrao; esconde registros automaticos do CIGAM como remessa bancaria), **Com anexos** e **Tudo**; campo de busca no texto, usuario ou nome do anexo.
+- Anexo: clique para baixar. **Abrir no portal** abre a mesma pesquisa no portal do CIGAM.
+- A primeira consulta do dia pode levar ate 30 segundos (login no CIGAM); as seguintes sao rapidas.
+- Quem ve: quem enxerga o cliente no Radar (representante so a propria carteira).
+- Regra: usa codigo do cliente padronizado com 6 digitos (o mesmo codigo de empresa do CIGAM).
 
 6. Amostras (card de cliente)
 
@@ -458,7 +463,7 @@ Painel Cliente Atual:
 
 3. Acompanhamento
 
-- Funcao: abrir portal externo de acompanhamento.
+- Funcao: abre a tela Acompanhamentos CIGAM do cliente atual (mesma do botao Acomp. do card). O Voltar retorna para a rota.
 
 4. Cancelar
 

@@ -41,3 +41,5 @@ enabled = true
 verify_jwt = false
 import_map = './functions/cadastrar-produto-feira/deno.json'
 entrypoint = './functions/cadastrar-produto-feira/index.ts'
+[functions.cigam-acompanhamentos]
+verify_jwt = true
