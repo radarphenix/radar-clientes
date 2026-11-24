@@ -185,6 +185,23 @@ async function listar(cliente: string) {
   }).sort((x, y) => `${y.data} ${y.hora}`.localeCompare(`${x.data} ${x.hora}`));
 }
 
+/** Decodifica entidades HTML do portal (ex.: "Relat&#243;rio" → "Relatório"). */
+function desescapar(t: string) {
+  return t
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+/** Acha na página o link de download do anexo com esse nome. */
+function procurarAnexo(pagina: string, arquivo: string): string | null {
+  const re = /data-action="(\/portalrepresentante\/ge\/acompanhamento\/_DownloadAnexo\/[^"]+)"[^>]*>\s*<span title="([^"]+)"/g;
+  const alvo = arquivo.trim().normalize("NFC");
+  for (const m of pagina.matchAll(re)) if (desescapar(m[2]).trim().normalize("NFC") === alvo) return desescapar(m[1]);
+  return null;
+}
+
 /** Baixa um anexo pela tela do portal (abre a pesquisa do cliente e usa o link de download dela). */
 async function baixar(cliente: string, arquivo: string): Promise<Response> {
   for (let tentativa = 0; tentativa < 2; tentativa++) {
@@ -192,10 +209,19 @@ async function baixar(cliente: string, arquivo: string): Promise<Response> {
     const r = await fetch(`${PORTAL}/ge/acompanhamento/pesquisa/${cliente}`, { headers: { cookie: cookies(s.jar) }, redirect: "manual" });
     guardar(s.jar, r);
     if (r.status !== 200) { await r.body?.cancel(); continue; }
-    const pagina = await r.text();
-    const re = /data-action="(\/portalrepresentante\/ge\/acompanhamento\/_DownloadAnexo\/[^"]+)"[^>]*>\s*<span title="([^"]+)"/g;
-    let acao: string | null = null;
-    for (const m of pagina.matchAll(re)) if (m[2].replace(/&amp;/g, "&").trim() === arquivo) { acao = m[1].replace(/&amp;/g, "&"); break; }
+    // A pesquisa mostra só os acompanhamentos mais recentes; os antigos vêm pela rolagem infinita
+    // (_ScrollAcompanhamento?page=N, 204 = acabou). Procura página a página até achar o arquivo.
+    let acao = procurarAnexo(await r.text(), arquivo);
+    for (let pg = 1; !acao && pg <= 30; pg++) {
+      const p = await fetch(`${PORTAL}/ge/acompanhamento/_ScrollAcompanhamento/?page=${pg}&search=`, {
+        headers: { cookie: cookies(s.jar), "X-Requested-With": "XMLHttpRequest" }, redirect: "manual",
+      });
+      guardar(s.jar, p);
+      if (p.status !== 200) { await p.body?.cancel(); break; }
+      const html = await p.text();
+      if (!html.trim()) break;
+      acao = procurarAnexo(html, arquivo);
+    }
     if (!acao) return json({ error: "Anexo não encontrado no CIGAM." }, 404);
     const d = await fetch(BASE + acao, { headers: { cookie: cookies(s.jar) } });
     if (!d.ok) return json({ error: `CIGAM ${d.status} ao baixar o anexo.` }, 502);

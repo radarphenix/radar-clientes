@@ -261,6 +261,8 @@ Botoes principais:
 - Funcao: abre a tela **Acompanhamentos CIGAM** do cliente, dentro do Radar (somente consulta).
 - Mostra a linha do tempo dos acompanhamentos lancados no CIGAM: data/hora, quem registrou, contato, assunto, texto, datas prevista/realizada e anexos.
 - Filtros: **Comerciais** (padrao; esconde registros automaticos do CIGAM como remessa bancaria), **Com anexos** e **Tudo**; campo de busca no texto, usuario ou nome do anexo.
+- Filtro **Titulos**: toque nos titulos que quer ver (ex.: VISITA, RECLAMACAO); pode marcar varios. A escolha fica salva no aparelho e vale para os proximos clientes; **Mostrar todos** limpa. Titulo marcado que o cliente nao tem e ignorado.
+- Anexos de acompanhamentos antigos tambem baixam (podem levar ~10 s, porque o CIGAM busca nas paginas mais antigas).
 - Anexo: clique para baixar. **Abrir no portal** abre a mesma pesquisa no portal do CIGAM.
 - Normalmente abre em 1 a 3 segundos. O Radar mantem a conexao com o CIGAM pronta em segundo plano; so se ela tiver expirado a consulta pode levar ate 20 segundos.
 - Quem ve: quem enxerga o cliente no Radar (representante so a propria carteira).

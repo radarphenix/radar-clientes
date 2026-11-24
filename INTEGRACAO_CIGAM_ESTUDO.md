@@ -1,5 +1,9 @@
 # Estudo: integração Radar ↔ CIGAM (wiki CIGAM, 24/11/2026)
 
+> **O que dá para aproveitar (mapa por área, gravações, direitos, ordem sugerida):**
+> [docs/cigam-api/APROVEITAMENTO_API_CIGAM.md](docs/cigam-api/APROVEITAMENTO_API_CIGAM.md).
+> **Catálogo dos 491 endpoints com campos:** [docs/cigam-api/CATALOGO_API_CIGAM.md](docs/cigam-api/CATALOGO_API_CIGAM.md).
+
 Estudo de viabilidade feito a partir da wiki pública da CIGAM e de uma sondagem sem credenciais do
 ambiente `phenixportais.cigam.cloud`. Ainda **não há implementação**. Os segredos (token do WhatsApp,
 PIN, senhas) nunca entram neste arquivo nem no git.
@@ -54,7 +58,7 @@ Sem Swagger público. Para testar, a CIGAM indica a ferramenta desktop **CGWebRe
   - `Anexos` vem como `%CDN%upload\acompanhamento\<timestamp>\<arquivo>` (vários separados por `;`).
   - **Download do anexo:** a CDN direta (`/CDN/files.ashx/...`) dá 401, porque exige o token próprio dela. O que
     funciona é passar pelo portal: abrir `GET /portalrepresentante/ge/acompanhamento/pesquisa/<codEmpresa>` (carrega a
-    lista na sessão) e depois `GET /portalrepresentante/ge/acompanhamento/_DownloadAnexo/<idxAnexo>?indexAcompanhamento=<n>`,
+    lista na sessão) e depois `GET /portalrepresentante/ge/acompanhamento/_DownloadAnexo/<idxAnexo>?indexAcompanhamento=<n>` (a pesquisa só traz os mais recentes: os antigos vêm por `GET .../_ScrollAcompanhamento/?page=N&search=` com `X-Requested-With: XMLHttpRequest`, 204 = fim; o `title` do anexo vem com entidades HTML como `&#243;`, decodificar antes de comparar),
     que devolveu o ZIP de teste (22 MB) com `content-disposition`.
   - Gravar: `POST Acompanhamentos/Salvar` com `Acao:"C"`, `TipoAcompanhamento`, `CodigoEmpresa`, `Data`, `Hora` (HH:MM:SS),
     `Assunto`, `Historico`, `CodigoTitulo` (títulos em `TituloAcompanhamento/Buscar`). Ainda não testado.

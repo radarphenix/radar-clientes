@@ -5,6 +5,27 @@ import { chamarAcompanhamentosCigam as chamar } from "./lib/cigamAcompanhamentos
 // Detalhes da integração: INTEGRACAO_CIGAM_ESTUDO.md.
 
 const LIMITE_TEXTO = 420;
+const CHAVE_TITULOS = "radar.acompanhamentos.titulos";
+
+const tituloDe = (a) => a.titulo || (a.automatico ? "Registro automático" : "Sem título");
+
+function lerTitulosSalvos() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CHAVE_TITULOS) || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+function salvarTitulos(lista) {
+  try {
+    if (lista.length) localStorage.setItem(CHAVE_TITULOS, JSON.stringify(lista));
+    else localStorage.removeItem(CHAVE_TITULOS);
+  } catch {
+    /* sem armazenamento: vale só nesta tela */
+  }
+}
 
 const codigoCigam = (cliente) => String(cliente?.codigo_cliente || "").replace(/\D/g, "").padStart(6, "0");
 const urlPortal = (cliente) =>
@@ -148,6 +169,19 @@ export default function AcompanhamentosCliente({ cliente }) {
   const [filtro, setFiltro] = useState("comerciais");
   const [busca, setBusca] = useState("");
   const [tentativa, setTentativa] = useState(0);
+  // Títulos escolhidos (vazio = todos). Fica salvo no aparelho e vale para os próximos clientes.
+  const [titulosSel, setTitulosSel] = useState(lerTitulosSalvos);
+
+  function alternarTitulo(t) {
+    const novo = titulosSel.includes(t) ? titulosSel.filter((x) => x !== t) : [...titulosSel, t];
+    setTitulosSel(novo);
+    salvarTitulos(novo);
+  }
+
+  function limparTitulos() {
+    setTitulosSel([]);
+    salvarTitulos([]);
+  }
 
   useEffect(() => {
     let ativo = true;
@@ -178,11 +212,30 @@ export default function AcompanhamentosCliente({ cliente }) {
     };
   }, [lista]);
 
+  // Títulos presentes neste cliente (respeitando Comerciais/Com anexos/Tudo), com contagem.
+  const titulos = useMemo(() => {
+    const mapa = new Map();
+    for (const a of lista || []) {
+      if (filtro === "comerciais" && a.automatico) continue;
+      if (filtro === "anexos" && !a.anexos.length) continue;
+      const t = tituloDe(a);
+      mapa.set(t, (mapa.get(t) || 0) + 1);
+    }
+    return [...mapa.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "pt-BR"));
+  }, [lista, filtro]);
+
+  // Só valem os títulos escolhidos que existem neste cliente; senão a tela ficaria vazia sem motivo aparente.
+  const titulosAtivos = useMemo(
+    () => titulosSel.filter((t) => titulos.some(([nome]) => nome === t)),
+    [titulosSel, titulos],
+  );
+
   const grupos = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     const filtrados = (lista || []).filter((a) => {
       if (filtro === "comerciais" && a.automatico) return false;
       if (filtro === "anexos" && !a.anexos.length) return false;
+      if (titulosAtivos.length && !titulosAtivos.includes(tituloDe(a))) return false;
       if (!termo) return true;
       return [a.titulo, a.assunto, a.historico, a.usuario, a.contato, ...a.anexos].join(" ").toLowerCase().includes(termo);
     });
@@ -193,7 +246,7 @@ export default function AcompanhamentosCliente({ cliente }) {
       mapa.get(chave).push(a);
     }
     return [...mapa.entries()];
-  }, [lista, filtro, busca]);
+  }, [lista, filtro, busca, titulosAtivos]);
 
   return (
     <section className="painel acomp-painel">
@@ -271,6 +324,35 @@ export default function AcompanhamentosCliente({ cliente }) {
               onChange={(e) => setBusca(e.target.value)}
             />
           </div>
+
+          {titulos.length > 1 && (
+            <div className="acomp-titulos">
+              <div className="acomp-titulos-topo">
+                <span>
+                  Títulos <small>{titulosAtivos.length ? `${titulosAtivos.length} selecionado(s)` : "todos"}</small>
+                </span>
+                {titulosAtivos.length > 0 && (
+                  <button type="button" className="acomp-titulos-limpar" onClick={limparTitulos}>
+                    Mostrar todos
+                  </button>
+                )}
+              </div>
+              <div className="acomp-chips">
+                {titulos.map(([nome, qtd]) => (
+                  <button
+                    type="button"
+                    key={nome}
+                    className="chip-historico"
+                    data-active={titulosAtivos.includes(nome)}
+                    aria-pressed={titulosAtivos.includes(nome)}
+                    onClick={() => alternarTitulo(nome)}
+                  >
+                    {nome} <span>{qtd}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {grupos.length === 0 ? (
             <div className="acomp-vazio">
