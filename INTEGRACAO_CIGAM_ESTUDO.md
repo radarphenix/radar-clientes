@@ -38,6 +38,7 @@ Sem Swagger público. Para testar, a CIGAM indica a ferramenta desktop **CGWebRe
      retornaram 200 com dados reais. `Pessoa/BuscarPessoaRepresentante` voltou vazio (provavelmente exige parâmetro).
   - O login direto em `Login/Autenticar` falha porque o portal manda a senha criptografada e o nome de portal do seu
     Web.config. O caminho acima contorna isso usando o próprio portal.
+  - Desempenho: o POST de login leva ~20 s no servidor da CIGAM; por isso a função guarda a sessão na tabela `cigam_sessao` e só refaz o login quando a API/portal recusa.
   - Ainda falta saber: quanto tempo o token dura, se `RefreshOAuthToken` renova, e o efeito de "Continuar conectado".
   - **Para produção:** fazer isso numa Edge Function, com usuário e senha em secret do Supabase. O ideal é um usuário
     técnico próprio, não o pessoal.

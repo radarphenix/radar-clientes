@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase, supabaseAnonKey, supabaseUrl } from "./supabaseClient";
+import { chamarAcompanhamentosCigam as chamar } from "./lib/cigamAcompanhamentos.js";
 
 // Acompanhamentos do cliente lidos do CIGAM (somente leitura) pela função cigam-acompanhamentos.
 // Detalhes da integração: INTEGRACAO_CIGAM_ESTUDO.md.
 
-const FUNCAO = `${supabaseUrl}/functions/v1/cigam-acompanhamentos`;
 const LIMITE_TEXTO = 420;
 
 const codigoCigam = (cliente) => String(cliente?.codigo_cliente || "").replace(/\D/g, "").padStart(6, "0");
@@ -40,14 +39,6 @@ function tipoArquivo(nome) {
 }
 
 const ROTULO_ARQUIVO = { imagem: "IMG", pdf: "PDF", planilha: "XLS", texto: "DOC", compactado: "ZIP", arquivo: "ARQ" };
-
-async function chamar(params) {
-  const { data } = await supabase.auth.getSession();
-  const token = data?.session?.access_token;
-  return fetch(`${FUNCAO}?${new URLSearchParams(params)}`, {
-    headers: { Authorization: `Bearer ${token}`, apikey: supabaseAnonKey },
-  });
-}
 
 function Acompanhamento({ item, cliente }) {
   const [aberto, setAberto] = useState(false);
@@ -247,7 +238,7 @@ export default function AcompanhamentosCliente({ cliente }) {
           <span className="acomp-spinner" aria-hidden="true" />
           <div>
             <strong>Buscando no CIGAM…</strong>
-            <p>A primeira consulta do dia pode levar até 30 segundos.</p>
+            <p>Se a conexão com o CIGAM tiver expirado, pode levar até 20 segundos.</p>
           </div>
         </div>
       )}

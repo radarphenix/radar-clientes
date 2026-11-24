@@ -1,6 +1,9 @@
 // Acompanhamentos do CIGAM (somente leitura) para o botão "Acompanhamento" do cliente.
 //   GET ?cliente=000046                    -> { acompanhamentos: [...] }
 //   GET ?cliente=000046&arquivo=<nome.ext> -> o anexo (via portal, a CDN exige token próprio)
+//   GET ?aquecer=1                         -> garante uma sessão válida (o app chama ao abrir; login leva ~20 s)
+// Sessão: memória da instância -> tabela cigam_sessao (só service_role) -> login novo. Só refaz o login quando o
+// CIGAM recusa a sessão, porque o POST de login do portal demora ~20 s.
 // Quem pode: quem enxerga o cliente no Radar (RLS de `clientes`, que já recorta a carteira do representante).
 // Segredos (supabase secrets): CIGAM_USUARIO, CIGAM_SENHA - usuário técnico com acesso Web ao Portal Representante.
 // Login: o mesmo fluxo do navegador (EncryptData + formulário). O cookie CGPortal_Token é o Bearer da API.
@@ -17,11 +20,25 @@ const json = (body: unknown, status = 200) =>
 
 const BASE = "https://phenixportais.cigam.cloud";
 const PORTAL = `${BASE}/portalrepresentante`;
-const SESSAO_MS = 20 * 60 * 1000;
+const REVALIDAR_MS = 5 * 60 * 1000;
 
-// ------------------------------------------------------------------ sessão CIGAM (cache por instância)
-type Sessao = { jar: Record<string, string>; token: string; criada: number };
+// ------------------------------------------------------------------ sessão CIGAM (memória + tabela cigam_sessao)
+type Sessao = { jar: Record<string, string>; token: string; validada: number };
 let sessao: Sessao | null = null;
+const admin = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+async function lerSessaoGuardada(): Promise<Sessao | null> {
+  const { data } = await admin().from("cigam_sessao").select("jar, token, validada_em").eq("id", 1).maybeSingle();
+  return data ? { jar: data.jar, token: data.token, validada: new Date(data.validada_em).getTime() } : null;
+}
+
+async function guardarSessao(s: Sessao, nova: boolean) {
+  const agora = new Date(s.validada).toISOString();
+  const linha: Record<string, unknown> = { id: 1, jar: s.jar, token: s.token, validada_em: agora };
+  if (nova) linha.criada_em = agora;
+  const { error } = await admin().from("cigam_sessao").upsert(linha);
+  if (error) console.error("cigam_sessao:", error.message);
+}
 
 const cookies = (jar: Record<string, string>) => Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ");
 function guardar(jar: Record<string, string>, r: Response) {
@@ -68,12 +85,31 @@ async function entrar(): Promise<Sessao> {
   await r.body?.cancel();
   const token = jar.CGPortal_Token ? decodeURIComponent(jar.CGPortal_Token) : "";
   if (!token) throw new Error("CIGAM: login recusado (confira usuário/senha e acesso Web ao Portal Representante).");
-  return (sessao = { jar, token, criada: Date.now() });
+  sessao = { jar, token, validada: Date.now() };
+  await guardarSessao(sessao, true);
+  return sessao;
 }
 
-async function obterSessao(nova = false) {
-  if (!nova && sessao && Date.now() - sessao.criada < SESSAO_MS) return sessao;
-  return await entrar();
+/** nova=true: a sessão atual foi recusada -> login novo (~20 s). */
+async function obterSessao(nova = false): Promise<Sessao> {
+  if (nova) return await entrar();
+  if (!sessao) sessao = await lerSessaoGuardada();
+  return sessao ?? await entrar();
+}
+
+/** Confere a sessão com uma chamada leve (~60 ms) se faz tempo que não é usada; refaz o login se o CIGAM recusar. */
+async function aquecer() {
+  const s = await obterSessao();
+  if (Date.now() - s.validada < REVALIDAR_MS) return { ok: true, sessao: "recente" };
+  const r = await fetch(`${BASE}/API/api/genericos/ge/TituloAcompanhamento/Buscar`, { headers: { Authorization: `Bearer ${s.token}` } });
+  await r.body?.cancel();
+  if (r.ok) {
+    s.validada = Date.now();
+    await guardarSessao(s, false);
+    return { ok: true, sessao: "valida" };
+  }
+  await entrar();
+  return { ok: true, sessao: "renovada" };
 }
 
 /** Chamada à API com uma nova tentativa (login refeito) se a sessão expirou. */
@@ -85,7 +121,8 @@ async function api(caminho: string, corpo?: unknown): Promise<unknown> {
       headers: { Authorization: `Bearer ${s.token}`, Accept: "application/json", "Content-Type": "application/json" },
       body: corpo ? JSON.stringify(corpo) : undefined,
     });
-    if (r.status === 401 && tentativa === 0) { await r.body?.cancel(); continue; }
+    if ((r.status === 401 || r.status === 403) && tentativa === 0) { await r.body?.cancel(); continue; }
+    s.validada = Date.now();
     const j = await r.json().catch(() => null);
     if (!r.ok) throw new Error(`CIGAM ${r.status}: ${JSON.stringify(j).slice(0, 200)}`);
     return Array.isArray(j) ? j : (j as { data?: unknown })?.data ?? j;
@@ -185,6 +222,7 @@ Deno.serve(async (req) => {
   if (req.method !== "GET") return json({ error: "Método não permitido." }, 405);
   try {
     const url = new URL(req.url);
+    if (url.searchParams.has("aquecer")) return json(await aquecer());
     const bruto = (url.searchParams.get("cliente") || "").trim();
     const digitos = bruto.replace(/\D/g, "");
     if (!digitos || /^0+$/.test(digitos)) return json({ error: "Cliente sem código." }, 400);

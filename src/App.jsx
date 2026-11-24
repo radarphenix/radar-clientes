@@ -19,6 +19,7 @@ import RotasPesquisa from "./RotasPesquisa.jsx";
 import PromocaoVestePhenix from "./PromocaoVestePhenix.jsx";
 import HistoricoCliente from "./HistoricoCliente.jsx";
 import AcompanhamentosCliente from "./AcompanhamentosCliente.jsx";
+import { aquecerAcompanhamentosCigam } from "./lib/cigamAcompanhamentos.js";
 import ImpressaoPesquisaRotas from "./ImpressaoPesquisaRotas.jsx";
 import ComissoesRepresentante from "./ComissoesRepresentante.jsx";
 import PainelBI from "./PainelBI.jsx";
@@ -1504,6 +1505,7 @@ function App() {
     // sem nenhum menu comercial (ex.: perfil Qualidade) não carrega clientes nem pauta
     const comercial = ["meu_dia", "clientes", "proximos", "rotas", "clientes_em_pauta", "pesquisa_rotas", "dashboard"].some((c) => minhas.has(c));
     if (comercial) {
+      aquecerAcompanhamentosCigam();
       await carregarClientes(data);
       await carregarPautaPorCliente();
     } else {
