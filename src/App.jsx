@@ -7352,6 +7352,7 @@ function App() {
             key={clienteAcompanhamento.codigo_cliente}
             cliente={clienteAcompanhamento}
             podeVendas={pode("clientes.cigam_vendas")}
+            podeVisao={pode("clientes.cigam_visao")}
             podeFinanceiro={pode("clientes.cigam_financeiro")}
           />
         )}

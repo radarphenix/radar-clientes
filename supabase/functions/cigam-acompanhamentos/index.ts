@@ -241,9 +241,10 @@ async function baixar(cliente: string, arquivo: string): Promise<Response> {
 // ------------------------------------------------------------------ ficha 360° (pedidos, notas, títulos)
 // Somente leitura. Atenção: $select derruba essas rotas no CIGAM ("Ocorreu uma falha"), por isso
 // a resposta vem inteira e é reduzida aqui. Cada parte tem a sua permissão no catálogo do Radar.
-const FICHA_PERMISSAO: Record<string, string> = {
-  pedidos: "clientes.cigam_vendas",
-  notas: "clientes.cigam_vendas",
+// A Visão geral (clientes.cigam_visao) calcula a partir de pedidos e notas, então ela também libera essas consultas.
+const FICHA_PERMISSAO: Record<string, string | string[]> = {
+  pedidos: ["clientes.cigam_vendas", "clientes.cigam_visao"],
+  notas: ["clientes.cigam_vendas", "clientes.cigam_visao"],
   titulos: "clientes.cigam_financeiro",
   pagos: "clientes.cigam_financeiro",
 };
@@ -365,8 +366,9 @@ servir(async (req) => {
     if (ficha) {
       const codigo = FICHA_PERMISSAO[ficha];
       if (!codigo) return json({ error: "Parte da ficha desconhecida." }, 400);
-      const { data: pode } = await sb.rpc("radar_pode", { p_codigo: codigo });
-      if (pode !== true) return json({ error: "Sem acesso a esta parte da ficha." }, 403);
+      const codigos = Array.isArray(codigo) ? codigo : [codigo];
+      const respostas = await Promise.all(codigos.map((c) => sb.rpc("radar_pode", { p_codigo: c })));
+      if (!respostas.some((r) => r.data === true)) return json({ error: "Sem acesso a esta parte da ficha." }, 403);
       return json({ cliente, ficha, itens: await buscarFicha(ficha, cliente) });
     }
 

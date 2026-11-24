@@ -55,6 +55,7 @@ o `db push` roda de novo sem efeito (idempotente).
 
 | Código | O que libera | Padrão |
 |---|---|---|
+| `clientes.cigam_visao` | Aba Visão geral (indicadores, gráfico, pedidos em aberto, produtos); o quadro Financeiro dentro dela segue `cigam_financeiro`. O servidor libera pedidos/notas para o cálculo, mas as abas Pedidos/Notas seguem `cigam_vendas` | só admin |
 | `clientes.cigam_vendas` | Abas Pedidos e Notas na ficha do cliente; selo "dias sem comprar" na rota | só admin |
 | `clientes.cigam_financeiro` | Aba Financeiro (títulos a receber em aberto); selo "título vencido" na rota | só admin |
 

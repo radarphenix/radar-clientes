@@ -164,14 +164,14 @@ function Acompanhamento({ item, cliente }) {
   );
 }
 
-export default function AcompanhamentosCliente({ cliente, podeVendas = false, podeFinanceiro = false }) {
+export default function AcompanhamentosCliente({ cliente, podeVendas = false, podeVisao = false, podeFinanceiro = false }) {
   const abas = [
-    ...(podeVendas ? [{ id: "visao", nome: "Visão geral", curto: "Geral" }] : []),
+    ...(podeVisao ? [{ id: "visao", nome: "Visão geral", curto: "Geral" }] : []),
     { id: "acomp", nome: "Acompanhamentos", curto: "Acomp." },
     ...(podeVendas ? [{ id: "pedidos", nome: "Pedidos" }, { id: "notas", nome: "Notas" }] : []),
     ...(podeFinanceiro ? [{ id: "titulos", nome: "Financeiro", curto: "Financ." }] : []),
   ];
-  const inicial = podeVendas ? "visao" : "acomp";
+  const inicial = podeVisao ? "visao" : "acomp";
   const [aba, setAba] = useState(inicial);
   // Aba já aberta fica montada (escondida) para não consultar o CIGAM de novo ao voltar nela.
   const [visitadas, setVisitadas] = useState(["acomp", inicial]);
@@ -301,7 +301,7 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
 
       {visitadas.includes("visao") && (
         <div hidden={aba !== "visao"}>
-          <VisaoGeralCigam cliente={codigoCigam(cliente)} podeFinanceiro={podeFinanceiro} irPara={abrirAba} />
+          <VisaoGeralCigam cliente={codigoCigam(cliente)} podeFinanceiro={podeFinanceiro} podeVendas={podeVendas} irPara={abrirAba} />
         </div>
       )}
       {visitadas.includes("pedidos") && <div hidden={aba !== "pedidos"}><PedidosCigam cliente={codigoCigam(cliente)} /></div>}

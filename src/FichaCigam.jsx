@@ -358,7 +358,7 @@ function GraficoMeses({ meses }) {
   );
 }
 
-export function VisaoGeralCigam({ cliente, podeFinanceiro, irPara }) {
+export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara }) {
   const [ped, repPed] = useFicha(cliente, "pedidos");
   const [nf, repNf] = useFicha(cliente, "notas");
   const [tit] = useFicha(cliente, "titulos", podeFinanceiro);
@@ -437,7 +437,9 @@ export function VisaoGeralCigam({ cliente, podeFinanceiro, irPara }) {
         <section className="ficha-bloco">
           <div className="ficha-bloco-topo">
             <h3>Pedidos em aberto</h3>
-            <button type="button" className="ficha-link" onClick={() => irPara("pedidos")}>ver pedidos</button>
+            {podeVendas && (
+              <button type="button" className="ficha-link" onClick={() => irPara("pedidos")}>ver pedidos</button>
+            )}
           </div>
           {r.abertos ? (
             <ul className="ficha-fatos">
