@@ -7153,6 +7153,7 @@ function App() {
               usuarios={usuariosPerfis}
               verTodos={pode("rotas.todas")}
               podeCompras={pode("clientes.cigam_visao") || pode("clientes.cigam_vendas")}
+              mostrarValores={pode("dashboard.valores")}
               abrirFicha={abrirAcompanhamento}
               colocarPauta={pode("clientes_em_pauta") ? abrirModalPauta : null}
               adicionarNaRota={pode("rotas") ? adicionarClienteEmRotaEscolhida : null}

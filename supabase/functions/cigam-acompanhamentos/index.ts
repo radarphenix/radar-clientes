@@ -399,10 +399,13 @@ async function dashboardCarteira(req: Request) {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
   });
-  const [{ data: visao }, { data: vendas }] = await Promise.all([
+  const [{ data: visao }, { data: vendas }, { data: valores }] = await Promise.all([
     sb.rpc("radar_pode", { p_codigo: "clientes.cigam_visao" }),
     sb.rpc("radar_pode", { p_codigo: "clientes.cigam_vendas" }),
+    sb.rpc("radar_pode", { p_codigo: "dashboard.valores" }),
   ]);
+  // Sem "Dashboard: mostrar valores" os valores em R$ não saem do servidor: vai só o necessário para as listas.
+  const comValores = valores === true;
   if (visao !== true && vendas !== true) throw Object.assign(new Error("Sem acesso às compras do CIGAM."), { status: 403 });
 
   const visiveis = new Set<string>();
@@ -446,6 +449,17 @@ async function dashboardCarteira(req: Request) {
       proxima: freq ? iso(new Date(Date.parse(ult) + freq * 86400000)) : null,
       total12: Math.round(a.total12 * 100) / 100, total24: Math.round(a.total24 * 100) / 100, notas12: a.notas12,
     };
+    if (!comValores) {
+      const k = clientes[c] as Record<string, unknown>;
+      k.comprou12 = a.total12 > 0;
+      k.queda_pct = a.total24 > 0 && a.total12 < a.total24 * 0.7 ? Math.round(((a.total24 - a.total12) / a.total24) * 100) : null;
+      delete k.total12; delete k.total24;
+    }
+  }
+  // Sem valores: a ordem "quem compra mais" vai como posição no ranking (1 = maior), sem revelar valores.
+  if (!comValores) {
+    [...por.entries()].sort((x, y) => (y[1].total12 + y[1].total24) - (x[1].total12 + x[1].total24))
+      .forEach(([c], i) => { if (clientes[c]) (clientes[c] as Record<string, unknown>).posicao = i + 1; });
   }
   // País dos clientes do exterior (UF "EX"): Pessoa.CodigoPais + tabela Pais (cache 1 dia).
   const paises: Record<string, string> = {};
@@ -462,7 +476,7 @@ async function dashboardCarteira(req: Request) {
     }
   } catch { /* sem país: a tela mostra a cidade do cadastro */ }
   const primeira = (notas || []).reduce((m, n) => { const d = String(n.DataEmissao || "").slice(0, 10); return d && (!m || d < m) ? d : m; }, "");
-  return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, clientes, paises };
+  return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, com_valores: comValores, clientes, paises };
 }
 
 // ------------------------------------------------------------------ BI Pagamentos (contas a pagar + fluxo)

@@ -84,7 +84,7 @@ function Lista({ itens, vazio, colunaExtra, acoes }) {
   );
 }
 
-export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas }) {
+export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, mostrarValores = false, verTodos, abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas }) {
   const acoes = { abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas };
   const [noMapa, setNoMapa] = useState(null);
   const selecionarNoMapa = useCallback((c) => setNoMapa(c), []);
@@ -118,25 +118,33 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
   const semVisita90 = carteira.filter((c) => c.diasVisita === null || c.diasVisita > 90);
 
   const hoje = hojeISO();
-  const ordenarValor = (a, b) => (b.compra?.total12 || 0) - (a.compra?.total12 || 0);
-  const compramSemVisita = semVisita90.filter((c) => c.compra?.total12 > 0).sort(ordenarValor);
+  // Sem "Dashboard: mostrar valores" o servidor não manda R$: usa comprou12, queda_pct e a posição no ranking.
+  const comprou = (c) => (c.compra ? (c.compra.comprou12 ?? c.compra.total12 > 0) : false);
+  const ordenarValor = (a, b) => (mostrarValores
+    ? (b.compra?.total12 || 0) - (a.compra?.total12 || 0)
+    : (a.compra?.posicao || Infinity) - (b.compra?.posicao || Infinity));
+  const valor12 = (c) => (mostrarValores
+    ? (c.compra?.total12 ? <><strong>{moeda(c.compra.total12)}</strong><small>em 12 meses</small></> : <small>sem compras</small>)
+    : (comprou(c) ? <><strong>comprou</strong><small>nos últimos 12 meses</small></> : <small>sem compras em 12 meses</small>));
+  const compramSemVisita = semVisita90.filter(comprou).sort(ordenarValor);
   // Atrasada = cliente com ritmo confiável (3+ compras) que comprou nos últimos 90 dias e já passou da
   // próxima compra prevista. Quem está há mais de 90 dias sem comprar vai para "Parados".
   const atrasada = carteira.filter((c) => c.compra?.proxima && c.compra.proxima < hoje && c.compra.compras >= 3 && dias(c.compra.ultima) <= 90)
     .sort((a, b) => dias(b.compra.proxima) - dias(a.compra.proxima));
   const parados = carteira.filter((c) => c.compra?.ultima && dias(c.compra.ultima) > 90).sort(ordenarValor);
-  const queda = carteira.filter((c) => c.compra?.total24 > 0 && c.compra.total12 < c.compra.total24 * 0.7)
-    .sort((a, b) => (b.compra.total24 - b.compra.total12) - (a.compra.total24 - a.compra.total12));
+  const pctQueda = (c) => (mostrarValores ? pct(c.compra.total24 - c.compra.total12, c.compra.total24) : c.compra.queda_pct);
+  const queda = carteira.filter((c) => (mostrarValores ? c.compra?.total24 > 0 && c.compra.total12 < c.compra.total24 * 0.7 : c.compra?.queda_pct != null))
+    .sort((a, b) => (mostrarValores ? (b.compra.total24 - b.compra.total12) - (a.compra.total24 - a.compra.total12) : pctQueda(b) - pctQueda(a)));
 
   // Pararam de comprar = cliente frequente (4+ compras, uma a cada 60 dias ou menos) que está sem comprar
   // há mais que o dobro do seu ritmo (mínimo 45 dias). Alerta antes de virar "parado".
   const pararam = carteira.filter((c) => c.compra?.frequencia && c.compra.compras >= 4 && c.compra.frequencia <= 60
     && dias(c.compra.ultima) >= Math.max(45, c.compra.frequencia * 2))
-    .sort((a, b) => (b.compra.total12 + b.compra.total24) - (a.compra.total12 + a.compra.total24));
+    .sort(ordenarValor);
   // Visita sem pedido = visitado entre 15 e 90 dias atrás e sem nenhuma compra desde a visita.
   const visitaSemPedido = carteira.filter((c) => c.diasVisita !== null && c.diasVisita >= 15 && c.diasVisita <= 90
     && (!c.compra?.ultima || c.compra.ultima < c.ultimaVisita))
-    .sort((a, b) => (b.compra?.total12 || 0) - (a.compra?.total12 || 0) || b.diasVisita - a.diasVisita);
+    .sort((a, b) => ordenarValor(a, b) || b.diasVisita - a.diasVisita);
 
   const abas = [
     ["pararam", "Pararam de comprar", pararam],
@@ -182,7 +190,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
           </div>
           {detalhe === "nunca" ? (
             <Lista itens={carteira.filter((c) => !c.ultimaVisita).sort(ordenarValor)} acoes={acoes} vazio="Todos os clientes já foram visitados."
-              colunaExtra={(c) => (c.compra?.total12 ? <><strong>{moeda(c.compra.total12)}</strong><small>em 12 meses</small></> : <small>sem compras</small>)} />
+              colunaExtra={valor12} />
           ) : (
             <Lista itens={carteira.filter((c) => c.diasVisita !== null && c.diasVisita <= detalhe).sort((a, b) => b.ultimaVisita.localeCompare(a.ultimaVisita))}
               acoes={acoes} vazio="Nenhuma visita no período."
@@ -200,14 +208,14 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
             <h4><AlertTriangle size={18} /> Compram e não são visitados há +90 dias</h4>
             {compras ? (
               <Lista itens={compramSemVisita} acoes={acoes} vazio="Nenhum cliente comprador sem visita. 👍"
-                colunaExtra={(c) => <><strong>{moeda(c.compra.total12)}</strong><small>em 12 meses</small></>} />
+                colunaExtra={valor12} />
             ) : <p className="dcart-vazio">{erroCompras ? `Não foi possível buscar as compras: ${erroCompras}` : "Buscando compras…"}</p>}
           </section>
         )}
 
         <section className="dcart-bloco">
           <h4><MapPinned size={18} /> Sem visita há +90 dias{podeCompras && compras ? " · demais clientes" : ""}</h4>
-          <Lista itens={semVisita90.filter((c) => !(podeCompras && compras && c.compra?.total12 > 0)).sort(podeCompras ? ordenarValor : (a, b) => (b.diasVisita ?? 9999) - (a.diasVisita ?? 9999))}
+          <Lista itens={semVisita90.filter((c) => !(podeCompras && compras && comprou(c))).sort(podeCompras ? ordenarValor : (a, b) => (b.diasVisita ?? 9999) - (a.diasVisita ?? 9999))}
             acoes={acoes} vazio="Toda a carteira foi visitada nos últimos 90 dias. 👍"
             colunaExtra={(c) => <><strong>{c.ultimaVisita ? dataBR(c.ultimaVisita) : "nunca"}</strong><small>última visita</small></>} />
         </section>
@@ -235,10 +243,10 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
               {aba === "atrasada" && <Lista itens={atrasada} acoes={acoes} vazio="Nenhum cliente com compra atrasada."
                 colunaExtra={(c) => <><strong className="dcart-ruim">{dias(c.compra.proxima)} d de atraso</strong><small>compra a cada {c.compra.frequencia} d</small></>} />}
               {aba === "parados" && <Lista itens={parados} acoes={acoes} vazio="Nenhum cliente parado há mais de 90 dias."
-                colunaExtra={(c) => <><strong>{moeda(c.compra.total12)}</strong><small>últ. compra {dataBR(c.compra.ultima)}</small></>} />}
+                colunaExtra={(c) => <><strong>{mostrarValores ? moeda(c.compra.total12) : `${dias(c.compra.ultima)} d`}</strong><small>últ. compra {dataBR(c.compra.ultima)}</small></>} />}
               {aba === "queda" && <Lista itens={queda} acoes={acoes}
                 vazio={compras.historico_desde && dias(compras.historico_desde) < 395 ? "Ainda não há 2 anos de notas para comparar." : "Nenhum cliente com queda relevante."}
-                colunaExtra={(c) => <><strong className="dcart-ruim"><TrendingDown size={14} /> {pct(c.compra.total24 - c.compra.total12, c.compra.total24)}%</strong><small>{moeda(c.compra.total12)} vs {moeda(c.compra.total24)}</small></>} />}
+                colunaExtra={(c) => <><strong className="dcart-ruim"><TrendingDown size={14} /> {pctQueda(c)}%</strong><small>{mostrarValores ? `${moeda(c.compra.total12)} vs ${moeda(c.compra.total24)}` : "12 meses vs 12 anteriores"}</small></>} />}
             </>
           )}
         </section>
@@ -257,7 +265,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
             </label>
           )}
         </div>
-        <MapaCarteira key={ufAtiva || "todas"} clientes={carteiraMapa} onSelecionar={selecionarNoMapa} />
+        <MapaCarteira key={ufAtiva || "todas"} clientes={carteiraMapa} onSelecionar={selecionarNoMapa} semFinanceiro={!mostrarValores} />
         {noMapa && (
           <ul className="dcart-lista dcart-mapa-sel">
             <li>
@@ -265,7 +273,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
                 <strong title={noMapa.cliente}>{noMapa.cliente}</strong>
                 <small>{local(noMapa)} · visita: {noMapa.ultimaVisita ? `${dataBR(noMapa.ultimaVisita)} (${ORIGEM[noMapa.origemVisita]}${noMapa.quemVisitou ? ` · ${noMapa.quemVisitou}` : ""})` : "nunca"}</small>
               </div>
-              <div className="dcart-extra">{noMapa.compra?.total12 ? <><strong>{moeda(noMapa.compra.total12)}</strong><small>em 12 meses</small></> : null}</div>
+              <div className="dcart-extra">{noMapa.compra ? valor12(noMapa) : null}</div>
               <Acoes c={noMapa} acoes={acoes} />
             </li>
           </ul>

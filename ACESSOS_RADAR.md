@@ -71,3 +71,16 @@ Migration: `20261124240000_bi_recebimentos_pagamentos.sql`.
 
 Conferidas no servidor pela função `cigam-acompanhamentos` (`radar_pode`), além da trava de cliente visível.
 Migration: `20261124220000_permissoes_ficha_cigam.sql`. Liberar para perfis ou pessoas em Administração → Acessos.
+
+## Dashboard: mostrar valores (25/11/2026)
+
+| Código | O que libera | Padrão |
+|---|---|---|
+| `dashboard.valores` | Valores em R$ no Dashboard (compras em 12 meses, queda vs ano anterior com valores, mapa por valor de compra) | só admin |
+
+Quem não tem continua vendo as listas (pararam de comprar, visita sem pedido, compra atrasada, parados, queda em %),
+sem os valores. **Conferido no servidor:** sem a permissão, `cigam-acompanhamentos?dashboard=carteira` não envia
+`total12`/`total24`; manda só `comprou12`, `queda_pct` e `posicao` (posição no ranking, para ordenar sem revelar valor).
+Testado em 25/11/2026 com o usuário demo trocado temporariamente para representante 000060: 46 clientes (só a
+carteira), 0 R$ sem a permissão e valores com a exceção liberada; perfil restaurado ao final.
+Migration: `20261125120000_permissao_dashboard_valores.sql`.
