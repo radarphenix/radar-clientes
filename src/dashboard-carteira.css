@@ -4,6 +4,8 @@
 .dcart-topo h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
 .dcart-filtro { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; }
 .dcart-filtro select { min-width: 200px; }
+.dcart-bloco-topo .dcart-filtro select { min-width: 140px; height: 36px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; font: inherit; color: #0f172a; }
+.dcart-bloco-topo:has(.dcart-filtro) { align-items: center; margin-bottom: 8px; }
 .dcart-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .dcart-kpi { display: grid; gap: 4px; padding: 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: #fff; }
 .dcart-kpi span { font-size: 0.8rem; color: #64748b; }

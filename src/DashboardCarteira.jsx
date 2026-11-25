@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, CalendarClock, Map as MapaIcone, MapPinned, TrendingDown, Users } from "lucide-react";
 import MapaCarteira from "./MapaCarteira.jsx";
 import AtividadeEquipe from "./AtividadeEquipe.jsx";
@@ -17,6 +17,16 @@ const dataBR = (v) => (v ? String(v).slice(0, 10).split("-").reverse().join("/")
 const moeda = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const LIMITE = 8;
+// Filtros do Dashboard ficam salvos no navegador (representante, aba e UF do mapa) e voltam ao reabrir a tela.
+const CHAVE_FILTROS = "radar.dashboard.filtros";
+const lerFiltros = () => { try { return JSON.parse(localStorage.getItem(CHAVE_FILTROS) || "{}") || {}; } catch { return {}; } };
+function useFiltroSalvo(nome, padrao) {
+  const [valor, setValor] = useState(() => lerFiltros()[nome] ?? padrao);
+  useEffect(() => {
+    try { localStorage.setItem(CHAVE_FILTROS, JSON.stringify({ ...lerFiltros(), [nome]: valor })); } catch { /* navegador sem armazenamento */ }
+  }, [nome, valor]);
+  return [valor, setValor];
+}
 // Cliente do exterior (UF "EX") mostra o país do cadastro do CIGAM no lugar de "EXTERIOR/EX".
 const local = (c) => (c.pais ? c.pais : `${c.cidade || "-"}${c.uf ? `/${c.uf}` : ""}`);
 // Origem da visita, como o usuário pediu: "Rota" (marcada como visitado) ou "Acompanhamento" (VISITA/VISITA TECNICA).
@@ -79,8 +89,9 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
   const [noMapa, setNoMapa] = useState(null);
   const selecionarNoMapa = useCallback((c) => setNoMapa(c), []);
   const [detalhe, setDetalhe] = useState(null); // card aberto
-  const [representante, setRepresentante] = useState("");
-  const [aba, setAba] = useState("atrasada");
+  const [representanteSalvo, setRepresentante] = useFiltroSalvo("representante", "");
+  const [aba, setAba] = useFiltroSalvo("aba", "pararam");
+  const [ufMapa, setUfMapa] = useFiltroSalvo("ufMapa", "");
   const { lista, compras, erroCompras } = useCarteira(clientes, usuarios, podeCompras);
 
   const nomesRep = useMemo(() => {
@@ -93,7 +104,12 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
     return [...s].map((c) => [c, nomesRep.get(c) || `Representante ${c}`]).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
   }, [clientes, nomesRep]);
 
+  // Representante salvo que não existe mais na carteira (ou usuário sem "ver todos") volta para toda a carteira.
+  const representante = verTodos && representantes.some(([c]) => c === representanteSalvo) ? representanteSalvo : "";
   const carteira = useMemo(() => lista.filter((c) => !representante || cod6(c.codigo_representante) === representante), [lista, representante]);
+  const ufs = useMemo(() => [...new Set(carteira.map((c) => String(c.uf || "").toUpperCase()).filter(Boolean))].sort(), [carteira]);
+  const ufAtiva = ufs.includes(ufMapa) ? ufMapa : "";
+  const carteiraMapa = useMemo(() => (ufAtiva ? carteira.filter((c) => String(c.uf || "").toUpperCase() === ufAtiva) : carteira), [carteira, ufAtiva]);
 
   const total = carteira.length;
   const visitadosEm = (d) => carteira.filter((c) => c.diasVisita !== null && c.diasVisita <= d).length;
@@ -112,7 +128,19 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
   const queda = carteira.filter((c) => c.compra?.total24 > 0 && c.compra.total12 < c.compra.total24 * 0.7)
     .sort((a, b) => (b.compra.total24 - b.compra.total12) - (a.compra.total24 - a.compra.total12));
 
+  // Pararam de comprar = cliente frequente (4+ compras, uma a cada 60 dias ou menos) que está sem comprar
+  // há mais que o dobro do seu ritmo (mínimo 45 dias). Alerta antes de virar "parado".
+  const pararam = carteira.filter((c) => c.compra?.frequencia && c.compra.compras >= 4 && c.compra.frequencia <= 60
+    && dias(c.compra.ultima) >= Math.max(45, c.compra.frequencia * 2))
+    .sort((a, b) => (b.compra.total12 + b.compra.total24) - (a.compra.total12 + a.compra.total24));
+  // Visita sem pedido = visitado entre 15 e 90 dias atrás e sem nenhuma compra desde a visita.
+  const visitaSemPedido = carteira.filter((c) => c.diasVisita !== null && c.diasVisita >= 15 && c.diasVisita <= 90
+    && (!c.compra?.ultima || c.compra.ultima < c.ultimaVisita))
+    .sort((a, b) => (b.compra?.total12 || 0) - (a.compra?.total12 || 0) || b.diasVisita - a.diasVisita);
+
   const abas = [
+    ["pararam", "Pararam de comprar", pararam],
+    ["visitaSemPedido", "Visita sem pedido", visitaSemPedido],
     ["atrasada", "Compra atrasada", atrasada],
     ["parados", "Parados +90 dias", parados],
     ["queda", "Queda vs ano anterior", queda],
@@ -200,6 +228,10 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
           </div>
           {!compras ? <p className="dcart-vazio">{erroCompras ? `Não foi possível buscar as compras: ${erroCompras}` : "Buscando compras…"}</p> : (
             <>
+              {aba === "pararam" && <Lista itens={pararam} acoes={acoes} vazio="Nenhum cliente frequente parou de comprar. 👍"
+                colunaExtra={(c) => <><strong className="dcart-ruim">{dias(c.compra.ultima)} d sem comprar</strong><small>comprava a cada {c.compra.frequencia} d</small></>} />}
+              {aba === "visitaSemPedido" && <Lista itens={visitaSemPedido} acoes={acoes} vazio="Toda visita dos últimos 90 dias teve pedido depois. 👍"
+                colunaExtra={(c) => <><strong>visita {dataBR(c.ultimaVisita)}</strong><small>{c.compra?.ultima ? `últ. compra ${dataBR(c.compra.ultima)}` : "sem compras"}</small></>} />}
               {aba === "atrasada" && <Lista itens={atrasada} acoes={acoes} vazio="Nenhum cliente com compra atrasada."
                 colunaExtra={(c) => <><strong className="dcart-ruim">{dias(c.compra.proxima)} d de atraso</strong><small>compra a cada {c.compra.frequencia} d</small></>} />}
               {aba === "parados" && <Lista itens={parados} acoes={acoes} vazio="Nenhum cliente parado há mais de 90 dias."
@@ -213,8 +245,19 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
       )}
 
       <section className="dcart-bloco">
-        <h4><MapaIcone size={18} /> Mapa da carteira · última visita</h4>
-        <MapaCarteira clientes={carteira} onSelecionar={selecionarNoMapa} />
+        <div className="dcart-bloco-topo">
+          <h4><MapaIcone size={18} /> Mapa da carteira · última visita</h4>
+          {ufs.length > 1 && (
+            <label className="dcart-filtro">
+              Região (UF)
+              <select value={ufAtiva} onChange={(e) => { setUfMapa(e.target.value); setNoMapa(null); }}>
+                <option value="">Todas</option>
+                {ufs.map((u) => <option key={u} value={u}>{u === "EX" ? "Exterior" : u}</option>)}
+              </select>
+            </label>
+          )}
+        </div>
+        <MapaCarteira key={ufAtiva || "todas"} clientes={carteiraMapa} onSelecionar={selecionarNoMapa} />
         {noMapa && (
           <ul className="dcart-lista dcart-mapa-sel">
             <li>
