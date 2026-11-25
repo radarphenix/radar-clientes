@@ -101,15 +101,18 @@ export default function PainelBIPagamentos() {
     return a;
   }, { total: 0, emDia: 0, atrasados: 0, somaAtraso: 0 });
 
-  // Fluxo de caixa projetado: semanas a partir de hoje. Vencidos (antes de hoje) aparecem à parte.
+  // Fluxo de caixa projetado em semanas fechadas (segunda a domingo), começando pela semana atual.
+  // Vencidos (antes de hoje) aparecem à parte, então a semana atual só soma de hoje em diante.
   const fluxo = (() => {
+    const segunda = somarDias(ref, -((new Date(`${ref}T12:00:00`).getDay() + 6) % 7));
     const semanas = Array.from({ length: SEMANAS_FLUXO }, (_, i) => {
-      const de = somarDias(ref, i * 7);
-      const ate = somarDias(ref, i * 7 + 6);
+      const de = somarDias(segunda, i * 7);
+      const ate = somarDias(segunda, i * 7 + 6);
+      const desde = de < ref ? ref : de;
       return {
-        de, ate,
-        entradas: soma(receberAbertos.filter((x) => entre(x.vencimento, de, ate)), (x) => x.saldo),
-        saidas: soma(abertos.filter((x) => entre(x.vencimento, de, ate)), (x) => x.saldo),
+        de, ate, desde,
+        entradas: soma(receberAbertos.filter((x) => entre(x.vencimento, desde, ate)), (x) => x.saldo),
+        saidas: soma(abertos.filter((x) => entre(x.vencimento, desde, ate)), (x) => x.saldo),
       };
     });
     let acumulado = 0;
@@ -199,9 +202,9 @@ export default function PainelBIPagamentos() {
           <tbody>{fluxo.map((s) => <tr key={s.de}>
             <td>{semanaBR(s)}</td>
             <td><button type="button" className="bi-link" onClick={() => setDetalhe({ titulo: `A receber · ${semanaBR(s)}`, subtitulo: "Títulos a receber em aberto",
-              colunas: COLUNAS.map((c) => (c.chave === "fornecedor" ? { ...c, rotulo: "Cliente" } : c)), linhas: linhas(receberAbertos.filter((x) => entre(x.vencimento, s.de, s.ate))).map((l) => ({ ...l, saldo: l.valor })),
+              colunas: COLUNAS.map((c) => (c.chave === "fornecedor" ? { ...c, rotulo: "Cliente" } : c)), linhas: linhas(receberAbertos.filter((x) => entre(x.vencimento, s.desde, s.ate))).map((l) => ({ ...l, saldo: l.valor })),
               total: s.entradas, arquivo: `bi_fluxo_receber_${s.de}` })}>{moeda(s.entradas)}</button></td>
-            <td><button type="button" className="bi-link" onClick={() => abrir(`A pagar · ${semanaBR(s)}`, abertos.filter((x) => entre(x.vencimento, s.de, s.ate)), "saldo", "Contas a pagar em aberto")}>{moeda(s.saidas)}</button></td>
+            <td><button type="button" className="bi-link" onClick={() => abrir(`A pagar · ${semanaBR(s)}`, abertos.filter((x) => entre(x.vencimento, s.desde, s.ate)), "saldo", "Contas a pagar em aberto")}>{moeda(s.saidas)}</button></td>
             <td className="bi-fluxo-barras" aria-hidden="true">
               <span className="bi-fluxo-entrada" style={{ width: `${(s.entradas / maxFluxo) * 100}%` }} />
               <span className="bi-fluxo-saida" style={{ width: `${(s.saidas / maxFluxo) * 100}%` }} />

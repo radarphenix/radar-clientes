@@ -218,8 +218,14 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
   const pedidosF = useMemo(() => pedidos.filter((x) => casaCliente(x.codigo_cliente) && casaRepresentante(x.codigo_representante)), [pedidos, casaCliente, casaRepresentante]);
   const notasF = useMemo(() => notas.filter((x) => casaCliente(x.codigo_cliente) && casaRepresentante(x.codigo_representante)), [notas, casaCliente, casaRepresentante]);
   const devolucoesF = useMemo(() => devolucoes.filter((x) => casaCliente(x.codigo_cliente) && casaRepresentante(x.codigo_representante)), [devolucoes, casaCliente, casaRepresentante]);
-  const financeiroF = useMemo(() => financeiro.filter((x) => casaCliente(x.cd_empresa)
-    && casaRepresentante(representantePorNota.get(chaveNotaFinanceiro(x)))), [financeiro, casaCliente, casaRepresentante, representantePorNota]);
+  // "Não exibir vencidos do exterior": título vencido e em aberto de cliente com UF "EX" sai de toda a tela
+  // (cards, previsão, gráficos, carteira vencida, devedores, exportação e alertas).
+  const financeiroF = useMemo(() => {
+    const ref = fim < hoje() ? fim : hoje();
+    return financeiro.filter((x) => casaCliente(x.cd_empresa)
+      && casaRepresentante(representantePorNota.get(chaveNotaFinanceiro(x)))
+      && !(recebimentos && ocultarExterior && n(x.valor_saldo) > 0 && x.data_vencimento < ref && clientesExterior.has(codigoNormal(x.cd_empresa))));
+  }, [financeiro, casaCliente, casaRepresentante, representantePorNota, ocultarExterior, clientesExterior, fim, recebimentos]);
 
   // "Não previsto" compara com todos os pedidos, não só com os filtrados: um filtro
   // de representante não pode transformar nota de pedido de outro representante em não prevista.
@@ -294,8 +300,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
   const emAberto = financeiroF.filter((x) => n(x.valor_saldo) > 0);
   const inicioVencidos = inicioRecorte(referencia, recorteVencidos);
   const rotuloRecorte = RECORTES_VENCIDOS.find(([t]) => t === recorteVencidos)[1].toLowerCase();
-  const doExterior = (x) => clientesExterior.has(codigoNormal(x.cd_empresa));
-  const vencidos = emAberto.filter((x) => x.data_vencimento < referencia && (!inicioVencidos || x.data_vencimento >= inicioVencidos) && (!ocultarExterior || !doExterior(x)));
+  const vencidos = emAberto.filter((x) => x.data_vencimento < referencia && (!inicioVencidos || x.data_vencimento >= inicioVencidos));
   const faixas = FAIXAS_ATRASO.map((faixa, i) => {
     const de = i === 0 ? 1 : FAIXAS_ATRASO[i - 1].ate + 1;
     return {
@@ -328,7 +333,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
     return { chave: i, de, ate, rotulo: `${dataBR(de).slice(0, 5)} a ${dataBR(ate).slice(0, 5)}`,
       valor: soma(emAberto.filter((x) => x.data_vencimento >= de && x.data_vencimento <= ate), (x) => n(x.valor_saldo)) };
   });
-  const semBaixa = emAberto.filter((x) => x.data_vencimento && diasEntre(x.data_vencimento, referencia) > 90 && (!ocultarExterior || !doExterior(x)));
+  const semBaixa = emAberto.filter((x) => x.data_vencimento && diasEntre(x.data_vencimento, referencia) > 90);
   const pontuar = (lista) => lista.reduce((a, x) => {
     if (!x.data_vencimento || !x.data_ultima_liquidacao) return a;
     const atraso = diasEntre(x.data_vencimento, x.data_ultima_liquidacao);
@@ -546,6 +551,9 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
             {representantes.map(([c, nome]) => <option key={c} value={c}>{nome}</option>)}
           </select>
         </label>
+        {recebimentos && <label className="bi-check">
+          <input type="checkbox" checked={ocultarExterior} onChange={(e) => setOcultarExterior(e.target.checked)} /> Não exibir vencidos do exterior
+        </label>}
         {!recebimentos && <label>Situação na lista
           <select value={situacao} onChange={(e) => setSituacao(e.target.value)}>
             <option value="todas">Todas</option>
@@ -652,9 +660,6 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
             <button key={t} type="button" className={recorteVencidos === t ? "ativo" : ""} onClick={() => setRecorteVencidos(t)}>{r}</button>
           ))}
         </div>
-        <label className="bi-opcao-check">
-          <input type="checkbox" checked={ocultarExterior} onChange={(e) => setOcultarExterior(e.target.checked)} /> Não exibir vencidos do exterior
-        </label>
         <button type="button" className="bi-link bi-recorte-total" onClick={() => abrir(`Carteira vencida · ${rotuloRecorte}`, COL_TITULOS, linhasTitulos(vencidos), "saldo", `Posição em ${dataBR(referencia)}`)}>
           {moeda(soma(vencidos, (x) => n(x.valor_saldo)))} em {vencidos.length} título(s)
         </button>

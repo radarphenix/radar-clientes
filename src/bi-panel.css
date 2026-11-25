@@ -40,8 +40,6 @@
 .bi-link { padding:0; border:0; background:none; color:#0057d8; font:inherit; font-weight:800; text-decoration:underline; cursor:pointer; }
 .bi-link:hover { background:none; color:#003f9e; }
 .bi-recorte-total { font-size:13px; }
-.bi-opcao-check { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#334155; cursor:pointer; white-space:nowrap; }
-.bi-opcao-check input { width:16px; height:16px; margin:0; accent-color:#0b57d0; }
 /* Janela de detalhe */
 .bi-detalhe-fundo { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:24px; background:rgba(3,22,50,.45); }
 .bi-detalhe-janela { display:grid; grid-template-rows:auto minmax(0,1fr); width:min(1100px,100%); max-height:min(80vh,820px); padding:20px; border-radius:16px; background:#fff; box-shadow:0 20px 60px rgba(3,22,50,.35); text-align:left; }
@@ -239,4 +237,5 @@ td.bi-fluxo-barras { display: grid; gap: 3px; padding-top: 8px; padding-bottom: 
 .bi-fluxo-saida { background: #dc2626; }
 @media (max-width: 700px) { .bi-fluxo-barras { display: none !important; } }
 .bi-check input[type="checkbox"] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: 0 0 auto; }
-.bi-check { align-self: end; padding-bottom: 8px; }
+.bi-filtros-fat label.bi-check { display:flex; align-items:center; align-self:flex-end; gap:8px; height:38px; padding:0; color:#334155; font-size:13px; font-weight:700; text-transform:none; letter-spacing:0; white-space:nowrap; cursor:pointer; }
+.bi-filtros-fat label.bi-check input[type="checkbox"] { width:18px; height:18px; accent-color:#0b57d0; }
