@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Activity, AlertTriangle, CalendarClock, Map as MapaIcone, MapPinned, TrendingDown, Users } from "lucide-react";
 import MapaCarteira from "./MapaCarteira.jsx";
 import AtividadeEquipe from "./AtividadeEquipe.jsx";
-import { supabase } from "./supabaseClient";
-import { chamarAcompanhamentosCigam } from "./lib/cigamAcompanhamentos.js";
+import { cod6, useCarteira } from "./lib/useCarteira.js";
 import "./dashboard-carteira.css";
 
 // Dashboard · Carteira (24/11/2026): cobertura de visitas e oportunidades do CIGAM.
@@ -16,7 +15,6 @@ const hojeISO = () => new Date().toISOString().slice(0, 10);
 const dias = (de, ate = hojeISO()) => Math.round((Date.parse(`${ate}T12:00:00`) - Date.parse(`${String(de).slice(0, 10)}T12:00:00`)) / 86400000);
 const dataBR = (v) => (v ? String(v).slice(0, 10).split("-").reverse().join("/") : "—");
 const moeda = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const cod6 = (c) => { const d = String(c || "").replace(/\D/g, ""); return d && !/^0+$/.test(d) ? d.padStart(6, "0") : ""; };
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const LIMITE = 8;
 // Cliente do exterior (UF "EX") mostra o país do cadastro do CIGAM no lugar de "EXTERIOR/EX".
@@ -76,50 +74,14 @@ function Lista({ itens, vazio, colunaExtra, acoes }) {
   );
 }
 
-export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas, criarRota, usuarioAtual, podeEscolherResponsavel }) {
+export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas }) {
   const acoes = { abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas };
   const [noMapa, setNoMapa] = useState(null);
   const selecionarNoMapa = useCallback((c) => setNoMapa(c), []);
-  const [visitas, setVisitas] = useState(null); // Radar: cliente_id -> { em, quem }
-  const [visitasCigam, setVisitasCigam] = useState(new Map()); // codigo6 -> { em, quem, titulo }
   const [detalhe, setDetalhe] = useState(null); // card aberto
-  const [compras, setCompras] = useState(null);
-  const [erroCompras, setErroCompras] = useState("");
   const [representante, setRepresentante] = useState("");
   const [aba, setAba] = useState("atrasada");
-
-  useEffect(() => {
-    let vivo = true;
-    Promise.all([
-      supabase.from("rota_clientes").select("cliente_id, rota_id, visitado_em").eq("status", "VISITADO").not("visitado_em", "is", null),
-      supabase.from("rotas").select("id, usuario_responsavel, user_id"),
-      supabase.from("cigam_visitas_clientes").select("codigo_cliente, ultima_visita, usuario, titulo").not("ultima_visita", "is", null),
-    ]).then(([rc, ro, vc]) => {
-      if (!vivo) return;
-      const resp = new Map((ro.data || []).map((r) => [r.id, r.usuario_responsavel || r.user_id]));
-      const m = new Map();
-      for (const v of rc.data || []) {
-        const atual = m.get(v.cliente_id);
-        if (!atual || v.visitado_em > atual.em) m.set(v.cliente_id, { em: v.visitado_em, quem: resp.get(v.rota_id) || null });
-      }
-      setVisitas(m);
-      setVisitasCigam(new Map((vc.data || []).map((x) => [x.codigo_cliente, { em: x.ultima_visita, quem: x.usuario, titulo: x.titulo }])));
-    });
-    return () => { vivo = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!podeCompras) return undefined;
-    let vivo = true;
-    chamarAcompanhamentosCigam({ dashboard: "carteira" })
-      .then(async (r) => {
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error || `Erro ${r.status}`);
-        if (vivo) setCompras(j);
-      })
-      .catch((e) => vivo && setErroCompras(e.message || "Falha na consulta."));
-    return () => { vivo = false; };
-  }, [podeCompras]);
+  const { lista, compras, erroCompras } = useCarteira(clientes, usuarios, podeCompras);
 
   const nomesRep = useMemo(() => {
     const m = new Map();
@@ -131,26 +93,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
     return [...s].map((c) => [c, nomesRep.get(c) || `Representante ${c}`]).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
   }, [clientes, nomesRep]);
 
-  const nomeUsuario = useMemo(() => new Map(usuarios.map((u) => [u.user_id, u.nome])), [usuarios]);
-  // Visita mais recente entre o Radar (rota marcada como visitada) e o CIGAM (acompanhamento VISITA / VISITA TECNICA).
-  const carteira = useMemo(() => (clientes || [])
-    .filter((c) => !representante || cod6(c.codigo_representante) === representante)
-    .map((c) => {
-      const codigo = cod6(c.codigo_cliente);
-      const r = visitas?.get(c.id);
-      const g = visitasCigam.get(codigo);
-      const dataR = r ? String(r.em).slice(0, 10) : "";
-      const dataG = g ? String(g.em).slice(0, 10) : "";
-      const usaCigam = dataG && dataG > dataR;
-      const ultimaVisita = usaCigam ? dataG : dataR || null;
-      return {
-        ...c, ultimaVisita, diasVisita: ultimaVisita ? dias(ultimaVisita) : null,
-        origemVisita: usaCigam ? "cigam" : dataR ? "radar" : null,
-        quemVisitou: usaCigam ? g.quem : r ? nomeUsuario.get(r.quem) || null : null,
-        pais: compras?.paises?.[codigo] || null,
-        compra: compras?.clientes?.[codigo] || null,
-      };
-    }), [clientes, representante, visitas, visitasCigam, compras, nomeUsuario]);
+  const carteira = useMemo(() => lista.filter((c) => !representante || cod6(c.codigo_representante) === representante), [lista, representante]);
 
   const total = carteira.length;
   const visitadosEm = (d) => carteira.filter((c) => c.diasVisita !== null && c.diasVisita <= d).length;
@@ -271,8 +214,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
 
       <section className="dcart-bloco">
         <h4><MapaIcone size={18} /> Mapa da carteira · última visita</h4>
-        <MapaCarteira clientes={carteira} onSelecionar={selecionarNoMapa} criarRota={criarRota} usuarios={usuarios}
-          usuarioAtual={usuarioAtual} podeEscolherResponsavel={podeEscolherResponsavel} />
+        <MapaCarteira clientes={carteira} onSelecionar={selecionarNoMapa} />
         {noMapa && (
           <ul className="dcart-lista dcart-mapa-sel">
             <li>

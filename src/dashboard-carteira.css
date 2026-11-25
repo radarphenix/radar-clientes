@@ -140,3 +140,10 @@ button.dcart-kpi strong { color: #0f172a; }
 }
 .dmapa-criar:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 900px) { .dmapa-layout.montando { grid-template-columns: 1fr; } }
+.dmapa-planejamento { margin: 12px 0; text-align: left; }
+.dmapa-data { margin-top: 4px; padding: 3px 6px; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 6px; max-width: 150px; }
+.dmapa-data-todos { display: grid; gap: 4px; font-size: 0.78rem; font-weight: 600; color: #475569; }
+.dmapa-data-todos span { display: flex; gap: 6px; align-items: center; }
+.dmapa-data-todos input { padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; }
+.dmapa-data-todos button, .dmapa-data-todos button:disabled { background: #eff6ff !important; color: #0b4fd6 !important; border: 1px solid #bfdbfe !important; }
+.dmapa-data-todos button:disabled { opacity: 0.5; }

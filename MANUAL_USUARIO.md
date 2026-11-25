@@ -323,6 +323,10 @@ Regras:
 - A consulta comum exibe cadastros manuais e acompanhamentos com status `CONCLUIDO`.
 - Acompanhamentos `EM_ANALISE` e `IGNORADO` nao aparecem na lista nem no total encontrado.
 
+## 7.1 Adicionar clientes pelo mapa (Rotas → Planejar)
+
+No planejamento da rota (lista de Rotas → botao **Planejar** da rota), o botao **Adicionar pelo mapa** abre o mapa da carteira (mesmas cores do Dashboard: ultima visita ou valor de compra). Clique nos pontos para selecionar (ou dê zoom e use "Selecionar o que esta na tela", ate 60; cores escondidas na legenda nao entram; clientes que ja estao na rota nao aparecem). O painel mostra os escolhidos na ordem sugerida de menor trajeto, cada um com o seu campo de **data da visita** (opcional; "Mesma data para todos" + **Aplicar** preenche todos e depois ajusta-se so os diferentes; sem data, entra sem data prevista); **Adicionar a rota** inclui todos no fim da rota, como pendentes (quem estava em pauta passa para "em rota"). Depois, **Ordenar por distancia** reorganiza a rota inteira.
+
 ## 8. Tela Dashboard
 
 Tela: indicadores de negocio e produtividade.
@@ -335,7 +339,7 @@ Tela: indicadores de negocio e produtividade.
 - Cada cliente tem os botoes **Ficha** (abre a ficha; o Voltar retorna ao Dashboard), **Rota** (escolhe uma rota aberta e inclui o cliente no fim da fila, como pendente) e **Pauta** (abre o cadastro de Clientes em Pauta com o cliente preenchido).
 - **Mapa da carteira**: pontos coloridos pela ultima visita (verde ate 30 dias, amarelo ate 90, vermelho acima de 90 ou nunca). Clique na legenda para esconder/mostrar uma cor; clique num ponto para ver o cliente com os botoes Ficha, Rota e Pauta. O mapa abre enquadrado no Brasil; marque "enquadrar exterior" para incluir os clientes de fora.
   - **Cor por**: "Ultima visita" ou "Valor de compra" (roxo; ponto maior = comprou mais em 12 meses; cinza = sem compra).
-  - **Montar rota pelo mapa**: clique nos pontos para incluir ou tirar (ou "Selecionar o que esta na tela", ate 60; cores escondidas na legenda nao entram). O painel ao lado mostra a ordem sugerida de menor trajeto e os km aproximados; informe nome, data (e responsavel, se admin) e clique **Criar rota**. A rota nasce aberta, com os clientes pendentes nessa ordem (ajuste fino em Rotas → Reordenar); quem estava em pauta passa para "em rota".
+  - No Dashboard o mapa e so para consulta. Para montar rota pelo mapa, use **Rotas → Planejar → Adicionar pelo mapa** (abaixo).
 - **Atividade da equipe**: visitas por semana (12 semanas, pelas rotas marcadas como visitado), conclusao das rotas finalizadas (visitados / incluidos), cancelamentos, tabela por pessoa (visitas em 30 e 90 dias, cancelamentos, conclusao) e motivos de cancelamento.
 
 - Indicadores organizados em cards horizontais compactos, com icone, rotulo e valor.

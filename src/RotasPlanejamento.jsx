@@ -1,5 +1,7 @@
+import { useState } from "react";
 import {
   ArrowUpDown,
+  Map as MapIcon,
   MapPin,
   Lock,
   Flag,
@@ -8,6 +10,7 @@ import {
 } from "lucide-react";
 import SugestoesPautaRota from "./SugestoesPautaRota.jsx";
 import PainelTodaPauta from "./PainelTodaPauta.jsx";
+import MapaPlanejamentoRota from "./MapaPlanejamentoRota.jsx";
 
 function RotasPlanejamento({
   rotaSelecionada,
@@ -38,7 +41,10 @@ function RotasPlanejamento({
   reenviarAvisoWhatsAppCliente,
   permiteAvisoWhatsAppRotaGrupoAtual,
   finalizarRota,
+  adicionarVariosNaRota,
+  podeComprasCigam,
 }) {
+  const [mapaAberto, setMapaAberto] = useState(false);
   const temSugestaoAutomatica =
     !!sugestoesPautaRota &&
     !sugestoesPautaRota.carregando &&
@@ -119,6 +125,17 @@ function RotasPlanejamento({
               Ordenar por distância
             </button>
 
+            {adicionarVariosNaRota && (
+              <button
+                type="button"
+                className={`btn-rota-acao${mapaAberto ? " ativo" : ""}`}
+                onClick={() => setMapaAberto(!mapaAberto)}
+              >
+                <MapIcon size={18} />
+                {mapaAberto ? "Fechar mapa" : "Adicionar pelo mapa"}
+              </button>
+            )}
+
             {!temSugestaoAutomatica && (
               <button
                 type="button"
@@ -170,6 +187,16 @@ function RotasPlanejamento({
             </button>
           )}
       </div>
+
+      {mapaAberto && adicionarVariosNaRota && rotaSelecionada.status !== "FINALIZADA" && (
+        <MapaPlanejamentoRota
+          clientes={clientes}
+          clientesDaRota={clientesDaRota}
+          usuarios={usuariosPerfis}
+          podeCompras={podeComprasCigam}
+          adicionarVariosNaRota={adicionarVariosNaRota}
+        />
+      )}
 
       {buscaClienteRota.trim() !== "" && (
         <div className="grid-clientes">

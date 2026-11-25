@@ -61,6 +61,8 @@ alterarResponsavelRota,
 filtroStatusRotas,
 setFiltroStatusRotas,
   alertasCigamAtivos,
+  adicionarVariosNaRota,
+  podeComprasCigam,
 }) {
   const [modoReordenar, setModoReordenar] = useState(false);
 const clienteAtual = clientesDaRota.find(
@@ -310,6 +312,8 @@ setFiltroStatusRotas={setFiltroStatusRotas}
 {modoTelaRota === "planejamento" && (
   <RotasPlanejamento
     rotaSelecionada={rotaSelecionada}
+    adicionarVariosNaRota={adicionarVariosNaRota}
+    podeComprasCigam={podeComprasCigam}
     clientesDaRota={clientesDaRota}
     clientes={clientes}
     buscaClienteRota={buscaClienteRota}

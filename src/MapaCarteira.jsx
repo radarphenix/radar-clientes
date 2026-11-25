@@ -1,79 +1,84 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "./dashboard-carteira.css";
 import { FAIXAS_VALOR, FAIXAS_VISITA, faixaValor, faixaVisita, ordenarMenorTrajeto, totalKm } from "./lib/faixasVisita.js";
 
-// Mapa da carteira (Dashboard). Cor por última visita (verde/amarelo/vermelho) ou por valor comprado em
-// 12 meses (roxo, ponto maior = compra mais). Modo "Montar rota": clicar nos pontos (ou "selecionar o que
-// está na tela") e criar a rota já na ordem de menor trajeto (ajuste fino depois em Rotas → Reordenar).
+// Mapa da carteira. Cor por última visita (verde/amarelo/vermelho) ou por valor comprado em 12 meses
+// (roxo, ponto maior = compra mais). Dois usos (decisão do usuário, 24/11/2026):
+// - Dashboard: só exibição (clicar no ponto mostra o cliente).
+// - Rotas → Planejamento: com onAdicionar, abre em modo de seleção (clicar nos pontos ou "selecionar o que
+//   está na tela") e "Adicionar à rota" inclui os escolhidos na rota, na ordem de menor trajeto.
 // Mapa aberto (OpenStreetMap). O enquadramento inicial ignora clientes do exterior.
 
-const hojeISO = () => new Date().toISOString().slice(0, 10);
-
-function PainelRota({ escolhidos, setEscolhidos, criarRota, usuarios, podeEscolherResponsavel, usuarioAtual }) {
-  const [nome, setNome] = useState("");
-  const [data, setData] = useState(hojeISO());
-  const [responsavel, setResponsavel] = useState(usuarioAtual || "");
+// Cada cliente pode ter a sua data de visita (pedido do usuário): campo por cliente + "mesma data para todos".
+// Sem data, entra sem data prevista (ajustável depois no planejamento, que já tem data por cliente).
+function PainelSelecao({ escolhidos, setEscolhidos, onAdicionar }) {
   const [gravando, setGravando] = useState(false);
+  const [datas, setDatas] = useState({}); // cliente.id -> "aaaa-mm-dd"
+  const [dataTodos, setDataTodos] = useState("");
   const ordem = useMemo(() => ordenarMenorTrajeto(escolhidos), [escolhidos]);
   const km = totalKm(ordem);
-  async function criar() {
+  async function adicionar() {
     if (!ordem.length) return;
     setGravando(true);
-    const nomeFinal = nome.trim() || `Rota ${ordem[0].cidade || ""} ${data.split("-").reverse().join("/")}`.replace(/\s+/g, " ").trim();
-    const ok = await criarRota({ nome: nomeFinal, data, responsavel: responsavel || usuarioAtual, clientes: ordem });
+    const ok = await onAdicionar(ordem.map((c) => ({ ...c, data_prevista_visita: datas[c.id] || null })));
     setGravando(false);
-    if (ok) { setEscolhidos([]); setNome(""); }
+    if (ok) { setEscolhidos([]); setDatas({}); setDataTodos(""); }
   }
   return (
     <div className="dmapa-painel">
       <div className="dmapa-painel-topo">
-        <strong>{ordem.length} cliente(s) na rota</strong>
+        <strong>{ordem.length} cliente(s) selecionado(s)</strong>
         {ordem.length > 1 && <small>~{Math.round(km)} km em linha reta, na ordem sugerida</small>}
       </div>
-      {!ordem.length ? <p className="dcart-vazio">Clique nos pontos do mapa para incluir clientes, ou use "Selecionar o que está na tela".</p> : (
+      {ordem.length > 0 && (
+        <label className="dmapa-data-todos">
+          Mesma data para todos
+          <span>
+            <input type="date" value={dataTodos} onChange={(e) => setDataTodos(e.target.value)} />
+            <button type="button" className="dcart-ficha" disabled={!dataTodos}
+              onClick={() => setDatas(Object.fromEntries(ordem.map((c) => [c.id, dataTodos])))}>Aplicar</button>
+          </span>
+        </label>
+      )}
+      {!ordem.length ? <p className="dcart-vazio">Clique nos pontos do mapa para selecionar clientes, ou use "Selecionar o que está na tela".</p> : (
         <ol className="dmapa-ordem">
           {ordem.map((c, i) => (
             <li key={c.id}>
               <span className="dmapa-n">{i + 1}</span>
-              <div><strong title={c.cliente}>{c.cliente}</strong><small>{c.pais || `${c.cidade || "-"}/${c.uf || ""}`}</small></div>
+              <div>
+                <strong title={c.cliente}>{c.cliente}</strong>
+                <small>{c.pais || `${c.cidade || "-"}/${c.uf || ""}`}</small>
+                <input type="date" className="dmapa-data" aria-label={`Data da visita em ${c.cliente}`} value={datas[c.id] || ""}
+                  onChange={(e) => setDatas((d) => ({ ...d, [c.id]: e.target.value }))} />
+              </div>
               <button type="button" className="dmapa-tirar" aria-label={`Tirar ${c.cliente}`} onClick={() => setEscolhidos(escolhidos.filter((x) => x.id !== c.id))}>×</button>
             </li>
           ))}
         </ol>
       )}
-      <div className="dmapa-form">
-        <label>Nome da rota<input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Oeste de SC - dezembro" /></label>
-        <label>Data prevista<input type="date" value={data} onChange={(e) => setData(e.target.value)} /></label>
-        {podeEscolherResponsavel && (
-          <label>Responsável
-            <select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
-              {usuarios.filter((u) => u.ativo !== false).map((u) => <option key={u.user_id} value={u.user_id}>{u.nome}</option>)}
-            </select>
-          </label>
-        )}
-        <div className="dmapa-botoes">
-          <button type="button" className="dmapa-criar" disabled={!ordem.length || gravando} onClick={criar}>{gravando ? "Criando…" : "Criar rota"}</button>
-          {ordem.length > 0 && <button type="button" className="dcart-mais" onClick={() => setEscolhidos([])}>limpar</button>}
-        </div>
+      <div className="dmapa-botoes">
+        <button type="button" className="dmapa-criar" disabled={!ordem.length || gravando} onClick={adicionar}>{gravando ? "Adicionando…" : "Adicionar à rota"}</button>
+        {ordem.length > 0 && <button type="button" className="dcart-mais" onClick={() => setEscolhidos([])}>limpar</button>}
       </div>
     </div>
   );
 }
 
-export default function MapaCarteira({ clientes, onSelecionar, criarRota, usuarios = [], podeEscolherResponsavel, usuarioAtual }) {
+export default function MapaCarteira({ clientes, onSelecionar, onAdicionar, jaNaRota }) {
   const caixa = useRef(null);
   const mapa = useRef(null);
   const camada = useRef(null);
   const [mostrarExterior, setMostrarExterior] = useState(false);
   const [ocultas, setOcultas] = useState([]);
   const [modoCor, setModoCor] = useState("visita");
-  const [montando, setMontando] = useState(false);
+  const montando = !!onAdicionar;
   const [escolhidos, setEscolhidos] = useState([]);
   const faixas = modoCor === "visita" ? FAIXAS_VISITA : FAIXAS_VALOR;
   const faixaDe = modoCor === "visita" ? faixaVisita : faixaValor;
   const idsEscolhidos = useMemo(() => new Set(escolhidos.map((c) => c.id)), [escolhidos]);
-  const comCoordenada = useMemo(() => clientes.filter((c) => Number(c.latitude) && Number(c.longitude)), [clientes]);
+  const comCoordenada = useMemo(() => clientes.filter((c) => Number(c.latitude) && Number(c.longitude) && !jaNaRota?.has(c.id)), [clientes, jaNaRota]);
   const visiveis = useMemo(() => comCoordenada.filter((c) => !ocultas.includes(faixaDe(c))), [comCoordenada, ocultas, faixaDe]);
 
   useEffect(() => {
@@ -86,9 +91,6 @@ export default function MapaCarteira({ clientes, onSelecionar, criarRota, usuari
     camada.current = L.layerGroup().addTo(mapa.current);
     return () => { mapa.current?.remove(); mapa.current = null; };
   }, []);
-
-  // Painel de montagem muda a largura do mapa: avisa o Leaflet para redesenhar.
-  useEffect(() => { setTimeout(() => mapa.current?.invalidateSize(), 50); }, [montando]);
 
   // Enquadramento só quando a carteira ou a opção do exterior muda (não a cada clique de seleção).
   useEffect(() => {
@@ -115,7 +117,7 @@ export default function MapaCarteira({ clientes, onSelecionar, criarRota, usuari
       m.bindTooltip(`${c.cliente}<br>${c.ultimaVisita ? `visita há ${c.diasVisita} d` : "nunca visitado"}${valor}`, { direction: "top" });
       m.on("click", () => {
         if (montando) setEscolhidos((e) => (e.some((x) => x.id === c.id) ? e.filter((x) => x.id !== c.id) : [...e, c]));
-        else onSelecionar(c);
+        else onSelecionar?.(c);
       });
       m.addTo(camada.current);
     }
@@ -146,19 +148,15 @@ export default function MapaCarteira({ clientes, onSelecionar, criarRota, usuari
         ))}
         <label className="dcart-mapa-ext"><input type="checkbox" checked={mostrarExterior} onChange={(e) => setMostrarExterior(e.target.checked)} /> enquadrar exterior</label>
       </div>
-      {criarRota && (
+      {montando && (
         <div className="dmapa-acoes">
-          <button type="button" className={montando ? "dmapa-criar" : "dcart-ficha"} onClick={() => setMontando(!montando)}>
-            {montando ? "Sair de montar rota" : "Montar rota pelo mapa"}
-          </button>
-          {montando && <button type="button" className="dcart-ficha" onClick={selecionarNaTela}>Selecionar o que está na tela</button>}
-          {montando && <small>Clique nos pontos para incluir ou tirar. As cores escondidas na legenda não entram.</small>}
+          <button type="button" className="dcart-ficha" onClick={selecionarNaTela}>Selecionar o que está na tela</button>
+          <small>Clique nos pontos para incluir ou tirar. As cores escondidas na legenda não entram. Clientes que já estão na rota não aparecem.</small>
         </div>
       )}
       <div className={montando ? "dmapa-layout montando" : "dmapa-layout"}>
         <div ref={caixa} className="dcart-mapa" role="region" aria-label="Mapa da carteira" />
-        {montando && <PainelRota escolhidos={escolhidos} setEscolhidos={setEscolhidos} criarRota={criarRota} usuarios={usuarios}
-          podeEscolherResponsavel={podeEscolherResponsavel} usuarioAtual={usuarioAtual} />}
+        {montando && <PainelSelecao escolhidos={escolhidos} setEscolhidos={setEscolhidos} onAdicionar={onAdicionar} />}
       </div>
       {semCoordenada > 0 && <small className="dcart-nota">{semCoordenada} cliente(s) sem localização não aparecem no mapa.</small>}
     </div>

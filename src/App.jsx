@@ -3755,31 +3755,30 @@ function App() {
   }
   // Dashboard: inclui o cliente numa rota escolhida (sem precisar abrir a rota antes). Mesmo efeito de
   // adicionarClienteNaRota: entra no fim da fila como PENDENTE e a pauta ativa do cliente vira EM_ROTA.
-  // Dashboard → mapa: cria uma rota nova já com os clientes na ordem escolhida (menor trajeto).
-  // Mesmos campos de criarRota (status ABERTA; responsável = quem cria, ou o escolhido pelo admin) e
-  // mesmo efeito de adicionar cliente (PENDENTE, data prevista, pauta ativa vira EM_ROTA).
-  async function criarRotaComClientes({ nome, data, responsavel, clientes: lista }) {
-    const { data: rota, error } = await supabase.from("rotas").insert({
-      nome, user_id: session.user.id, criado_por: session.user.id,
-      usuario_responsavel: perfil?.tipo_perfil === "admin" && responsavel ? responsavel : session.user.id,
-      status: "ABERTA", data_rota: data || null,
-    }).select("id, nome").single();
-    if (error) { alert("Erro ao criar rota: " + error.message); return false; }
-    const { data: itens, error: erroItens } = await supabase.from("rota_clientes").insert(lista.map((c, i) => ({
-      rota_id: rota.id, cliente_id: c.id, sequencia: i + 1, status: "PENDENTE", visitado: false,
-      data_prevista_visita: data || null, incluido_por: session.user.id,
+  // Rotas → Planejamento → "Adicionar pelo mapa": inclui vários clientes no fim da rota aberta, na ordem
+  // recebida (menor trajeto entre eles), cada um com a sua data prevista (ou sem data). Mesmo efeito de
+  // adicionarClienteNaRota (PENDENTE, pauta ativa vira EM_ROTA).
+  async function adicionarVariosNaRota(lista) {
+    if (!rotaSelecionada) { alert("Abra uma rota antes de adicionar clientes."); return false; }
+    const ja = new Set((clientesDaRota || []).map((x) => x.cliente_id));
+    const novos = lista.filter((c) => !ja.has(c.id));
+    if (!novos.length) { alert("Esses clientes já estão na rota."); return false; }
+    const base = (clientesDaRota || []).length;
+    const { data: itens, error } = await supabase.from("rota_clientes").insert(novos.map((c, i) => ({
+      rota_id: rotaSelecionada.id, cliente_id: c.id, sequencia: base + i + 1, status: "PENDENTE", visitado: false,
+      data_prevista_visita: normalizarDataVisita(c.data_prevista_visita || null), incluido_por: session.user.id,
     }))).select("id, cliente_id");
-    if (erroItens) { alert("A rota foi criada, mas houve falha ao incluir os clientes: " + erroItens.message); await carregarRotas(); return false; }
+    if (error) { alert("Falha ao adicionar clientes na rota: " + error.message); return false; }
     const { data: pautas } = await supabase.from("clientes_em_pauta").select("id, cliente_id")
-      .in("cliente_id", lista.map((c) => c.id)).eq("status", "ATIVO");
+      .in("cliente_id", novos.map((c) => c.id)).eq("status", "ATIVO");
     for (const p of pautas || []) {
       const item = (itens || []).find((x) => x.cliente_id === p.cliente_id);
       if (item) await supabase.from("clientes_em_pauta").update({
         status: "EM_ROTA", rota_cliente_id: item.id, atualizado_por: session.user.id, atualizado_em: new Date().toISOString(),
       }).eq("id", p.id);
     }
-    await carregarRotas();
-    alert(`Rota "${rota.nome}" criada com ${lista.length} cliente(s). Ela está em Rotas.`);
+    await abrirRota(rotaSelecionada);
+    alert(`${novos.length} cliente(s) adicionado(s) à rota.`);
     return true;
   }
 
@@ -7157,9 +7156,6 @@ function App() {
               abrirFicha={abrirAcompanhamento}
               colocarPauta={pode("clientes_em_pauta") ? abrirModalPauta : null}
               adicionarNaRota={pode("rotas") ? adicionarClienteEmRotaEscolhida : null}
-              criarRota={pode("rotas") ? criarRotaComClientes : null}
-              usuarioAtual={session.user.id}
-              podeEscolherResponsavel={perfil?.tipo_perfil === "admin"}
               rotasAbertas={(rotas || []).filter((r) => String(r.status || "").toUpperCase() !== "FINALIZADA"
                 && (pode("rotas.todas") || (r.usuario_responsavel || r.user_id) === session.user.id))}
             />
@@ -7484,6 +7480,8 @@ function App() {
             setBuscaClienteRota={setBuscaClienteRota}
             clientes={clientes}
             adicionarClienteNaRota={adicionarClienteNaRota}
+            adicionarVariosNaRota={adicionarVariosNaRota}
+            podeComprasCigam={pode("clientes.cigam_visao") || pode("clientes.cigam_vendas")}
             sugestoesPautaRota={sugestoesPautaRota}
             painelTodaPautaAberto={painelTodaPautaAberto}
             todaPautaAtiva={todaPautaAtiva}
