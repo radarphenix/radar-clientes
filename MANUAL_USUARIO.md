@@ -1286,7 +1286,19 @@ Rankings: **Top 10 clientes por faturado líquido**, **Top 10 clientes por carte
 
 **Análise da carteira** (abaixo dos rankings, no faturado líquido do período e com os mesmos filtros; todo número abre a lista com exportação para Excel):
 - **Concentração (curva ABC)**: quantos clientes fazem 80% do faturado (classe A; B até 95%, C o resto), peso dos 5 maiores e do maior cliente, e a curva completa.
-- **Ganhos e perdidos** (contra o período anterior de mesmo tamanho): clientes novos ou recuperados (compraram agora e não antes), que não compraram neste período (compraram antes e não agora), que compraram mais e que compraram menos.
+- **Ganhos e perdidos**: clientes novos ou recuperados (compraram agora e não antes), que não compraram neste período (compraram antes e não agora), que compraram mais e que compraram menos. O título mostra as duas faixas de datas comparadas.
+  - **Período anterior** = o período de mesmo tamanho logo antes do filtrado, cortado até hoje (para não comparar um período inteiro com um que ainda não terminou). É a mesma regra do "vs período anterior" do card Faturado líquido. Exemplos com hoje = 25/11/2026:
+
+    | Filtro | Atual | Anterior |
+    |---|---|---|
+    | Mês atual | 01/11 a 25/11 | 01/10 a 25/10 |
+    | Mês anterior | 01/10 a 31/10 | 01/09 a 30/09 |
+    | Trimestre | 01/10 a 25/11 | 01/07 a 25/08 |
+    | Semestre | 01/07 a 25/11 | 01/01 a 25/05 |
+    | Ano | 01/01 a 25/11/2026 | 01/01 a 25/11/2025 |
+    | Datas à mão | o intervalo | o mesmo número de dias, imediatamente antes |
+
+  - Cuidado com o filtro **Ano** até 2027: o histórico de notas começa em 17/12/2025, então quase todo cliente aparece como "novo ou recuperado".
 - **Faturado por família de produto** (grupo do material: Feltro, Tela formadora, Telas secadoras, Camisa encolhível, Outras aplicações; também aparece Ativo imobilizado quando há venda de bem). Clique na barra para ver as notas.
 - **Faturado por estado / exterior** (clique para ver os clientes) e **mapa do faturamento**: cada cliente é um círculo do tamanho do que faturou; clique para ver as notas.
 - O gráfico anual ganha a linha do **ano anterior** quando houver notas daquele ano (o histórico de notas começa em 17/12/2025).

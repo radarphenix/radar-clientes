@@ -20,6 +20,7 @@ const moeda = (v) => n(v).toLocaleString("pt-BR", { style: "currency", currency:
 const pct = (v) => `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 const codigoNormal = (v) => String(v ?? "").trim().replace(/^0+(?=.)/, "");
 const entre = (d, a, b) => d && d >= a && d <= b;
+const dataBR = (v) => (v ? String(v).slice(0, 10).split("-").reverse().join("/") : "");
 
 const COL_ABC = [
   { chave: "posicao", rotulo: "#", tipo: "numero" },
@@ -178,7 +179,7 @@ export default function AnaliseCarteiraBI({ noPeriodo, dvPeriodo, notasF, devolu
       </div>
 
       {mov && <>
-        <h4 className="bi-subtitulo">Ganhos e perdidos · comparado ao período anterior</h4>
+        <h4 className="bi-subtitulo">Ganhos e perdidos · {dataBR(periodos.atual[0])} a {dataBR(periodos.atual[1])} comparado a {dataBR(periodos.anterior[0])} a {dataBR(periodos.anterior[1])}</h4>
         <div className="bi-kpis">
           <StatTile label={`Novos ou recuperados (${mov.ganhos.length})`} valor={moeda(somaV(mov.ganhos))} onClick={() => abrirClientes("Compraram agora e não no período anterior", mov.ganhos)} />
           <StatTile label={`Não compraram neste período (${mov.perdidos.length})`} valor={moeda(somaV(mov.perdidos, "anterior"))} onClick={() => abrirClientes("Compraram no período anterior e não agora", mov.perdidos)} />
