@@ -161,7 +161,7 @@ const nomeArquivo = (caminho: string) => caminho.split(/[\\/]/).pop()!.trim();
 type Bruto = {
   Data?: string; Hora?: string; Assunto?: string; Historico?: string; Usuario?: string; UsuarioCriacao?: string;
   Contato?: string; Contatante?: string; CodigoTitulo?: string; Anexos?: string | null; LinkGerenciadorDoc?: string | null;
-  DataPrevista?: string | null; DataRealizada?: string | null;
+  DataPrevista?: string | null; DataRealizada?: string | null; DataCriacao?: string | null;
 };
 
 async function listar(cliente: string) {
@@ -184,6 +184,9 @@ async function listar(cliente: string) {
       titulo: aux.titulos.get(limpar(a.CodigoTitulo)) || "",
       data_prevista: a.DataPrevista ? String(a.DataPrevista).slice(0, 10) : null,
       data_realizada: a.DataRealizada ? String(a.DataRealizada).slice(0, 10) : null,
+      // Data em que o registro foi criado no CIGAM (pode diferir de Data, que o usuário informa).
+      data_criacao: a.DataCriacao ? String(a.DataCriacao).slice(0, 10) : null,
+      usuario_criacao: aux.usuarios.get(limpar(a.UsuarioCriacao)) || limpar(a.UsuarioCriacao) || null,
       link: limpar(a.LinkGerenciadorDoc) || null,
       anexos: limpar(a.Anexos).split(";").map((s) => s.trim()).filter(Boolean).map(nomeArquivo),
       automatico: AUTOMATICO.test(`${assunto} ${historico}`),
