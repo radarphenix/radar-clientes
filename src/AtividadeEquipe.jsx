@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabaseClient";
+import DetalheBI from "./bi/DetalheBI.jsx";
+import "./bi-panel.css";
 
 // Atividade da equipe (Dashboard): visitas por semana (rotas marcadas como visitado, pela data gravada
 // em visitado_em), por pessoa (responsável da rota), conclusão das rotas finalizadas e cancelamentos
@@ -24,39 +26,23 @@ function Num({ itens, titulo, abrir, children }) {
   return <button type="button" className="dativ-num" title="Ver o que gerou este número" onClick={() => abrir(titulo, itens)}>{children}</button>;
 }
 
-// Painel com as linhas por trás do número clicado.
-function DetalheAtividade({ detalhe, fechar }) {
-  const itens = [...detalhe.itens].sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
-  const temMotivo = itens.some((x) => x.motivo);
-  return (
-    <section className="dcart-bloco dcart-detalhe dativ-detalhe">
-      <div className="dcart-bloco-topo">
-        <h4>{detalhe.titulo} ({itens.length})</h4>
-        <button type="button" className="dcart-mais" onClick={fechar}>fechar</button>
-      </div>
-      <div className="dativ-tabela dativ-tabela-detalhe">
-        <table>
-          <thead><tr><th>Data</th><th>Cliente</th><th>Rota</th><th>Pessoa</th><th>Situação</th>{temMotivo && <th>Motivo</th>}</tr></thead>
-          <tbody>{itens.map((x) => (
-            <tr key={x.id}>
-              <td>{dataBR(x.data)}</td>
-              <td>{x.cliente}<small>{[x.codigo, x.local].filter(Boolean).join(" · ")}</small></td>
-              <td>{x.rota}<small>{x.rotaStatus}</small></td>
-              <td>{x.pessoa}</td>
-              <td>{x.status}</td>
-              {temMotivo && <td>{x.motivo || "—"}</td>}
-            </tr>
-          ))}</tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
+// Detalhe na mesma janela dos painéis BI (pedido do usuário, 25/11/2026): ordena por coluna e exporta Excel.
+const COLUNAS = [
+  { chave: "data", rotulo: "Data", tipo: "data" },
+  { chave: "cliente", rotulo: "Cliente", tipo: "texto" },
+  { chave: "codigo", rotulo: "Código", tipo: "texto" },
+  { chave: "local", rotulo: "Cidade/UF", tipo: "texto" },
+  { chave: "rota", rotulo: "Rota", tipo: "texto" },
+  { chave: "rotaStatus", rotulo: "Situação da rota", tipo: "texto" },
+  { chave: "pessoa", rotulo: "Pessoa", tipo: "texto" },
+  { chave: "status", rotulo: "Situação", tipo: "texto" },
+];
 
 export default function AtividadeEquipe({ usuarios = [] }) {
   const [dados, setDados] = useState(null);
   const [detalhe, setDetalhe] = useState(null);
   const abrir = (titulo, itens) => setDetalhe({ titulo, itens });
+  const fecharDetalhe = useCallback(() => setDetalhe(null), []);
 
   useEffect(() => {
     let vivo = true;
@@ -158,7 +144,13 @@ export default function AtividadeEquipe({ usuarios = [] }) {
           <span>Cancelamentos</span><strong>{r.totalCancelados}</strong><small>em todas as rotas · ver quais</small>
         </button>
       </div>
-      {detalhe && <DetalheAtividade detalhe={detalhe} fechar={() => setDetalhe(null)} />}
+      {detalhe && (() => {
+        const linhas = [...detalhe.itens].map((x) => ({ ...x, data: x.data ? String(x.data).slice(0, 10) : null }))
+          .sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
+        const colunas = linhas.some((x) => x.motivo) ? [...COLUNAS, { chave: "motivo", rotulo: "Motivo", tipo: "texto" }] : COLUNAS;
+        return <DetalheBI titulo={detalhe.titulo} subtitulo="Atividade da equipe" colunas={colunas} linhas={linhas}
+          arquivo="atividade_equipe" onFechar={fecharDetalhe} />;
+      })()}
 
       <div className="dativ-grafico" role="group" aria-label="Visitas por semana">
         {r.semanas.map((s) => (
