@@ -622,3 +622,15 @@
   border-radius: 6px;
   padding: 1px 7px;
 }
+
+/* Visão geral: visitas e resultado (12 meses) */
+.ficha-resultado { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.ficha-resultado-item { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: #f8fafc; }
+.ficha-resultado-item { align-content: start; }
+.ficha-resultado-item span { min-height: 2.5em; font-size: 0.78rem; line-height: 1.25; color: #64748b; }
+.ficha-resultado-item strong, .ficha-resultado-num { font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+.ficha-resultado-num { justify-self: start; padding: 0; border: 0; background: none; box-shadow: none; min-height: 0; color: #0b4fd6 !important; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.ficha-resultado-num:hover { color: #003f9e !important; }
+.ficha-resultado-item small { font-size: 0.74rem; color: #94a3b8; }
+@media (max-width: 900px) { .ficha-resultado { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ficha-resultado { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

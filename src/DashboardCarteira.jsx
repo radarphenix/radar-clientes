@@ -92,6 +92,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
   const [representanteSalvo, setRepresentante] = useFiltroSalvo("representante", "");
   const [aba, setAba] = useFiltroSalvo("aba", "pararam");
   const [ufMapa, setUfMapa] = useFiltroSalvo("ufMapa", "");
+  const [resultado, setResultado] = useFiltroSalvo("resultadoVisita", "nada");
   const { lista, compras, erroCompras } = useCarteira(clientes, usuarios, podeCompras);
 
   const nomesRep = useMemo(() => {
@@ -141,14 +142,38 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
   const pararam = carteira.filter((c) => c.compra?.frequencia && c.compra.compras >= 4 && c.compra.frequencia <= 60
     && dias(c.compra.ultima) >= Math.max(45, c.compra.frequencia * 2))
     .sort(ordenarValor);
-  // Visita sem pedido = visitado entre 15 e 90 dias atrás e sem nenhuma compra desde a visita.
-  const visitaSemPedido = carteira.filter((c) => c.diasVisita !== null && c.diasVisita >= 15 && c.diasVisita <= 90
-    && (!c.compra?.ultima || c.compra.ultima < c.ultimaVisita))
-    .sort((a, b) => ordenarValor(a, b) || b.diasVisita - a.diasVisita);
+  // Resultado da visita (pedido do usuário, 25/11/2026): cada cliente visitado nos últimos 90 dias cai em
+  // faturou (nota depois da visita), pedido em aberto (pedido depois da visita ainda não faturado), nada
+  // (nem pedido nem nota, visita com 15+ dias) ou aguardando (visita com menos de 15 dias, sem resultado ainda).
+  const pedidosDepois = (c) => (c.compra?.pedidos || []).filter(([d]) => d >= c.ultimaVisita);
+  const resultadoVisita = (c) => {
+    if (c.compra?.ultima && c.compra.ultima >= c.ultimaVisita) return "faturou";
+    if (pedidosDepois(c).some(([, ab]) => ab)) return "aberto";
+    return c.diasVisita >= 15 ? "nada" : "aguardando";
+  };
+  const visitados90 = carteira.filter((c) => c.diasVisita !== null && c.diasVisita <= 90);
+  const porResultado = (r) => visitados90.filter((c) => resultadoVisita(c) === r);
+  const visitaSemPedido = porResultado("nada").sort((a, b) => ordenarValor(a, b) || b.diasVisita - a.diasVisita);
+  const RESULTADOS = [
+    ["nada", "Sem pedido nem nota", visitaSemPedido],
+    ["aberto", "Pedido em aberto", porResultado("aberto").sort((a, b) => b.ultimaVisita.localeCompare(a.ultimaVisita))],
+    ["faturou", "Faturou", porResultado("faturou").sort((a, b) => b.ultimaVisita.localeCompare(a.ultimaVisita))],
+    ["aguardando", "Visita recente (< 15 d)", porResultado("aguardando").sort((a, b) => b.ultimaVisita.localeCompare(a.ultimaVisita))],
+  ];
+  const listaResultado = RESULTADOS.find(([id]) => id === resultado) || RESULTADOS[0];
+  const extraResultado = (c) => {
+    const peds = pedidosDepois(c);
+    const abertos = peds.filter(([, ab]) => ab);
+    const r = resultadoVisita(c);
+    const linha2 = r === "faturou" ? `nota em ${dataBR(c.compra.ultima)}`
+      : r === "aberto" ? `${abertos.length} pedido(s) em aberto${mostrarValores ? ` · ${moeda(abertos.reduce((t, x) => t + (x[2] || 0), 0))}` : ""}`
+      : c.compra?.ultima ? `últ. compra ${dataBR(c.compra.ultima)}` : "sem compras";
+    return <><strong className={r === "nada" ? "dcart-ruim" : undefined}>visita {dataBR(c.ultimaVisita)}</strong><small>{linha2}</small></>;
+  };
 
   const abas = [
     ["pararam", "Pararam de comprar", pararam],
-    ["visitaSemPedido", "Visita sem pedido", visitaSemPedido],
+    ["visitaSemPedido", "Resultado da visita", visitaSemPedido],
     ["atrasada", "Compra atrasada", atrasada],
     ["parados", "Parados +90 dias", parados],
     ["queda", "Queda vs ano anterior", queda],
@@ -238,8 +263,16 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
             <>
               {aba === "pararam" && <Lista itens={pararam} acoes={acoes} vazio="Nenhum cliente frequente parou de comprar. 👍"
                 colunaExtra={(c) => <><strong className="dcart-ruim">{dias(c.compra.ultima)} d sem comprar</strong><small>comprava a cada {c.compra.frequencia} d</small></>} />}
-              {aba === "visitaSemPedido" && <Lista itens={visitaSemPedido} acoes={acoes} vazio="Toda visita dos últimos 90 dias teve pedido depois. 👍"
-                colunaExtra={(c) => <><strong>visita {dataBR(c.ultimaVisita)}</strong><small>{c.compra?.ultima ? `últ. compra ${dataBR(c.compra.ultima)}` : "sem compras"}</small></>} />}
+              {aba === "visitaSemPedido" && <>
+                <div className="dcart-resultado" role="group" aria-label="Resultado da visita">
+                  {RESULTADOS.map(([id, nome, l]) => (
+                    <button key={id} type="button" data-active={listaResultado[0] === id} data-tom={id} onClick={() => setResultado(id)}>{nome} <b>{l.length}</b></button>
+                  ))}
+                </div>
+                <p className="dcart-nota">Clientes visitados nos últimos 90 dias, pela última visita.{compras.pedidos_ok === false ? " Pedidos indisponíveis agora: só as notas foram consideradas." : " Pedido em aberto = pedido feito depois da visita e ainda não faturado."}</p>
+                <Lista itens={listaResultado[2]} acoes={acoes} vazio={listaResultado[0] === "nada" ? "Toda visita dos últimos 90 dias teve pedido ou nota depois. 👍" : "Nenhum cliente nesta situação."}
+                  colunaExtra={extraResultado} />
+              </>}
               {aba === "atrasada" && <Lista itens={atrasada} acoes={acoes} vazio="Nenhum cliente com compra atrasada."
                 colunaExtra={(c) => <><strong className="dcart-ruim">{dias(c.compra.proxima)} d de atraso</strong><small>compra a cada {c.compra.frequencia} d</small></>} />}
               {aba === "parados" && <Lista itens={parados} acoes={acoes} vazio="Nenhum cliente parado há mais de 90 dias."

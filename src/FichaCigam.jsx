@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { chamarAcompanhamentosCigam as chamar } from "./lib/cigamAcompanhamentos.js";
+import { supabase } from "./supabaseClient";
+import DetalheBI from "./bi/DetalheBI.jsx";
+import "./bi-panel.css";
 
 // Abas Pedidos / Notas / Financeiro da ficha do cliente (CIGAM, somente leitura).
 // Função: cigam-acompanhamentos?cliente=&ficha=pedidos|notas|titulos. Permissões:
@@ -379,7 +382,68 @@ function GraficoMeses({ meses }) {
   );
 }
 
-export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara }) {
+// Visitas x resultado em 12 meses (pedido do usuário, 25/11/2026): base para, no futuro, somar o custo das
+// visitas (lançamentos financeiros de débito vinculados ao cliente) e chegar à lucratividade do cliente.
+// Visita = rota marcada como visitado ou acompanhamento VISITA / VISITA TECNICA; mesmo dia conta uma vez.
+const TITULOS_VISITA = new Set(["VISITA", "VISITA TECNICA"]);
+function VisitasResultado({ clienteId, acompanhamentos, pedidos, r, podeVendas, irPara }) {
+  const [rotas, setRotas] = useState(null);
+  const [detalhe, setDetalhe] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    if (!clienteId) { setRotas([]); return undefined; }
+    (async () => {
+      const { data: rc } = await supabase.from("rota_clientes").select("id, rota_id, visitado_em")
+        .eq("cliente_id", clienteId).eq("status", "VISITADO").not("visitado_em", "is", null);
+      const ids = [...new Set((rc || []).map((x) => x.rota_id))];
+      const { data: ro } = ids.length ? await supabase.from("rotas").select("id, nome").in("id", ids) : { data: [] };
+      const nome = new Map((ro || []).map((x) => [x.id, x.nome]));
+      if (vivo) setRotas((rc || []).map((x) => ({ data: String(x.visitado_em).slice(0, 10), origem: "Rota", detalhe: nome.get(x.rota_id) || "" })));
+    })();
+    return () => { vivo = false; };
+  }, [clienteId]);
+  const ha12 = somarDias(hojeISO(), -365);
+  const visitas = useMemo(() => {
+    const acomp = (acompanhamentos || []).filter((a) => a.data && TITULOS_VISITA.has(String(a.titulo || "").trim().toUpperCase()))
+      .map((a) => ({ data: a.data, origem: "Acompanhamento", detalhe: [a.usuario, a.assunto].filter(Boolean).join(" · ") }));
+    const porDia = new Map();
+    for (const v of [...(rotas || []), ...acomp]) if (v.data >= ha12 && !porDia.has(v.data)) porDia.set(v.data, v);
+    return [...porDia.values()].sort((a, b) => b.data.localeCompare(a.data));
+  }, [rotas, acompanhamentos, ha12]);
+  const fechar = useCallback(() => setDetalhe(false), []);
+  const pedidos12 = pedidos.filter((p) => (p.data || "") >= ha12).length;
+  const carregando = rotas === null || acompanhamentos === null;
+  const porVisita = visitas.length ? (pedidos12 / visitas.length).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "-";
+  const vaiPara = (aba) => (podeVendas ? () => irPara(aba) : undefined);
+  const Item = ({ rotulo, valor, onClick, nota }) => (
+    <div className="ficha-resultado-item">
+      <span>{rotulo}</span>
+      {onClick ? <button type="button" className="ficha-resultado-num" onClick={onClick}>{valor}</button> : <strong>{valor}</strong>}
+      {nota && <small>{nota}</small>}
+    </div>
+  );
+  return (
+    <section className="ficha-bloco">
+      <div className="ficha-bloco-topo">
+        <h3>Visitas e resultado</h3>
+        <small>últimos 12 meses</small>
+      </div>
+      <div className="ficha-resultado">
+        <Item rotulo="Visitas" valor={carregando ? "…" : visitas.length} onClick={visitas.length ? () => setDetalhe(true) : undefined}
+          nota={visitas[0] ? `última em ${data(visitas[0].data)}` : "nenhuma"} />
+        <Item rotulo="Pedidos feitos" valor={pedidos12} onClick={pedidos12 ? vaiPara("pedidos") : undefined} />
+        <Item rotulo="Pedidos em aberto" valor={r.abertos} onClick={r.abertos ? vaiPara("pedidos") : undefined} />
+        <Item rotulo="Notas faturadas" valor={r.qtd12} onClick={r.qtd12 ? vaiPara("notas") : undefined} />
+        <Item rotulo="Pedidos por visita" valor={carregando ? "…" : porVisita} />
+      </div>
+      <p className="ficha-nota">Visita = rota marcada como visitado ou acompanhamento VISITA / VISITA TÉCNICA (mesmo dia conta uma vez). Mais adiante: custo das visitas e lucratividade do cliente.</p>
+      {detalhe && <DetalheBI titulo="Visitas nos últimos 12 meses" subtitulo="Visão geral do cliente" linhas={visitas} arquivo="visitas_cliente" onFechar={fechar}
+        colunas={[{ chave: "data", rotulo: "Data", tipo: "data" }, { chave: "origem", rotulo: "Origem", tipo: "texto" }, { chave: "detalhe", rotulo: "Rota / quem", tipo: "texto" }]} />}
+    </section>
+  );
+}
+
+export function VisaoGeralCigam({ cliente, clienteId, acompanhamentos = null, podeFinanceiro, podeVendas, irPara }) {
   const [ped, repPed] = useFicha(cliente, "pedidos");
   const [nf, repNf] = useFicha(cliente, "notas");
   const [tit] = useFicha(cliente, "titulos", podeFinanceiro);
@@ -448,6 +512,8 @@ export function VisaoGeralCigam({ cliente, podeFinanceiro, podeVendas, irPara })
           </small>
         </div>
       </div>
+
+      <VisitasResultado clienteId={clienteId} acompanhamentos={acompanhamentos} pedidos={ped.itens} r={r} podeVendas={podeVendas} irPara={irPara} />
 
       <section className="ficha-bloco">
         <h3>Compras por mês (notas)</h3>

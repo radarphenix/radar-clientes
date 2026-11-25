@@ -168,3 +168,12 @@ button.dcart-kpi:disabled small { color: #64748b; }
   .dativ-tabela-detalhe td { padding: 2px 0; border: 0; text-align: left; }
   .dativ-tabela-detalhe td:first-child { font-weight: 700; color: #0b4fd6; }
 }
+
+/* Resultado da visita: faturou / pedido em aberto / nada / recente */
+.dcart-resultado { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.dcart-resultado button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #334155; font-size: 13px; font-weight: 600; cursor: pointer; }
+.dcart-resultado button b { padding: 0 7px; border-radius: 999px; background: #f1f5f9; font-size: 12px; }
+.dcart-resultado button[data-tom="nada"] b { background: #fee2e2; color: #b91c1c; }
+.dcart-resultado button[data-tom="aberto"] b { background: #fef3c7; color: #92400e; }
+.dcart-resultado button[data-tom="faturou"] b { background: #dcfce7; color: #166534; }
+.dcart-resultado button[data-active="true"] { border-color: #0b4fd6; background: #eff6ff; color: #0b4fd6; box-shadow: inset 0 0 0 1px #0b4fd6; }

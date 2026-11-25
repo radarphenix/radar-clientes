@@ -301,7 +301,7 @@ export default function AcompanhamentosCliente({ cliente, podeVendas = false, po
 
       {visitadas.includes("visao") && (
         <div hidden={aba !== "visao"}>
-          <VisaoGeralCigam cliente={codigoCigam(cliente)} podeFinanceiro={podeFinanceiro} podeVendas={podeVendas} irPara={abrirAba} />
+          <VisaoGeralCigam cliente={codigoCigam(cliente)} clienteId={cliente?.id} acompanhamentos={erro ? [] : lista} podeFinanceiro={podeFinanceiro} podeVendas={podeVendas} irPara={abrirAba} />
         </div>
       )}
       {visitadas.includes("pedidos") && <div hidden={aba !== "pedidos"}><PedidosCigam cliente={codigoCigam(cliente)} /></div>}

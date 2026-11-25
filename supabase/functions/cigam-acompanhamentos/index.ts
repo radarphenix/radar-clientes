@@ -456,6 +456,22 @@ async function dashboardCarteira(req: Request) {
       delete k.total12; delete k.total24;
     }
   }
+  // Pedidos dos últimos 12 meses (uma chamada para a carteira toda): a aba "Visita sem pedido" separa
+  // quem faturou, quem tem pedido em aberto (ainda não faturado) e quem não fez nada (pedido do usuário, 25/11/2026).
+  // Situação "F" = faturado; o resto conta como em aberto (mesma regra da ficha).
+  let pedidosOk = false;
+  try {
+    const peds = (await api(odata(`comercial/fa/Pedido/Buscar?$filter=DataPedido ge ${ha12}&$top=20000&$select=Codigo,CodigoCliente,DataPedido,Situacao,TotalPedido`))) as L[];
+    for (const p of peds || []) {
+      const c = String(p.CodigoCliente || "").trim();
+      const data = String(p.DataPedido || "").slice(0, 10);
+      if (!visiveis.has(c) || !data) continue;
+      const k = (clientes[c] ||= { ultima: null, compras: 0, frequencia: null, proxima: null, notas12: 0 }) as Record<string, unknown>;
+      const aberto = String(p.Situacao || "").trim() !== "F";
+      ((k.pedidos ||= []) as unknown[]).push(comValores ? [data, aberto ? 1 : 0, Number(p.TotalPedido) || 0] : [data, aberto ? 1 : 0]);
+    }
+    pedidosOk = true;
+  } catch { /* sem pedidos: a aba continua só com as notas */ }
   // Sem valores: a ordem "quem compra mais" vai como posição no ranking (1 = maior), sem revelar valores.
   if (!comValores) {
     [...por.entries()].sort((x, y) => (y[1].total12 + y[1].total24) - (x[1].total12 + x[1].total24))
@@ -476,7 +492,7 @@ async function dashboardCarteira(req: Request) {
     }
   } catch { /* sem país: a tela mostra a cidade do cadastro */ }
   const primeira = (notas || []).reduce((m, n) => { const d = String(n.DataEmissao || "").slice(0, 10); return d && (!m || d < m) ? d : m; }, "");
-  return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, com_valores: comValores, clientes, paises };
+  return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, com_valores: comValores, pedidos_ok: pedidosOk, clientes, paises };
 }
 
 // ------------------------------------------------------------------ BI Pagamentos (contas a pagar + fluxo)
