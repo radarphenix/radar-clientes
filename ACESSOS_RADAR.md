@@ -84,3 +84,10 @@ sem os valores. **Conferido no servidor:** sem a permissão, `cigam-acompanhamen
 Testado em 25/11/2026 com o usuário demo trocado temporariamente para representante 000060: 46 clientes (só a
 carteira), 0 R$ sem a permissão e valores com a exceção liberada; perfil restaurado ao final.
 Migration: `20261125120000_permissao_dashboard_valores.sql`.
+
+## Teste automático (25/11/2026)
+
+`npm run testar:acessos` roda `scripts/testar-acessos.mjs`: para cada usuário ativo simula a sessão dele dentro do banco
+(sem gravar nada) e confere o recorte por perfil. Rodar depois de toda mudança de RLS, permissão ou carteira.
+Alerta conhecido: cliente com letra no código (ex.: 03017A) casa com o código numérico equivalente (003017) e aparece
+para o representante dono do 003017.

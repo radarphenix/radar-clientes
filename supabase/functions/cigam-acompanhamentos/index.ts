@@ -361,7 +361,7 @@ async function sincronizarVisitas(req: Request) {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: cli, error } = await sb.from("clientes").select("codigo_cliente").range(0, 9999);
   if (error) throw new Error(error.message);
-  const codigos = [...new Set((cli || []).map((c) => String(c.codigo_cliente || "").replace(/D/g, "")).filter((d) => d && !/^0+$/.test(d)).map((d) => d.padStart(6, "0")))];
+  const codigos = [...new Set((cli || []).map((c) => String(c.codigo_cliente || "").replace(/\D/g, "")).filter((d) => d && !/^0+$/.test(d)).map((d) => d.padStart(6, "0")))];
   const { data: feitos } = await sb.from("cigam_visitas_clientes").select("codigo_cliente, atualizado_em").range(0, 9999);
   const quando = new Map((feitos || []).map((x) => [x.codigo_cliente, x.atualizado_em as string]));
   // Nunca sincronizados primeiro; depois os mais antigos.
@@ -413,7 +413,7 @@ async function dashboardCarteira(req: Request) {
     const { data, error } = await sb.from("clientes").select("codigo_cliente").range(de, de + 999);
     if (error) throw new Error(error.message);
     for (const c of data || []) {
-      const d = String(c.codigo_cliente || "").replace(/D/g, "");
+      const d = String(c.codigo_cliente || "").replace(/\D/g, "");
       if (d && !/^0+$/.test(d)) visiveis.add(d.padStart(6, "0"));
     }
     if (!data || data.length < 1000) break;

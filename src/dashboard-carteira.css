@@ -149,3 +149,22 @@ button.dcart-kpi strong { color: #0f172a; }
 .dmapa-data-todos input { padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; }
 .dmapa-data-todos button, .dmapa-data-todos button:disabled { background: #eff6ff !important; color: #0b4fd6 !important; border: 1px solid #bfdbfe !important; }
 .dmapa-data-todos button:disabled { opacity: 0.5; }
+
+/* Atividade da equipe: todo número abre o que o gerou (25/11/2026) */
+.dativ-num { padding: 0 2px; border: 0; background: none !important; color: #0b4fd6 !important; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; box-shadow: none; min-height: 0; }
+.dativ-num:hover, .dativ-num:focus-visible { color: #003f9e !important; background: #eff6ff !important; border-radius: 4px; }
+.dativ-motivos .dativ-num b { color: inherit; }
+.dativ-barra-clicavel { cursor: pointer; border-radius: 6px; }
+.dativ-barra-clicavel:hover div, .dativ-barra-clicavel:focus-visible div { outline: 2px solid #93c5fd; }
+.dativ-barra-clicavel span { color: #0b4fd6; font-weight: 700; }
+button.dcart-kpi:disabled { cursor: default; opacity: 1; }
+button.dcart-kpi:disabled small { color: #64748b; }
+.dativ-tabela-detalhe { max-height: 420px; overflow: auto; }
+.dativ-tabela-detalhe td small { display: block; color: #64748b; font-size: 0.75rem; }
+@media (max-width: 640px) {
+  .dativ-tabela-detalhe thead { display: none; }
+  .dativ-tabela-detalhe table, .dativ-tabela-detalhe tbody, .dativ-tabela-detalhe tr, .dativ-tabela-detalhe td { display: block; width: 100%; }
+  .dativ-tabela-detalhe tr { padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+  .dativ-tabela-detalhe td { padding: 2px 0; border: 0; text-align: left; }
+  .dativ-tabela-detalhe td:first-child { font-weight: 700; color: #0b4fd6; }
+}

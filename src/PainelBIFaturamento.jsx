@@ -343,6 +343,20 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
     return a;
   }, { total: 0, emDia: 0, atrasados: 0, somaAtraso: 0, somaPrazo: 0, valor: 0 });
   const pontualidade = pontuar(periodo.r);
+  // Recebimentos por representante (representante da nota que gerou o título): carteira em aberto,
+  // vencido (posição na data de referência, sem o recorte de vencimento) e pontualidade dos liquidados no período.
+  const repDoTitulo = (x) => representantePorNota.get(chaveNotaFinanceiro(x)) || SEM_REPRESENTANTE;
+  const recebimentosPorRep = (() => {
+    const m = new Map();
+    const de = (c) => { if (!m.has(c)) m.set(c, { codigo: c, aberto: 0, vencido: 0, titulosVencidos: 0, somaAtrasoVencido: 0, liquidados: [] }); return m.get(c); };
+    emAberto.forEach((x) => {
+      const a = de(repDoTitulo(x)); a.aberto += n(x.valor_saldo);
+      if (x.data_vencimento < referencia) { a.vencido += n(x.valor_saldo); a.titulosVencidos += 1; a.somaAtrasoVencido += diasEntre(x.data_vencimento, referencia); }
+    });
+    periodo.r.forEach((x) => de(repDoTitulo(x)).liquidados.push(x));
+    return [...m.values()].map((a) => ({ ...a, nome: nomeRepresentante(a.codigo), pont: pontuar(a.liquidados) }))
+      .filter((a) => a.aberto || a.pont.total).sort((a, b) => b.vencido - a.vencido || b.aberto - a.aberto);
+  })();
   const pontualidadeClientes = (() => {
     const grupos = new Map();
     periodo.r.forEach((x) => grupos.set(x.cd_empresa, [...(grupos.get(x.cd_empresa) || []), x]));
@@ -710,6 +724,22 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
             <td>{x.atrasados ? `${Math.round(x.somaAtraso / x.atrasados)} d` : "—"}</td><td>{moeda(x.valor)}</td>
           </tr>)}</tbody>
         </table></div> : <p className="bi-vazio">Nenhum título liquidado no período.</p>}
+      </div>
+      <div className="bi-chart-card">
+        <div className="bi-chart-cabecalho"><h3>Recebimentos por representante</h3><span className="bi-contagem">{recebimentosPorRep.length} representante(s)</span></div>
+        {recebimentosPorRep.length ? <div className="bi-tabela-container"><table className="bi-tabela">
+          <thead><tr><th>Representante</th><th>Em aberto</th><th>Vencido</th><th title="Vencido sobre o total em aberto">% vencido</th><th title="Atraso médio dos títulos vencidos em aberto">Atraso médio vencidos</th><th title="Liquidados no período pagos até o vencimento">Pago em dia</th><th title="Atraso médio dos liquidados no período, quando atrasa">Atraso ao pagar</th></tr></thead>
+          <tbody>{recebimentosPorRep.map((x) => <tr key={x.codigo} className="bi-linha-clicavel" tabIndex={0} title="Ver títulos vencidos"
+            onClick={() => abrir(`Vencidos em aberto · ${x.nome}`, COL_TITULOS, linhasTitulos(emAberto.filter((t) => t.data_vencimento < referencia && repDoTitulo(t) === x.codigo)), "saldo", `Posição em ${dataBR(referencia)}`)}
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.click(); }}>
+            <td className="bi-celula-nome" title={x.nome}>{x.nome}</td><td>{moeda(x.aberto)}</td>
+            <td className={x.vencido ? "bi-delta-ruim" : ""}>{moeda(x.vencido)}</td>
+            <td>{x.aberto ? pct(x.vencido / x.aberto) : "—"}</td>
+            <td>{x.titulosVencidos ? `${Math.round(x.somaAtrasoVencido / x.titulosVencidos)} d (${x.titulosVencidos} tít.)` : "—"}</td>
+            <td className={x.pont.total && x.pont.emDia / x.pont.total < 0.7 ? "bi-delta-ruim" : x.pont.total ? "bi-delta-bom" : ""}>{x.pont.total ? pct(x.pont.emDia / x.pont.total) : "—"}</td>
+            <td>{x.pont.atrasados ? `${Math.round(x.pont.somaAtraso / x.pont.atrasados)} d` : "—"}</td>
+          </tr>)}</tbody>
+        </table></div> : <p className="bi-vazio">Nenhum título no recorte.</p>}
       </div>
       </>}
 

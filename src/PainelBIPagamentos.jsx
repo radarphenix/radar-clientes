@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Printer, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, Printer, RefreshCw } from "lucide-react";
+import * as XLSX from "xlsx";
 import StatTile from "./bi/StatTile.jsx";
 import BarChart from "./bi/BarChart.jsx";
 import DetalheBI from "./bi/DetalheBI.jsx";
@@ -139,6 +140,19 @@ export default function PainelBIPagamentos() {
   const topContas = agruparTop([...pagoNoPeriodo, ...abertos.filter((x) => entre(x.vencimento, inicio, fim))],
     (x) => x.conta || "-", (x) => x.conta_desc || "Sem conta", (x) => x.valor);
   const atalhoAtivo = ATALHOS.map(([t]) => t).find((t) => { const [a, b] = atalho(t); return a === inicio && b === fim; });
+  // Exporta o fluxo projetado: aba "Fluxo" (semanas, vencidos fora da conta) e aba "Lançamentos" (o que compõe cada semana).
+  function exportarFluxo() {
+    const resumo = fluxo.map((s) => ({ Semana: semanaBR(s), De: dataBR(s.desde), "Até": dataBR(s.ate), Entradas: s.entradas, "Saídas": s.saidas, "Saldo da semana": s.saldo, Acumulado: s.acumulado }));
+    resumo.push({}, { Semana: "Fora da conta: vencidos a receber", Entradas: atrasadoReceber }, { Semana: "Fora da conta: vencidos a pagar", "Saídas": atrasadoPagar });
+    const detalhe = fluxo.flatMap((s) => [
+      ...receberAbertos.filter((x) => entre(x.vencimento, s.desde, s.ate)).map((x) => ({ Semana: semanaBR(s), Tipo: "A receber", Vencimento: dataBR(x.vencimento), Nome: x.nome, "Histórico": x.historico_desc + (x.previsao ? " (previsão)" : ""), Conta: x.conta_desc, Documento: [x.nf ? `NF ${x.nf}` : "", x.documento || ""].filter(Boolean).join(" · "), Valor: x.saldo })),
+      ...abertos.filter((x) => entre(x.vencimento, s.desde, s.ate)).map((x) => ({ Semana: semanaBR(s), Tipo: "A pagar", Vencimento: dataBR(x.vencimento), Nome: x.nome, "Histórico": x.historico_desc + (x.previsao ? " (previsão)" : ""), Conta: x.conta_desc, Documento: [x.nf ? `NF ${x.nf}` : "", x.documento || ""].filter(Boolean).join(" · "), Valor: x.saldo })),
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), "Fluxo");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalhe), "Lançamentos");
+    XLSX.writeFile(wb, `fluxo_caixa_${ref}${comPrevisoes ? "_com_previsoes" : ""}.xlsx`);
+  }
   const semanaBR = (s) => `${dataBR(s.de).slice(0, 5)} a ${dataBR(s.ate).slice(0, 5)}`;
 
   return <section className="painel bi-painel">
@@ -196,6 +210,7 @@ export default function PainelBIPagamentos() {
         <div className="bi-chart-cabecalho">
           <h3>Próximas {SEMANAS_FLUXO} semanas · a receber × a pagar em aberto</h3>
           <span className="bi-contagem">Fora da conta: vencidos a receber {moeda(atrasadoReceber)} · vencidos a pagar {moeda(atrasadoPagar)}</span>
+          <button type="button" className="bi-botao-tabela" onClick={exportarFluxo} disabled={!fluxo.length}><FileSpreadsheet size={13} /> Exportar Excel</button>
         </div>
         <div className="bi-tabela-container"><table className="bi-tabela bi-fluxo">
           <thead><tr><th>Semana</th><th>Entradas</th><th>Saídas</th><th className="bi-fluxo-barras" aria-hidden="true"></th><th>Saldo da semana</th><th>Acumulado</th></tr></thead>

@@ -2043,3 +2043,12 @@ Fechamento das pendências da auditoria de 2026-08 e dos alertas do `supabase db
     - a lista "a receber" mostra "Liquidado em" abaixo do vencimento
     - a data de liquidação só chega ao Radar depois que o MWComissoesSync
       novo rodar; detalhes em `MWComissoesSync/MWCOMISSOESSYNC_ACOMPANHAMENTO.md`
+
+## 25/11/2026 · Localização da visita, BI por representante, fluxo em Excel, Atividade clicável e teste de acessos
+
+- **Local da visita** (sem aviso, só guarda): ao marcar visitado (`alterarStatusClienteRota`, `App.jsx`), o navegador lê a posição e grava em `rota_clientes.visitado_latitude/longitude/precisao_m/local_em` (migration `20261125130000_rota_clientes_local_visita.sql`). Não espera nem bloqueia: aparelho negou ou demorou (15 s) = fica nulo. Testado com rota temporária e posição simulada (gravou lat/lng/precisão; rota apagada).
+- **Recebimentos por representante** (`PainelBIFaturamento.jsx`): representante da nota que gerou o título (`representantePorNota`); em aberto, vencido na data de referência (sem o recorte de vencimento), % vencido, atraso médio dos vencidos e pontualidade dos liquidados no período. "Sem representante" = título cuja nota não está em `bi_notas_itens` (em 25/11 era a maior linha: R$ 374 mil vencidos, quase tudo antigo).
+- **Fluxo de caixa em Excel** (`PainelBIPagamentos.jsx`, `exportarFluxo`): abas Fluxo e Lançamentos, mesmo corte da tela (semana atual a partir de hoje).
+- **Atividade da equipe clicável** (`AtividadeEquipe.jsx`): cada número guarda as linhas que o geraram e abre o painel `DetalheAtividade` (no celular, uma linha por bloco).
+- **Correção** em `cigam-acompanhamentos`: a limpeza do código do cliente usava `replace(/D/g, "")` (tirava a letra D) em vez de `/\D/g`; afetava a carteira das compras do Dashboard e os alertas.
+- **Teste automático de acessos**: `npm run testar:acessos` (`scripts/testar-acessos.mjs`). Simula cada usuário ativo dentro do banco (role authenticated + jwt claims, transação nunca gravada) e confere carteira do representante, rotas, Painel BI, "mostrar valores", admin vendo tudo e Qualidade sem nada comercial. Primeira rodada: 12 usuários, 0 falhas, 1 alerta: o cliente **03017A** (sem representante) aparece para João (000060) e Romeu (000061) porque `radar_codigos_numericos_equivalentes` transforma "03017A" em "003017", que é vínculo deles. Comportamento antigo da regra; aguarda decisão do usuário.

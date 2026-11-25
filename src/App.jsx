@@ -4124,6 +4124,23 @@ function App() {
       return;
     }
 
+    // Guarda onde a pessoa estava ao marcar visitado (sem aviso e sem esperar: se o aparelho negar
+    // ou demorar, fica sem localização e o fluxo segue normal).
+    if (novoStatus === "VISITADO" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          supabase.from("rota_clientes").update({
+            visitado_latitude: pos.coords.latitude,
+            visitado_longitude: pos.coords.longitude,
+            visitado_precisao_m: pos.coords.accuracy,
+            visitado_local_em: new Date(pos.timestamp).toISOString(),
+          }).eq("id", itemRota.id).then(() => {});
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+      );
+    }
+
     if (novoStatus === "VISITADO" || novoStatus === "CANCELADO") {
       const { data: pautaVinculada } = await supabase
         .from("clientes_em_pauta")
