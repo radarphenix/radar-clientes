@@ -312,9 +312,11 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
   })();
 
   // ---- Recebimentos: semanas à frente, pontualidade e títulos sem baixa ----
+  // Semanas fechadas de segunda a domingo, começando pela semana da data de referência.
+  const segundaReferencia = deslocarDias(referencia, -((deIso(referencia).getDay() + 6) % 7));
   const semanasReceber = Array.from({ length: 8 }, (_, i) => {
-    const de = deslocarDias(referencia, i * 7);
-    const ate = deslocarDias(referencia, i * 7 + 6);
+    const de = deslocarDias(segundaReferencia, i * 7);
+    const ate = deslocarDias(segundaReferencia, i * 7 + 6);
     return { chave: i, de, ate, rotulo: `${dataBR(de).slice(0, 5)} a ${dataBR(ate).slice(0, 5)}`,
       valor: soma(emAberto.filter((x) => x.data_vencimento >= de && x.data_vencimento <= ate), (x) => n(x.valor_saldo)) };
   });
@@ -613,7 +615,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
           { nome: "Previsto", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pr })) },
           { nome: "Recebido", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.rec })) },
         ]} formatarValor={moeda} />
-        <BarChart titulo={`A receber nas próximas 8 semanas · a partir de ${dataBR(referencia)}`} itens={semanasReceber} corPadrao={CATEGORICAL.vendas} formatarValor={moeda}
+        <BarChart titulo={`A receber por semana (seg. a dom.) · desde ${dataBR(segundaReferencia)}`} itens={semanasReceber} corPadrao={CATEGORICAL.vendas} formatarValor={moeda}
           onSelecionarItem={(item) => abrir(`A receber · ${item.rotulo}`, COL_TITULOS, linhasTitulos(emAberto.filter((x) => x.data_vencimento >= item.de && x.data_vencimento <= item.ate)), "saldo", `Posição em ${dataBR(referencia)}`)} />
       </div>
       <h3 className="bi-secao-titulo">Caixa</h3>
