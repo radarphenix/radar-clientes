@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CalendarClock, MapPinned, TrendingDown, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, AlertTriangle, CalendarClock, Map as MapaIcone, MapPinned, TrendingDown, Users } from "lucide-react";
+import MapaCarteira from "./MapaCarteira.jsx";
+import AtividadeEquipe from "./AtividadeEquipe.jsx";
 import { supabase } from "./supabaseClient";
 import { chamarAcompanhamentosCigam } from "./lib/cigamAcompanhamentos.js";
 import "./dashboard-carteira.css";
@@ -22,7 +24,29 @@ const local = (c) => (c.pais ? c.pais : `${c.cidade || "-"}${c.uf ? `/${c.uf}` :
 // Origem da visita, como o usuário pediu: "Rota" (marcada como visitado) ou "Acompanhamento" (VISITA/VISITA TECNICA).
 const ORIGEM = { radar: "Rota", cigam: "Acompanhamento" };
 
-function Lista({ itens, vazio, colunaExtra, abrirFicha }) {
+// Ações do cliente: abrir a ficha, incluir numa rota aberta (escolhendo qual) ou colocar em pauta.
+function Acoes({ c, acoes }) {
+  const [escolhendo, setEscolhendo] = useState(false);
+  const { abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas = [] } = acoes;
+  return (
+    <div className="dcart-acoes">
+      <button type="button" className="dcart-ficha" onClick={() => abrirFicha(c)}>Ficha</button>
+      {adicionarNaRota && <button type="button" className="dcart-ficha" aria-expanded={escolhendo} onClick={() => setEscolhendo(!escolhendo)}>Rota</button>}
+      {colocarPauta && <button type="button" className="dcart-ficha" onClick={() => colocarPauta(c)}>Pauta</button>}
+      {escolhendo && (
+        <div className="dcart-rotas" role="menu">
+          {rotasAbertas.length ? rotasAbertas.map((r) => (
+            <button key={r.id} type="button" role="menuitem" onClick={async () => { setEscolhendo(false); await adicionarNaRota(c, r); }}>
+              {r.nome || `Rota ${r.id}`}<small>{r.status}{r.data_rota ? ` · ${dataBR(r.data_rota)}` : ""}</small>
+            </button>
+          )) : <p>Nenhuma rota aberta. Crie uma em Rotas.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Lista({ itens, vazio, colunaExtra, acoes }) {
   const [todos, setTodos] = useState(false);
   if (!itens.length) return <p className="dcart-vazio">{vazio}</p>;
   const mostrar = todos ? itens : itens.slice(0, LIMITE);
@@ -39,7 +63,7 @@ function Lista({ itens, vazio, colunaExtra, abrirFicha }) {
               </small>
             </div>
             <div className="dcart-extra">{colunaExtra(c)}</div>
-            <button type="button" className="dcart-ficha" onClick={() => abrirFicha(c)}>Ficha</button>
+            <Acoes c={c} acoes={acoes} />
           </li>
         ))}
       </ul>
@@ -52,7 +76,10 @@ function Lista({ itens, vazio, colunaExtra, abrirFicha }) {
   );
 }
 
-export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha }) {
+export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas }) {
+  const acoes = { abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas };
+  const [noMapa, setNoMapa] = useState(null);
+  const selecionarNoMapa = useCallback((c) => setNoMapa(c), []);
   const [visitas, setVisitas] = useState(null); // Radar: cliente_id -> { em, quem }
   const [visitasCigam, setVisitasCigam] = useState(new Map()); // codigo6 -> { em, quem, titulo }
   const [detalhe, setDetalhe] = useState(null); // card aberto
@@ -183,11 +210,11 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
             <button type="button" className="dcart-mais" onClick={() => setDetalhe(null)}>fechar</button>
           </div>
           {detalhe === "nunca" ? (
-            <Lista itens={carteira.filter((c) => !c.ultimaVisita).sort(ordenarValor)} abrirFicha={abrirFicha} vazio="Todos os clientes já foram visitados."
+            <Lista itens={carteira.filter((c) => !c.ultimaVisita).sort(ordenarValor)} acoes={acoes} vazio="Todos os clientes já foram visitados."
               colunaExtra={(c) => (c.compra?.total12 ? <><strong>{moeda(c.compra.total12)}</strong><small>em 12 meses</small></> : <small>sem compras</small>)} />
           ) : (
             <Lista itens={carteira.filter((c) => c.diasVisita !== null && c.diasVisita <= detalhe).sort((a, b) => b.ultimaVisita.localeCompare(a.ultimaVisita))}
-              abrirFicha={abrirFicha} vazio="Nenhuma visita no período."
+              acoes={acoes} vazio="Nenhuma visita no período."
               colunaExtra={(c) => <><strong>{dataBR(c.ultimaVisita)}</strong><small>{c.quemVisitou || "—"} · {ORIGEM[c.origemVisita]}</small></>} />
           )}
         </section>
@@ -201,7 +228,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
           <section className="dcart-bloco dcart-destaque">
             <h4><AlertTriangle size={18} /> Compram e não são visitados há +90 dias</h4>
             {compras ? (
-              <Lista itens={compramSemVisita} abrirFicha={abrirFicha} vazio="Nenhum cliente comprador sem visita. 👍"
+              <Lista itens={compramSemVisita} acoes={acoes} vazio="Nenhum cliente comprador sem visita. 👍"
                 colunaExtra={(c) => <><strong>{moeda(c.compra.total12)}</strong><small>em 12 meses</small></>} />
             ) : <p className="dcart-vazio">{erroCompras ? `Não foi possível buscar as compras: ${erroCompras}` : "Buscando compras…"}</p>}
           </section>
@@ -210,7 +237,7 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
         <section className="dcart-bloco">
           <h4><MapPinned size={18} /> Sem visita há +90 dias{podeCompras && compras ? " · demais clientes" : ""}</h4>
           <Lista itens={semVisita90.filter((c) => !(podeCompras && compras && c.compra?.total12 > 0)).sort(podeCompras ? ordenarValor : (a, b) => (b.diasVisita ?? 9999) - (a.diasVisita ?? 9999))}
-            abrirFicha={abrirFicha} vazio="Toda a carteira foi visitada nos últimos 90 dias. 👍"
+            acoes={acoes} vazio="Toda a carteira foi visitada nos últimos 90 dias. 👍"
             colunaExtra={(c) => <><strong>{c.ultimaVisita ? dataBR(c.ultimaVisita) : "nunca"}</strong><small>última visita</small></>} />
         </section>
       </div>
@@ -230,17 +257,39 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
           </div>
           {!compras ? <p className="dcart-vazio">{erroCompras ? `Não foi possível buscar as compras: ${erroCompras}` : "Buscando compras…"}</p> : (
             <>
-              {aba === "atrasada" && <Lista itens={atrasada} abrirFicha={abrirFicha} vazio="Nenhum cliente com compra atrasada."
+              {aba === "atrasada" && <Lista itens={atrasada} acoes={acoes} vazio="Nenhum cliente com compra atrasada."
                 colunaExtra={(c) => <><strong className="dcart-ruim">{dias(c.compra.proxima)} d de atraso</strong><small>compra a cada {c.compra.frequencia} d</small></>} />}
-              {aba === "parados" && <Lista itens={parados} abrirFicha={abrirFicha} vazio="Nenhum cliente parado há mais de 90 dias."
+              {aba === "parados" && <Lista itens={parados} acoes={acoes} vazio="Nenhum cliente parado há mais de 90 dias."
                 colunaExtra={(c) => <><strong>{moeda(c.compra.total12)}</strong><small>últ. compra {dataBR(c.compra.ultima)}</small></>} />}
-              {aba === "queda" && <Lista itens={queda} abrirFicha={abrirFicha}
+              {aba === "queda" && <Lista itens={queda} acoes={acoes}
                 vazio={compras.historico_desde && dias(compras.historico_desde) < 395 ? "Ainda não há 2 anos de notas para comparar." : "Nenhum cliente com queda relevante."}
                 colunaExtra={(c) => <><strong className="dcart-ruim"><TrendingDown size={14} /> {pct(c.compra.total24 - c.compra.total12, c.compra.total24)}%</strong><small>{moeda(c.compra.total12)} vs {moeda(c.compra.total24)}</small></>} />}
             </>
           )}
         </section>
       )}
+
+      <section className="dcart-bloco">
+        <h4><MapaIcone size={18} /> Mapa da carteira · última visita</h4>
+        <MapaCarteira clientes={carteira} onSelecionar={selecionarNoMapa} />
+        {noMapa && (
+          <ul className="dcart-lista dcart-mapa-sel">
+            <li>
+              <div className="dcart-cli">
+                <strong title={noMapa.cliente}>{noMapa.cliente}</strong>
+                <small>{local(noMapa)} · visita: {noMapa.ultimaVisita ? `${dataBR(noMapa.ultimaVisita)} (${ORIGEM[noMapa.origemVisita]}${noMapa.quemVisitou ? ` · ${noMapa.quemVisitou}` : ""})` : "nunca"}</small>
+              </div>
+              <div className="dcart-extra">{noMapa.compra?.total12 ? <><strong>{moeda(noMapa.compra.total12)}</strong><small>em 12 meses</small></> : null}</div>
+              <Acoes c={noMapa} acoes={acoes} />
+            </li>
+          </ul>
+        )}
+      </section>
+
+      <section className="dcart-bloco">
+        <h4><Activity size={18} /> Atividade da equipe</h4>
+        <AtividadeEquipe usuarios={usuarios} />
+      </section>
     </div>
   );
 }

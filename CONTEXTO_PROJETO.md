@@ -1612,6 +1612,12 @@ No Historico anual, a composicao da comissao mostra separadamente comissao perce
 - **HTTP/1.1 obrigatório**: o servidor do CIGAM recusa HTTP/2 em algumas respostas ("endpoint requires HTTP/1.1", ex.: cliente sem acompanhamentos), o que derrubava a ficha desses clientes. `api()` usa `Deno.createHttpClient({ http1: true, http2: false })`.
 - Dashboard: visita mais recente entre Radar e CIGAM, com quem visitou (responsável da rota ou usuário do acompanhamento) e origem; cards clicáveis abrem a lista. País dos clientes UF "EX" vem de `Pessoa.CodigoPais` + `Pais/Buscar` (no retorno de `?dashboard=carteira`, campo `paises`).
 
+### Dashboard · etapa 2 (2026-11-24)
+- Ações por cliente nas listas e no ponto do mapa (`Acoes` em `DashboardCarteira.jsx`): Ficha (`abrirAcompanhamento`), **Rota** (`adicionarClienteEmRotaEscolhida` em `App.jsx`: escolhe entre as rotas não finalizadas do usuário, ou todas com `rotas.todas`; recusa duplicado; insere PENDENTE no fim e marca a pauta ativa como EM_ROTA, como `adicionarClienteNaRota`) e **Pauta** (`abrirModalPauta`, modal existente). Botões seguem `pode("rotas")` e `pode("clientes_em_pauta")`.
+- **Mapa** (`src/MapaCarteira.jsx`, Leaflet 1.9 + tiles OpenStreetMap, dependência nova `leaflet`): `clientes.latitude/longitude` (257 de 269 com coordenada), cor por faixa (`src/lib/faixasVisita.js`); enquadramento inicial só Brasil (UF EX, país ou fora da caixa lat -34..6 / lng -74..-34 ficam fora). `public/_headers` (CSP report-only) inclui `https://*.tile.openstreetmap.org` em img-src.
+- **Atividade da equipe** (`src/AtividadeEquipe.jsx`): `rota_clientes` + `rotas` (RLS); visitas por semana (segunda a domingo, por `visitado_em`), por pessoa (responsável da rota), conclusão das rotas FINALIZADA (visitados ÷ incluídos), cancelamentos e `motivo_cancelamento`.
+- Pegadinha de teste: `npm install` de dependência nova remove o Playwright (instalado sem salvar); reinstalar com `npm install --no-save playwright` e, se pedir, `npx playwright install chromium-headless-shell`.
+
 ## Painel BI separado: Faturamento, Recebimentos e Pagamentos (2026-11-24)
 
 - `PainelBIFaturamento.jsx` agora tem `modo` = `faturamento` (seção Comercial + lista de pedidos/notas) ou `recebimentos` (seção Caixa + "A receber nas próximas 8 semanas" + Pontualidade e alertas). Mesmos filtros e dados (`bi_*` do MWFaturamentoSync); recebimentos não lê `bi_pedidos_itens`.

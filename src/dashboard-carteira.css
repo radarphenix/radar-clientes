@@ -58,3 +58,54 @@ button.dcart-kpi, button.dcart-kpi:hover, button.dcart-kpi:focus, button.dcart-k
 button.dcart-kpi[data-aberto="true"] { background: #eff6ff !important; }
 button.dcart-kpi span { color: #64748b; }
 button.dcart-kpi strong { color: #0f172a; }
+
+/* Ações por cliente (Ficha / Rota / Pauta) */
+.dcart-acoes { position: relative; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.dcart-rotas {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; min-width: 240px; max-height: 260px; overflow: auto;
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); padding: 4px;
+}
+.dcart-rotas button {
+  display: grid; width: 100%; text-align: left; gap: 1px; padding: 8px 10px; border: none; border-radius: 8px;
+  background: #fff !important; color: #0f172a !important; font-weight: 600; font-size: 0.85rem; cursor: pointer; box-shadow: none;
+}
+.dcart-rotas button:hover { background: #eff6ff !important; }
+.dcart-rotas small { color: #64748b; font-weight: 400; font-size: 0.75rem; }
+.dcart-rotas p { margin: 8px 10px; font-size: 0.82rem; color: #64748b; }
+/* Mapa */
+.dcart-mapa-wrap { display: grid; gap: 8px; }
+.dcart-mapa { height: 420px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; z-index: 0; }
+.dcart-mapa-legenda { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dcart-mapa-legenda button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid #cbd5e1;
+  background: #fff !important; color: #334155 !important; font-size: 0.8rem; font-weight: 600; cursor: pointer; box-shadow: none;
+}
+.dcart-mapa-legenda button[data-off="true"] { opacity: 0.4; text-decoration: line-through; }
+.dcart-mapa-legenda i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dcart-mapa-ext { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: #64748b; margin-left: auto; }
+.dcart-mapa-sel { margin-top: 8px; border-top: 1px dashed #cbd5e1; }
+/* Atividade */
+.dativ { display: grid; gap: 12px; }
+.dativ-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.dativ-grafico { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; height: 150px; align-items: end; }
+.dativ-barra { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; gap: 3px; }
+.dativ-barra span { font-size: 0.72rem; color: #475569; min-height: 1em; }
+.dativ-barra div { display: flex; align-items: flex-end; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+.dativ-barra i { width: 100%; background: linear-gradient(180deg, #22c55e, #15803d); border-radius: 6px 6px 0 0; }
+.dativ-barra small { font-size: 0.68rem; color: #64748b; }
+.dativ-tabela { overflow-x: auto; }
+.dativ-tabela table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.dativ-tabela th { text-align: left; font-size: 0.75rem; color: #64748b; padding: 6px; border-bottom: 1px solid #e2e8f0; }
+.dativ-tabela td { padding: 7px 6px; border-bottom: 1px solid #f1f5f9; }
+.dativ-tabela td small { display: block; color: #94a3b8; font-size: 0.72rem; }
+.dativ-sub { margin: 0 0 8px; font-size: 0.88rem; }
+.dativ-motivos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.dativ-motivos li { display: flex; justify-content: space-between; gap: 10px; font-size: 0.86rem; padding: 6px 8px; background: #f8fafc; border-radius: 8px; }
+@media (max-width: 560px) {
+  .dcart-mapa { height: 320px; }
+  .dativ-kpis { grid-template-columns: 1fr; }
+  .dativ-grafico { gap: 2px; height: 120px; }
+  .dativ-barra span { display: none; }
+  .dativ-barra { grid-template-rows: 1fr auto; }
+  .dcart-acoes { grid-row: 1 / span 2; grid-column: 2; flex-direction: column; }
+}

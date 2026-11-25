@@ -3753,6 +3753,35 @@ function App() {
 
     window.open(url, "_blank");
   }
+  // Dashboard: inclui o cliente numa rota escolhida (sem precisar abrir a rota antes). Mesmo efeito de
+  // adicionarClienteNaRota: entra no fim da fila como PENDENTE e a pauta ativa do cliente vira EM_ROTA.
+  async function adicionarClienteEmRotaEscolhida(cliente, rota) {
+    const { data: itens, error: erroItens } = await supabase
+      .from("rota_clientes").select("id, cliente_id").eq("rota_id", rota.id);
+    if (erroItens) { alert("Falha ao consultar a rota: " + erroItens.message); return; }
+    if ((itens || []).some((x) => x.cliente_id === cliente.id)) {
+      alert(`${cliente.cliente} já está na rota "${rota.nome || rota.id}".`);
+      return;
+    }
+    const { data: inserido, error } = await supabase
+      .from("rota_clientes")
+      .insert({
+        rota_id: rota.id, cliente_id: cliente.id, sequencia: (itens || []).length + 1,
+        status: "PENDENTE", visitado: false, incluido_por: session.user.id,
+      })
+      .select("id").single();
+    if (error) { alert("Falha ao adicionar cliente na rota: " + error.message); return; }
+    const { data: pautaAtiva } = await supabase
+      .from("clientes_em_pauta").select("id").eq("cliente_id", cliente.id).eq("status", "ATIVO").maybeSingle();
+    if (pautaAtiva) {
+      await supabase.from("clientes_em_pauta").update({
+        status: "EM_ROTA", rota_cliente_id: inserido.id, atualizado_por: session.user.id, atualizado_em: new Date().toISOString(),
+      }).eq("id", pautaAtiva.id);
+    }
+    alert(`${cliente.cliente} incluído na rota "${rota.nome || rota.id}".`);
+    carregarRotas();
+  }
+
   async function adicionarClienteNaRota(cliente) {
     if (!rotaSelecionada) {
       alert("Abra uma rota antes de adicionar clientes.");
@@ -7098,6 +7127,10 @@ function App() {
               verTodos={pode("rotas.todas")}
               podeCompras={pode("clientes.cigam_visao") || pode("clientes.cigam_vendas")}
               abrirFicha={abrirAcompanhamento}
+              colocarPauta={pode("clientes_em_pauta") ? abrirModalPauta : null}
+              adicionarNaRota={pode("rotas") ? adicionarClienteEmRotaEscolhida : null}
+              rotasAbertas={(rotas || []).filter((r) => String(r.status || "").toUpperCase() !== "FINALIZADA"
+                && (pode("rotas.todas") || (r.usuario_responsavel || r.user_id) === session.user.id))}
             />
 
             <div className="dashboard-grupo">

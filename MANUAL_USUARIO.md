@@ -332,7 +332,9 @@ Tela: indicadores de negocio e produtividade.
 - **Compram e nao sao visitados ha +90 dias** (com acesso a Visao geral ou a Pedidos e notas do CIGAM): clientes que compraram nos ultimos 12 meses, ordenados pelo valor.
 - **Sem visita ha +90 dias**: os demais clientes sem visita recente.
 - **Oportunidades no CIGAM**: **Compra atrasada** (cliente com 3 ou mais compras, que comprou nos ultimos 90 dias e ja passou da proxima compra prevista pelo ritmo dele), **Parados +90 dias** e **Queda vs ano anterior** (quando houver 2 anos de notas no CIGAM).
-- Cada cliente tem o botao **Ficha**, que abre a ficha do cliente; o Voltar retorna ao Dashboard.
+- Cada cliente tem os botoes **Ficha** (abre a ficha; o Voltar retorna ao Dashboard), **Rota** (escolhe uma rota aberta e inclui o cliente no fim da fila, como pendente) e **Pauta** (abre o cadastro de Clientes em Pauta com o cliente preenchido).
+- **Mapa da carteira**: pontos coloridos pela ultima visita (verde ate 30 dias, amarelo ate 90, vermelho acima de 90 ou nunca). Clique na legenda para esconder/mostrar uma cor; clique num ponto para ver o cliente com os botoes Ficha, Rota e Pauta. O mapa abre enquadrado no Brasil; marque "enquadrar exterior" para incluir os clientes de fora.
+- **Atividade da equipe**: visitas por semana (12 semanas, pelas rotas marcadas como visitado), conclusao das rotas finalizadas (visitados / incluidos), cancelamentos, tabela por pessoa (visitas em 30 e 90 dias, cancelamentos, conclusao) e motivos de cancelamento.
 
 - Indicadores organizados em cards horizontais compactos, com icone, rotulo e valor.
 - No desktop, os indicadores sao distribuidos em ate cinco colunas; no mobile, em duas colunas.
