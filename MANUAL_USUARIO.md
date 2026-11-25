@@ -1315,6 +1315,25 @@ Rankings: **Top 10 clientes por faturado líquido**, **Top 10 clientes por carte
 
 Cada pedido aparece uma vez, com o número das notas que o faturaram. Clique para abrir os itens: controle de cada item e em qual nota (data e valor) ele foi faturado. Notas sem pedido (**Não previsto**) e notas de pedido previsto em outro período aparecem como documento próprio. Devoluções aparecem com valor negativo e o selo **Devolução da NF** (nota original). A lista mostra 40 por vez (**Mostrar mais**). **Exportar Excel** gera duas abas: os itens da lista filtrada e os vencidos por cliente.
 
+## 24.1 Painel BI - Funil e entregas, Desempenho comercial e Crédito e caixa
+
+Três painéis próprios no submenu **Painel BI** (desde 25/11/2026), para não carregar os que já existem. Cada um tem seu acesso em Administração → Acessos (no início só admin). Todos têm os atalhos de período (Mês atual, Trimestre, Semestre, Ano, Últimos 12 meses ou datas à mão), e todo número abre a lista com **Exportar Excel**.
+
+**Funil e entregas**
+- **Funil de pedidos** (pela data do pedido): lançado no período, quanto virou venda (aprovado ou faturado), quanto segue em aberto (negociação + aguardando aprovação) e a **conversão = venda ÷ lançado**; valor por situação atual e conversão por representante.
+- **Entrega no prazo** (pela data da nota): % dos itens faturados até a data de previsão do pedido, atraso médio dos que atrasaram, % no prazo por família e os aprovados com previsão vencida ainda não faturados.
+- **Devoluções**: devolvido no período, devolvido ÷ faturado, por família e por cliente.
+- Limites: o ERP guarda só a situação atual de cada item (não dá para medir o tempo de cada etapa) e itens cancelados não chegam ao Radar, por isso não há "perdido". O tempo do pedido até a nota não aparece porque a maioria dos pedidos é digitada no dia do faturamento.
+
+**Desempenho comercial** (visitas × compras da carteira de cada representante; representante = o do cadastro do cliente)
+- Carteira visitada, visitados que compraram depois da visita, faturado por visita (faturado dos visitados ÷ visitas), carteira parada (sem visita e sem compra), visitados que não compraram e compraram sem visita.
+- Tabela por representante (clique na linha para ver os clientes) e gráficos de % visitada e faturado por visita.
+- Visita = rota marcada como visitado ou acompanhamento VISITA / VISITA TÉCNICA (mesmo dia conta uma vez). Os acompanhamentos dos últimos 12 meses são atualizados às 7h, 12h e 17h.
+
+**Crédito e caixa**
+- **Matriz valor × pagamento** (no período): Proteger (grandes que pagam bem), Atenção (grandes que pagam mal), Crescer (menores que pagam bem) e Revisar crédito (menores que pagam mal). Grande = classe A da curva ABC. Paga bem = pagou em dia, com até 5 dias de tolerância pela compensação bancária, pelo menos 80% dos títulos que venceram no período, e nenhum título do período vencido há mais de 30 dias. Cuidado com períodos que incluam o início de 2026: há títulos daquela época ainda em aberto por falta de baixa no ERP.
+- **Caixa futuro** (sempre a partir de hoje, 6 meses): títulos emitidos a vencer + pedidos aprovados ainda não faturados, projetados para a data de previsão (vencida = hoje) mais o prazo médio do cliente (vencimento − emissão dos títulos dele; sem histórico, a média geral). Vencidos em aberto ficam num card à parte.
+
 ## 25. App da feira Veste Phenix (atendimento sem login)
 
 Endereco: `radarphenix.pages.dev/feira/veste-phenix` (pode ser instalado como

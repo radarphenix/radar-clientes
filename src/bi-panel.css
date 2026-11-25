@@ -245,3 +245,9 @@ td.bi-fluxo-barras { display: grid; gap: 3px; padding-top: 8px; padding-bottom: 
 .bi-mapa { height:420px; border-radius:12px; border:1px solid #d7e3f1; overflow:hidden; }
 .bi-stat-tile span { overflow-wrap:anywhere; }
 @media (max-width: 560px) { .bi-mapa { height:320px; } }
+
+/* Painéis Funil e entregas, Desempenho comercial e Crédito e caixa */
+.bi-tabela-bloco { min-width:0; padding:18px; border:1px solid #d7e3f1; border-radius:14px; background:#fff; }
+.bi-tabela-bloco .bi-subtitulo { margin-top:0; }
+.bi-linha-clicavel { cursor:pointer; }
+.bi-linha-clicavel:hover td, .bi-linha-clicavel:focus-visible td { background:#eaf2fb; }

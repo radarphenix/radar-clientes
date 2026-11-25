@@ -26,6 +26,9 @@ import PainelBI from "./PainelBI.jsx";
 import PainelBIFaturamento from "./PainelBIFaturamento.jsx";
 import PainelBIPagamentos from "./PainelBIPagamentos.jsx";
 import DashboardCarteira from "./DashboardCarteira.jsx";
+import PainelBIFunil from "./PainelBIFunil.jsx";
+import PainelBIDesempenho from "./PainelBIDesempenho.jsx";
+import PainelBICredito from "./PainelBICredito.jsx";
 import { urlAdicionarGoogleCalendar, urlWebcal } from "./lib/agendaLinks.js";
 import "./minha-agenda.css";
 import "./promocao.css";
@@ -5473,7 +5476,7 @@ function App() {
           </MenuGrupo>
           )}
 
-          {(pode("dashboard") || pode("bi_comissoes") || pode("bi_faturamento") || pode("bi_recebimentos") || pode("bi_pagamentos") || pode("comissoes") || pode("amostras")) && (
+          {(pode("dashboard") || pode("bi_comissoes") || pode("bi_faturamento") || pode("bi_recebimentos") || pode("bi_pagamentos") || pode("bi_funil") || pode("bi_desempenho") || pode("bi_credito") || pode("comissoes") || pode("amostras")) && (
           <MenuGrupo
             titulo="Gestão e Análise"
             icone={BarChart3}
@@ -5495,7 +5498,7 @@ function App() {
             </button>
             )}
 
-            {(pode("bi_comissoes") || pode("bi_faturamento") || pode("bi_recebimentos") || pode("bi_pagamentos")) && (
+            {(pode("bi_comissoes") || pode("bi_faturamento") || pode("bi_recebimentos") || pode("bi_pagamentos") || pode("bi_funil") || pode("bi_desempenho") || pode("bi_credito")) && (
               <div className="menu-subgrupo">
                 <span>Painel BI</span>
                 {pode("bi_comissoes") && (
@@ -5516,6 +5519,21 @@ function App() {
                 {pode("bi_pagamentos") && (
                 <button type="button" className={telaAtual === "painelBIPagamentos" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIPagamentos"); setMenuMobileAberto(false); }}>
                   <LineChart size={18} /> Pagamentos
+                </button>
+                )}
+                {pode("bi_funil") && (
+                <button type="button" className={telaAtual === "painelBIFunil" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIFunil"); setMenuMobileAberto(false); }}>
+                  <LineChart size={18} /> Funil e entregas
+                </button>
+                )}
+                {pode("bi_desempenho") && (
+                <button type="button" className={telaAtual === "painelBIDesempenho" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBIDesempenho"); setMenuMobileAberto(false); }}>
+                  <LineChart size={18} /> Desempenho comercial
+                </button>
+                )}
+                {pode("bi_credito") && (
+                <button type="button" className={telaAtual === "painelBICredito" ? "ativo" : ""} onClick={() => { setTelaAtual("painelBICredito"); setMenuMobileAberto(false); }}>
+                  <LineChart size={18} /> Crédito e caixa
                 </button>
                 )}
               </div>
@@ -7204,6 +7222,9 @@ function App() {
         {pode("bi_pagamentos") && telaAtual === "painelBIPagamentos" && (
           <PainelBIPagamentos />
         )}
+        {pode("bi_funil") && telaAtual === "painelBIFunil" && <PainelBIFunil />}
+        {pode("bi_desempenho") && telaAtual === "painelBIDesempenho" && <PainelBIDesempenho />}
+        {pode("bi_credito") && telaAtual === "painelBICredito" && <PainelBICredito />}
         {pode("bi_faturamento") && telaAtual === "painelBIFaturamento" && (
           <PainelBIFaturamento key="faturamento" modo="faturamento" />
         )}

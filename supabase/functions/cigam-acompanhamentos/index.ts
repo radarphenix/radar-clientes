@@ -379,9 +379,14 @@ async function sincronizarVisitas(req: Request) {
         const visitas = itens.filter((a) => TITULOS_VISITA.has(String(a.titulo || "").trim().toUpperCase()) && a.data)
           .sort((a, b) => String(b.data).localeCompare(String(a.data)));
         const v = visitas[0];
+        // Lista dos 12 meses (um registro por dia) para o painel Desempenho comercial.
+        const corte = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+        const dias = new Map<string, string>();
+        for (const x of visitas) { const d = String(x.data).slice(0, 10); if (d >= corte && !dias.has(d)) dias.set(d, String(x.usuario || "")); }
         await sb.from("cigam_visitas_clientes").upsert({
           codigo_cliente: codigo, ultima_visita: v ? String(v.data).slice(0, 10) : null,
           titulo: v?.titulo || null, usuario: v?.usuario || null, atualizado_em: new Date().toISOString(),
+          visitas_12m: [...dias.entries()].map(([data, usuario]) => ({ data, usuario })),
         });
         processados++; if (v) comVisita++;
       } catch {

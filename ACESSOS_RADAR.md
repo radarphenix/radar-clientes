@@ -58,6 +58,9 @@ o `db push` roda de novo sem efeito (idempotente).
 | `bi_faturamento` | Painel BI · Faturamento (comercial); RLS de `bi_pedidos_itens` | só admin |
 | `bi_recebimentos` | Painel BI · Recebimentos; RLS de `bi_lancamentos_financeiros`, `bi_notas_itens` e `bi_devolucoes_itens` aceita `bi_faturamento` OU `bi_recebimentos` | só admin |
 | `bi_pagamentos` | Painel BI · Pagamentos (ao vivo do CIGAM, função `cigam-acompanhamentos?bi=financeiro`, conferido no servidor) | só admin |
+| `bi_funil` | Painel BI · Funil e entregas (funil de pedidos, entrega no prazo, devoluções) | só admin |
+| `bi_desempenho` | Painel BI · Desempenho comercial (visitas × compras por representante) | só admin |
+| `bi_credito` | Painel BI · Crédito e caixa (matriz valor × pagamento, caixa futuro) | só admin |
 
 Migration: `20261124240000_bi_recebimentos_pagamentos.sql`.
 
