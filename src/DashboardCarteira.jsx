@@ -76,7 +76,7 @@ function Lista({ itens, vazio, colunaExtra, acoes }) {
   );
 }
 
-export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas }) {
+export default function DashboardCarteira({ clientes, usuarios = [], podeCompras, verTodos, abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas, criarRota, usuarioAtual, podeEscolherResponsavel }) {
   const acoes = { abrirFicha, colocarPauta, adicionarNaRota, rotasAbertas };
   const [noMapa, setNoMapa] = useState(null);
   const selecionarNoMapa = useCallback((c) => setNoMapa(c), []);
@@ -271,7 +271,8 @@ export default function DashboardCarteira({ clientes, usuarios = [], podeCompras
 
       <section className="dcart-bloco">
         <h4><MapaIcone size={18} /> Mapa da carteira · última visita</h4>
-        <MapaCarteira clientes={carteira} onSelecionar={selecionarNoMapa} />
+        <MapaCarteira clientes={carteira} onSelecionar={selecionarNoMapa} criarRota={criarRota} usuarios={usuarios}
+          usuarioAtual={usuarioAtual} podeEscolherResponsavel={podeEscolherResponsavel} />
         {noMapa && (
           <ul className="dcart-lista dcart-mapa-sel">
             <li>
