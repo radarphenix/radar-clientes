@@ -100,7 +100,9 @@ export default function MapaCarteira({ clientes, onSelecionar, onAdicionar, jaNa
       const exterior = String(c.uf || "").trim().toUpperCase() === "EX" || !!c.pais || lat > 6 || lat < -34 || lng > -34 || lng < -74;
       return mostrarExterior || !exterior;
     }).map((c) => [Number(c.latitude), Number(c.longitude)]);
-    if (pontos.length) mapa.current.fitBounds(pontos, { padding: [24, 24], maxZoom: 9 });
+    // Só há clientes do exterior (ex.: filtro Região = Exterior): enquadra todos eles.
+    const alvo = pontos.length ? pontos : comCoordenada.map((c) => [Number(c.latitude), Number(c.longitude)]);
+    if (alvo.length) mapa.current.fitBounds(alvo, { padding: [24, 24], maxZoom: 9 });
   }, [comCoordenada, mostrarExterior]);
 
   useEffect(() => {
@@ -114,7 +116,8 @@ export default function MapaCarteira({ clientes, onSelecionar, onAdicionar, jaNa
         fillColor: faixa.cor, fillOpacity: 0.9,
       });
       const valor = !semFinanceiro && c.compra?.total12 ? ` · ${Number(c.compra.total12).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })} em 12 meses` : "";
-      m.bindTooltip(`${c.cliente}<br>${c.ultimaVisita ? `visita há ${c.diasVisita} d` : "nunca visitado"}${valor}`, { direction: "top" });
+      const aprox = c.localAproximado ? `<br><i>local aproximado (${c.localAproximado === "pais" ? "só o país" : "centro da cidade"}${c.pais ? `: ${c.pais}` : ""})</i>` : "";
+      m.bindTooltip(`${c.cliente}<br>${c.ultimaVisita ? `visita há ${c.diasVisita} d` : "nunca visitado"}${valor}${aprox}`, { direction: "top" });
       m.on("click", () => {
         if (montando) setEscolhidos((e) => (e.some((x) => x.id === c.id) ? e.filter((x) => x.id !== c.id) : [...e, c]));
         else onSelecionar?.(c);
