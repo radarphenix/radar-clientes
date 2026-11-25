@@ -66,7 +66,7 @@ function PainelSelecao({ escolhidos, setEscolhidos, onAdicionar }) {
   );
 }
 
-export default function MapaCarteira({ clientes, onSelecionar, onAdicionar, jaNaRota }) {
+export default function MapaCarteira({ clientes, onSelecionar, onAdicionar, jaNaRota, semFinanceiro = false }) {
   const caixa = useRef(null);
   const mapa = useRef(null);
   const camada = useRef(null);
@@ -113,7 +113,7 @@ export default function MapaCarteira({ clientes, onSelecionar, onAdicionar, jaNa
         radius: (faixa.raio || 7) + (escolhido ? 2 : 0), color: escolhido ? "#0f172a" : "#fff", weight: escolhido ? 3 : 1.5,
         fillColor: faixa.cor, fillOpacity: 0.9,
       });
-      const valor = c.compra?.total12 ? ` · ${Number(c.compra.total12).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })} em 12 meses` : "";
+      const valor = !semFinanceiro && c.compra?.total12 ? ` · ${Number(c.compra.total12).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })} em 12 meses` : "";
       m.bindTooltip(`${c.cliente}<br>${c.ultimaVisita ? `visita há ${c.diasVisita} d` : "nunca visitado"}${valor}`, { direction: "top" });
       m.on("click", () => {
         if (montando) setEscolhidos((e) => (e.some((x) => x.id === c.id) ? e.filter((x) => x.id !== c.id) : [...e, c]));
@@ -136,10 +136,10 @@ export default function MapaCarteira({ clientes, onSelecionar, onAdicionar, jaNa
   return (
     <div className="dcart-mapa-wrap">
       <div className="dcart-mapa-legenda">
-        <div className="dmapa-modo" role="group" aria-label="Cor dos pontos">
+        {!semFinanceiro && <div className="dmapa-modo" role="group" aria-label="Cor dos pontos">
           <button type="button" data-active={modoCor === "visita"} onClick={() => { setModoCor("visita"); setOcultas([]); }}>Última visita</button>
           <button type="button" data-active={modoCor === "valor"} onClick={() => { setModoCor("valor"); setOcultas([]); }}>Valor de compra</button>
-        </div>
+        </div>}
         {faixas.map((f) => (
           <button key={f.id} type="button" data-off={ocultas.includes(f.id)}
             onClick={() => setOcultas((o) => (o.includes(f.id) ? o.filter((x) => x !== f.id) : [...o, f.id]))}>

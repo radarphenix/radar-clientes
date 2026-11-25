@@ -325,7 +325,7 @@ Regras:
 
 ## 7.1 Adicionar clientes pelo mapa (Rotas → Planejar)
 
-No planejamento da rota (lista de Rotas → botao **Planejar** da rota), o botao **Adicionar pelo mapa** abre o mapa da carteira (mesmas cores do Dashboard: ultima visita ou valor de compra). Clique nos pontos para selecionar (ou dê zoom e use "Selecionar o que esta na tela", ate 60; cores escondidas na legenda nao entram; clientes que ja estao na rota nao aparecem). O painel mostra os escolhidos na ordem sugerida de menor trajeto, cada um com o seu campo de **data da visita** (opcional; "Mesma data para todos" + **Aplicar** preenche todos e depois ajusta-se so os diferentes; sem data, entra sem data prevista); **Adicionar a rota** inclui todos no fim da rota, como pendentes (quem estava em pauta passa para "em rota"). Depois, **Ordenar por distancia** reorganiza a rota inteira.
+No planejamento da rota (lista de Rotas → botao **Planejar** da rota), o botao **Adicionar pelo mapa** abre o mapa da carteira (cor por ultima visita; sem a visao financeira de valor de compra, que fica so no Dashboard). Clique nos pontos para selecionar (ou dê zoom e use "Selecionar o que esta na tela", ate 60; cores escondidas na legenda nao entram; clientes que ja estao na rota nao aparecem). O painel mostra os escolhidos na ordem sugerida de menor trajeto, cada um com o seu campo de **data da visita** (opcional; "Mesma data para todos" + **Aplicar** preenche todos e depois ajusta-se so os diferentes; sem data, entra sem data prevista); **Adicionar a rota** inclui todos no fim da rota, como pendentes (quem estava em pauta passa para "em rota"). Depois, **Ordenar por distancia** reorganiza a rota inteira.
 
 ## 8. Tela Dashboard
 
