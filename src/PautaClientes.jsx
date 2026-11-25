@@ -41,6 +41,33 @@ function PautaClientes({ onEditar, onRemover, onNovoCadastro, sincronizarQuando 
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroCriticidade, setFiltroCriticidade] = useState("");
   const [versao, setVersao] = useState(0);
+  // Indicadores (vieram do Dashboard em 25/11/2026): cada card filtra a lista pelo que conta.
+  const [metricas, setMetricas] = useState(null);
+  const [filtroStatus, setFiltroStatus] = useState("");
+
+  useEffect(() => {
+    let vivo = true;
+    supabase.from("clientes_em_pauta").select("status, criado_em, resolvido_em").then(({ data, error }) => {
+      if (!vivo || error) return;
+      const linhas = data || [];
+      const resolvidos = linhas.filter((x) => x.resolvido_em);
+      setMetricas({
+        total: linhas.length,
+        aguardando: linhas.filter((x) => x.status === "ATIVO" || x.status === "EM_ROTA").length,
+        atendidos: linhas.filter((x) => x.status === "ATENDIDO").length,
+        descartados: linhas.filter((x) => x.status === "DESCARTADO").length,
+        tempoMedio: resolvidos.length
+          ? Math.round(resolvidos.reduce((t, x) => t + (new Date(x.resolvido_em) - new Date(x.criado_em)) / 86400000, 0) / resolvidos.length)
+          : null,
+      });
+    });
+    return () => { vivo = false; };
+  }, [versao, sincronizarQuando]);
+
+  const escolherIndicador = (status) => {
+    setFiltroStatus(status);
+    setMostrarHistorico(status !== "" && status !== "AGUARDANDO");
+  };
 
   useEffect(() => {
     let cancelado = false;
@@ -159,6 +186,8 @@ function PautaClientes({ onEditar, onRemover, onNovoCadastro, sincronizarQuando 
     const termo = filtroTexto.trim().toLowerCase();
 
     return itens.filter((item) => {
+      if (filtroStatus === "AGUARDANDO" && !["ATIVO", "EM_ROTA"].includes(item.status)) return false;
+      if (filtroStatus && filtroStatus !== "AGUARDANDO" && filtroStatus !== "TODOS" && item.status !== filtroStatus) return false;
       if (filtroCriticidade && item.criticidade !== filtroCriticidade) {
         return false;
       }
@@ -173,7 +202,7 @@ function PautaClientes({ onEditar, onRemover, onNovoCadastro, sincronizarQuando 
         cliente?.uf?.toLowerCase().includes(termo)
       );
     });
-  }, [itens, filtroTexto, filtroCriticidade]);
+  }, [itens, filtroTexto, filtroCriticidade, filtroStatus]);
 
   async function handleRemover(item) {
     const sucesso = await onRemover(item);
@@ -202,6 +231,25 @@ function PautaClientes({ onEditar, onRemover, onNovoCadastro, sincronizarQuando 
           Cadastrar novo
         </button>
       </div>
+
+      {metricas && (
+        <div className="pauta-indicadores">
+          {[
+            ["TODOS", "Cadastrados (total)", metricas.total],
+            ["AGUARDANDO", "Aguardando", metricas.aguardando],
+            ["ATENDIDO", "Atendidos", metricas.atendidos],
+            ["DESCARTADO", "Descartados", metricas.descartados],
+          ].map(([status, rotulo, valor]) => (
+            <button key={status} type="button" className="pauta-indicador" data-ativo={filtroStatus === status}
+              onClick={() => escolherIndicador(filtroStatus === status ? "" : status)} title="Filtrar a lista">
+              <span>{rotulo}</span><strong>{valor}</strong>
+            </button>
+          ))}
+          <div className="pauta-indicador pauta-indicador-fixo">
+            <span>Tempo médio até resolver</span><strong>{metricas.tempoMedio === null ? "-" : `${metricas.tempoMedio} dia(s)`}</strong>
+          </div>
+        </div>
+      )}
 
       {presosEmRotaAberta.length > 0 && !mostrarHistorico && (
         <div className="pauta-clientes-alerta-presos">
@@ -239,7 +287,7 @@ function PautaClientes({ onEditar, onRemover, onNovoCadastro, sincronizarQuando 
           <input
             type="checkbox"
             checked={mostrarHistorico}
-            onChange={(e) => setMostrarHistorico(e.target.checked)}
+            onChange={(e) => { setMostrarHistorico(e.target.checked); setFiltroStatus(""); }}
           />
           Mostrar histórico (atendidos/descartados)
         </label>

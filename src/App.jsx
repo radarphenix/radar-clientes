@@ -47,10 +47,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  LockOpen,
-  PlayCircle,
   Flag,
-  CheckCircle,
   UserCheck,
   AlertTriangle,
   Trophy,
@@ -640,7 +637,6 @@ function App() {
   const [painelTodaPautaAberto, setPainelTodaPautaAberto] = useState(false);
   const [todaPautaAtiva, setTodaPautaAtiva] = useState([]);
   const [carregandoTodaPauta, setCarregandoTodaPauta] = useState(false);
-  const [metricasPauta, setMetricasPauta] = useState(null);
   const [clienteWhatsApp, setClienteWhatsApp] = useState(null);
   const [contatosWhatsApp, setContatosWhatsApp] = useState([]);
   const acaoContatoWhatsAppRef = useRef(null);
@@ -2842,49 +2838,6 @@ function App() {
     );
   }
 
-  async function carregarMetricasPauta() {
-    const { data, error } = await supabase
-      .from("clientes_em_pauta")
-      .select("status, criado_em, resolvido_em");
-
-    if (error) {
-      console.warn("Falha ao carregar métricas de pauta:", error.message);
-      return;
-    }
-
-    const linhas = data || [];
-
-    const atendidos = linhas.filter(
-      (item) => item.status === "ATENDIDO",
-    ).length;
-    const descartados = linhas.filter(
-      (item) => item.status === "DESCARTADO",
-    ).length;
-    const aguardando = linhas.filter(
-      (item) => item.status === "ATIVO" || item.status === "EM_ROTA",
-    ).length;
-
-    const resolvidos = linhas.filter((item) => item.resolvido_em);
-    const tempoMedioDias = resolvidos.length
-      ? Math.round(
-          resolvidos.reduce((total, item) => {
-            const dias =
-              (new Date(item.resolvido_em) - new Date(item.criado_em)) /
-              (1000 * 60 * 60 * 24);
-            return total + dias;
-          }, 0) / resolvidos.length,
-        )
-      : null;
-
-    setMetricasPauta({
-      totalCadastrados: linhas.length,
-      atendidos,
-      descartados,
-      aguardando,
-      tempoMedioDias,
-    });
-  }
-
   function abrirModalPauta(cliente) {
     const pautaAtual = pautaPorCliente.get(cliente.id);
 
@@ -3293,9 +3246,6 @@ function App() {
     abrirRota(rota);
   }
 
-  function abrirRotasPorStatus(status) {
-    abrirListaRotas(status);
-  }
 
   function abrirPesquisaRotas() {
     setFiltrosPesquisaRotas(FILTROS_PESQUISA_ROTAS_INICIAIS);
@@ -5537,7 +5487,6 @@ function App() {
               onClick={() => {
                 setTelaAtual("dashboard");
                 carregarRotas();
-                carregarMetricasPauta();
                 setMenuMobileAberto(false);
               }}
             >
@@ -7178,221 +7127,47 @@ function App() {
                 && (pode("rotas.todas") || (r.usuario_responsavel || r.user_id) === session.user.id))}
             />
 
-            <div className="dashboard-grupo">
-              <div className="dashboard-grupo-topo">
-                <h3>
-                  <Route size={22} />
-                  Rotas
-                </h3>
-              </div>
-
-              <div className="dashboard-indicadores">
-                <div className="dashboard-indicador">
-                  <Route size={30} />
-                  <span>Total de rotas</span>
-                  <strong>{indicadoresDashboard.totalRotas}</strong>
-                </div>
-
-                <div
-                  className="dashboard-indicador dashboard-card-click"
-                  onClick={() => abrirRotasPorStatus("ABERTA")}
-                >
-                  <LockOpen size={30} />
-                  <span>Abertas</span>
-                  <strong>{indicadoresDashboard.abertas}</strong>
-                </div>
-
-                <div
-                  className="dashboard-indicador dashboard-card-click"
-                  onClick={() => abrirRotasPorStatus("FECHADA")}
-                >
-                  <Flag size={30} />
-                  <span>Fechadas</span>
-                  <strong>{indicadoresDashboard.fechadas}</strong>
-                </div>
-
-                <div
-                  className="dashboard-indicador dashboard-card-click"
-                  onClick={() => abrirRotasPorStatus("EM_ANDAMENTO")}
-                >
-                  <PlayCircle size={30} />
-                  <span>Em andamento</span>
-                  <strong>{indicadoresDashboard.emAndamento}</strong>
-                </div>
-
-                <div
-                  className="dashboard-indicador dashboard-card-click"
-                  onClick={() => abrirRotasPorStatus("FINALIZADA")}
-                >
-                  <CheckCircle size={30} />
-                  <span>Finalizadas</span>
-                  <strong>{indicadoresDashboard.finalizadas}</strong>
-                </div>
-              </div>
-            </div>
-
+            {/* 25/11/2026: cards de Rotas, Clientes, Pauta e Ranking saíram (repetiam a Carteira e a Atividade
+                da equipe; os indicadores da pauta foram para a tela Clientes em Pauta). Fica o que leva a uma ação. */}
             <div className="dashboard-grupo">
               <h3>
-                <Users size={22} />
-                Clientes
+                <AlertTriangle size={22} />
+                Rotas com pendências
               </h3>
 
-              <div className="dashboard-indicadores">
-                <div className="dashboard-indicador">
-                  <Users size={30} />
-                  <span>Clientes cadastrados</span>
-                  <strong>{indicadoresDashboard.totalClientes}</strong>
-                </div>
-
-                <div className="dashboard-indicador">
-                  <Route size={30} />
-                  <span>Clientes em rotas</span>
-                  <strong>{indicadoresDashboard.totalClientesRotas}</strong>
-                </div>
-
-                <div className="dashboard-indicador">
-                  <UserCheck size={30} />
-                  <span>Visitados</span>
-                  <strong>{indicadoresDashboard.totalVisitados}</strong>
-                </div>
-
-                <div className="dashboard-indicador">
-                  <AlertTriangle size={30} />
-                  <span>Pendentes</span>
-                  <strong>{indicadoresDashboard.totalPendentes}</strong>
-                </div>
-
-                <div className="dashboard-indicador dashboard-indicador-destaque">
-                  <Flag size={30} />
-                  <span>Conclusão das rotas</span>
-                  <strong>{indicadoresDashboard.percentualConclusao}%</strong>
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-grupo">
-              <h3>
-                <Flag size={22} />
-                Clientes em Pauta
-              </h3>
-
-              {metricasPauta ? (
-                <div className="dashboard-indicadores">
-                  <div className="dashboard-indicador">
-                    <Flag size={30} />
-                    <span>Cadastrados (total)</span>
-                    <strong>{metricasPauta.totalCadastrados}</strong>
-                  </div>
-
-                  <div className="dashboard-indicador">
-                    <AlertTriangle size={30} />
-                    <span>Aguardando</span>
-                    <strong>{metricasPauta.aguardando}</strong>
-                  </div>
-
-                  <div className="dashboard-indicador">
-                    <CheckCircle size={30} />
-                    <span>Atendidos</span>
-                    <strong>{metricasPauta.atendidos}</strong>
-                  </div>
-
-                  <div className="dashboard-indicador">
-                    <UserCheck size={30} />
-                    <span>Descartados</span>
-                    <strong>{metricasPauta.descartados}</strong>
-                  </div>
-
-                  <div className="dashboard-indicador dashboard-indicador-destaque">
-                    <BarChart3 size={30} />
-                    <span>Tempo médio até resolver</span>
-                    <strong>
-                      {metricasPauta.tempoMedioDias === null
-                        ? "-"
-                        : `${metricasPauta.tempoMedioDias} dia(s)`}
-                    </strong>
-                  </div>
-                </div>
-              ) : (
-                <p>Carregando indicadores de pauta...</p>
-              )}
-            </div>
-
-            <div className="dashboard-duas-colunas">
-              <div className="dashboard-grupo">
-                <h3>
-                  <Trophy size={22} />
-                  Ranking por responsável
-                </h3>
-
-                <div className="dashboard-ranking">
-                  {indicadoresDashboard.rankingResponsaveis.length === 0 ? (
-                    <p>Nenhuma rota encontrada.</p>
-                  ) : (
-                    indicadoresDashboard.rankingResponsaveis.map((item) => (
-                      <div className="dashboard-ranking-item" key={item.nome}>
-                        <div>
-                          <strong>{item.nome}</strong>
-                          <span>
-                            {item.totalRotas} rota(s) · {item.totalClientes}{" "}
-                            cliente(s)
-                          </span>
-                        </div>
-
-                        <div>
-                          <strong>{item.totalVisitados}</strong>
-                          <span>visitados</span>
-                        </div>
-
-                        <div>
-                          <strong>{item.totalPendentes}</strong>
-                          <span>pendentes</span>
-                        </div>
+              <div className="dashboard-ranking">
+                {indicadoresDashboard.rotasCriticas.length === 0 ? (
+                  <p>Nenhuma rota com pendência encontrada.</p>
+                ) : (
+                  indicadoresDashboard.rotasCriticas.map((rota) => (
+                    <div
+                      className="dashboard-ranking-item dashboard-ranking-click"
+                      key={rota.id}
+                      onClick={() => {
+                        setTelaAtual("rotas");
+                        abrirRota(rota);
+                      }}
+                    >
+                      <div>
+                        <strong>{rota.nome}</strong>
+                        <span>
+                          {rota.responsavel_nome || "Sem responsável"} ·{" "}
+                          {rota.status}
+                        </span>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
 
-              <div className="dashboard-grupo">
-                <h3>
-                  <AlertTriangle size={22} />
-                  Rotas com pendências
-                </h3>
-
-                <div className="dashboard-ranking">
-                  {indicadoresDashboard.rotasCriticas.length === 0 ? (
-                    <p>Nenhuma rota com pendência encontrada.</p>
-                  ) : (
-                    indicadoresDashboard.rotasCriticas.map((rota) => (
-                      <div
-                        className="dashboard-ranking-item dashboard-ranking-click"
-                        key={rota.id}
-                        onClick={() => {
-                          setTelaAtual("rotas");
-                          abrirRota(rota);
-                        }}
-                      >
-                        <div>
-                          <strong>{rota.nome}</strong>
-                          <span>
-                            {rota.responsavel_nome || "Sem responsável"} ·{" "}
-                            {rota.status}
-                          </span>
-                        </div>
-
-                        <div>
-                          <strong>{rota.total_clientes || 0}</strong>
-                          <span>clientes</span>
-                        </div>
-
-                        <div>
-                          <strong>{rota.total_pendentes || 0}</strong>
-                          <span>pendentes</span>
-                        </div>
+                      <div>
+                        <strong>{rota.total_clientes || 0}</strong>
+                        <span>clientes</span>
                       </div>
-                    ))
-                  )}
-                </div>
+
+                      <div>
+                        <strong>{rota.total_pendentes || 0}</strong>
+                        <span>pendentes</span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </section>

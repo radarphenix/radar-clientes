@@ -66,9 +66,8 @@ for (const u of usuarios) {
 
   if (u.tipo === "representante") {
     const fora = v.fora_da_carteira || [];
-    const comLetra = fora.filter((c) => /\D/.test(String(c)));
-    ok(fora.length === comLetra.length, `vê só a própria carteira (${v.clientes} clientes de ${totalClientes})${fora.length > comLetra.length ? `: fora = ${fora.filter((c) => !comLetra.includes(c)).join(", ")}` : ""}`);
-    if (comLetra.length) alerta(`vê cliente(s) com letra no código pela equivalência numérica: ${comLetra.join(", ")}`);
+    // Desde 25/11/2026 código com letra (ex.: 03017A) só casa com ele mesmo: qualquer cliente fora é falha.
+    ok(!fora.length, `vê só a própria carteira (${v.clientes} clientes de ${totalClientes})${fora.length ? `: fora = ${fora.join(", ")}` : ""}`);
     ok(v.pode_rotas_todas || v.rotas_de_outros === 0, `rotas só dele (${v.rotas} rota(s))`);
     ok(v.pode_bi || v.bi === 0, `Painel BI: ${v.pode_bi ? "liberado" : "sem acesso e 0 títulos"}`);
     ok(v.valores === (v.excecao_valores === true), `Dashboard: mostrar valores = ${v.valores} (${v.excecao_valores === true ? "exceção liberada" : "padrão do perfil"})`);

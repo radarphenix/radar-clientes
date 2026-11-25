@@ -205,3 +205,13 @@
     flex: 1;
   }
 }
+
+/* Indicadores da pauta (vieram do Dashboard, 25/11/2026): cada card filtra a lista */
+.pauta-indicadores { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.pauta-indicador { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: #fff !important; color: #0f172a !important; text-align: left; font: inherit; box-shadow: none; }
+button.pauta-indicador { cursor: pointer; }
+button.pauta-indicador:hover { border-color: #93c5fd; }
+.pauta-indicador[data-ativo="true"] { border-color: #0b4fd6; background: #eff6ff !important; box-shadow: 0 0 0 2px rgba(11, 79, 214, 0.15); }
+.pauta-indicador span { font-size: 0.8rem; color: #64748b; }
+.pauta-indicador strong { font-size: 1.35rem; }
+@media (max-width: 900px) { .pauta-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
