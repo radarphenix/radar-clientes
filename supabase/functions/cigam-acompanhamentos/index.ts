@@ -498,6 +498,24 @@ async function dashboardCarteira(req: Request) {
   return { gerado_em: hoje.toISOString(), historico_desde: primeira || null, com_valores: comValores, pedidos_ok: pedidosOk, clientes, paises };
 }
 
+// ------------------------------------------------------------------ BI: nomes dos grupos de material
+// Faturamento por família (pedido do usuário, 25/11/2026): o grupo são os 3 primeiros dígitos do código do material.
+let cacheGrupos: { grupos: Record<string, string>; em: number } | null = null;
+async function biGrupos(req: Request) {
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+  });
+  const { data: pode } = await sb.rpc("radar_pode", { p_codigo: "bi_faturamento" });
+  if (pode !== true) throw Object.assign(new Error("Sem acesso ao BI de Faturamento."), { status: 403 });
+  if (!cacheGrupos || Date.now() - cacheGrupos.em > 86400_000) {
+    const r = (await api("suprimentos/es/Grupo/Buscar?$top=2000")) as Record<string, unknown>[];
+    const grupos: Record<string, string> = {};
+    for (const g of r || []) { const c = String(g.Codigo || "").trim(); if (c) grupos[c] = String(g.Descricao || "").trim(); }
+    cacheGrupos = { grupos, em: Date.now() };
+  }
+  return { grupos: cacheGrupos.grupos };
+}
+
 // ------------------------------------------------------------------ BI Pagamentos (contas a pagar + fluxo)
 // Lê todos os lançamentos do GFLANCAM pela API (a base inteira cabe numa chamada: ~2 mil linhas em <1 s)
 // e devolve só o que o painel usa: pagar em aberto (Tipo P), pagos (Tipo d, o CIGAM troca P -> d na
@@ -615,6 +633,7 @@ servir(async (req) => {
     if (url.searchParams.get("sync") === "visitas") return json(await sincronizarVisitas(req));
     if (url.searchParams.get("dashboard") === "carteira") return json(await dashboardCarteira(req));
     if (url.searchParams.get("bi") === "financeiro") return json(await biFinanceiro(req));
+    if (url.searchParams.get("bi") === "grupos") return json(await biGrupos(req));
     if (url.searchParams.has("alertas")) return json(await alertas(req, url.searchParams.get("alertas") || ""));
     const bruto = (url.searchParams.get("cliente") || "").trim();
     const digitos = bruto.replace(/\D/g, "");

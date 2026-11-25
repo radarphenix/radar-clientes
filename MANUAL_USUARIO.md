@@ -1284,6 +1284,13 @@ O controle do item de pedido no CIGAM define a etapa:
 
 Rankings: **Top 10 clientes por faturado líquido**, **Top 10 clientes por carteira a faturar** (tudo o que está previsto e ainda não foi faturado) e **Faturado líquido por representante** (some quando um representante está filtrado). Nos rankings, a devolução desconta do cliente e do representante da nota original. Todos têm "Ver como tabela".
 
+**Análise da carteira** (abaixo dos rankings, no faturado líquido do período e com os mesmos filtros; todo número abre a lista com exportação para Excel):
+- **Concentração (curva ABC)**: quantos clientes fazem 80% do faturado (classe A; B até 95%, C o resto), peso dos 5 maiores e do maior cliente, e a curva completa.
+- **Ganhos e perdidos** (contra o período anterior de mesmo tamanho): clientes novos ou recuperados (compraram agora e não antes), que não compraram neste período (compraram antes e não agora), que compraram mais e que compraram menos.
+- **Faturado por família de produto** (grupo do material: Feltro, Tela formadora, Telas secadoras, Camisa encolhível, Outras aplicações; também aparece Ativo imobilizado quando há venda de bem). Clique na barra para ver as notas.
+- **Faturado por estado / exterior** (clique para ver os clientes) e **mapa do faturamento**: cada cliente é um círculo do tamanho do que faturou; clique para ver as notas.
+- O gráfico anual ganha a linha do **ano anterior** quando houver notas daquele ano (o histórico de notas começa em 17/12/2025).
+
 ### Caixa
 
 - **Títulos com vencimento no período**: **Previsão de recebimento** = **Recebido** + **Vencido em aberto** + **A vencer**, sempre sobre os mesmos títulos (R01 que vencem no período). Vencido e a vencer são separados pela data de referência: o fim do filtro, ou hoje se o filtro termina no futuro. Não existem pagamentos parciais.

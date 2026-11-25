@@ -6,6 +6,7 @@ import StatTile from "./bi/StatTile.jsx";
 import LineChart from "./bi/LineChart.jsx";
 import BarChart from "./bi/BarChart.jsx";
 import DetalheBI from "./bi/DetalheBI.jsx";
+import AnaliseCarteiraBI from "./bi/AnaliseCarteiraBI.jsx";
 import { buscarTodas } from "./bi/buscarTodas.js";
 import { CATEGORICAL, SEQUENCIAL_ORDINAL } from "./bi/paletteBI.js";
 import "./bi-panel.css";
@@ -371,6 +372,8 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
       rotuloX: rotulo,
       pf: em(itensPedido.filter((x) => PREVISTAS.has(x.etapa)), "data_previsao", (x) => x.valor),
       fat: em(notasF, "data_movimento", (x) => n(x.valor_liquido)) - em(devolucoesF, "data_movimento", (x) => n(x.valor_liquido)),
+      // Mesmo mês do ano anterior (aparece no gráfico quando houver notas daquele ano).
+      fatAnt: (() => { const m = `${ano - 1}-${pad(i + 1)}`; const e = (l) => soma(l.filter((x) => String(x.data_movimento || "").startsWith(m)), (x) => n(x.valor_liquido)); return e(notasF) - e(devolucoesF); })(),
       pr: em(financeiroF, "data_vencimento", (x) => n(x.valor)),
       // Mesma base dos cards de Caixa: títulos pelo mês de vencimento, recebido = valor - saldo.
       rec: em(financeiroF, "data_vencimento", (x) => n(x.valor) - n(x.valor_saldo)),
@@ -625,6 +628,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
         <LineChart titulo={`Comercial anual ${ano} · previsão × faturado líquido`} onSelecionarPonto={selecionarMes} series={[
           { nome: "Previsão", cor: CATEGORICAL.comissao, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.pf })) },
           { nome: "Faturado", cor: CATEGORICAL.vendas, pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.fat })) },
+          ...(anual.some((x) => x.fatAnt) ? [{ nome: `Faturado ${ano - 1}`, cor: "#898781", pontos: anual.map((x) => ({ rotuloX: x.rotuloX, valor: x.fatAnt })) }] : []),
         ]} formatarValor={moeda} />
       </div>
 
@@ -636,6 +640,9 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
       </div>
       {!representante && <BarChart titulo="Faturado líquido por representante" itens={rankingRepresentantes} corPadrao={CATEGORICAL.vendas} formatarValor={moeda}
         onSelecionarItem={(item) => abrir(`Faturado líquido · ${item.rotulo}`, COL_NOTAS, linhasNotas(periodo.no.filter(doRepresentante(item.chave)), periodo.dv.filter(doRepresentante(item.chave))))} />}
+
+      <AnaliseCarteiraBI noPeriodo={periodo.no} dvPeriodo={periodo.dv} notasF={notasF} devolucoesF={devolucoesF}
+        periodos={comparacao?.periodos} abrir={abrir} abrirNotas={(titulo, no, dv) => abrir(titulo, COL_NOTAS, linhasNotas(no, dv))} />
 
       </>}
 
