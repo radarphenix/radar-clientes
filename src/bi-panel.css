@@ -40,6 +40,8 @@
 .bi-link { padding:0; border:0; background:none; color:#0057d8; font:inherit; font-weight:800; text-decoration:underline; cursor:pointer; }
 .bi-link:hover { background:none; color:#003f9e; }
 .bi-recorte-total { font-size:13px; }
+.bi-opcao-check { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#334155; cursor:pointer; white-space:nowrap; }
+.bi-opcao-check input { width:16px; height:16px; margin:0; accent-color:#0b57d0; }
 /* Janela de detalhe */
 .bi-detalhe-fundo { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:24px; background:rgba(3,22,50,.45); }
 .bi-detalhe-janela { display:grid; grid-template-rows:auto minmax(0,1fr); width:min(1100px,100%); max-height:min(80vh,820px); padding:20px; border-radius:16px; background:#fff; box-shadow:0 20px 60px rgba(3,22,50,.35); text-align:left; }

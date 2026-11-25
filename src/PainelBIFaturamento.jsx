@@ -56,6 +56,8 @@ const PREVISTAS = new Set(["negociacao", "pendente", "carteira", "faturado"]);
 // Vínculo pedido–nota: cliente + pedido + sequência do item do pedido.
 // A nota também tem sequencia_item, mas é a sequência dela própria; a do pedido
 // vem em sequencia_pedido_origem (ESMOVIME.SEQ_PEDIDO_O).
+// Código do cliente sem espaços e zeros à esquerda, para casar o cadastro com o financeiro do ERP.
+const codigoNormal = (v) => String(v ?? "").trim().replace(/^0+(?=.)/, "");
 const chave = (...partes) => partes.map((v) => String(v ?? "").trim()).join(":");
 const chaveItemPedido = (p) => chave(p.codigo_cliente, p.cd_pedido, p.sequencia_item);
 const chaveOrigemNota = (nota) => chave(nota.codigo_cliente, nota.pedido_origem, nota.sequencia_pedido_origem);
@@ -141,6 +143,9 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
   const [financeiro, setFinanceiro] = useState([]);
   const [devolucoes, setDevolucoes] = useState([]);
   const [recorteVencidos, setRecorteVencidos] = useState("mes");
+  // Vencidos de clientes do exterior (UF "EX") ficam fora por padrão; o usuário pode desmarcar para ver.
+  const [ocultarExterior, setOcultarExterior] = useState(true);
+  const [clientesExterior, setClientesExterior] = useState(new Set());
   const [detalhe, setDetalhe] = useState(null);
   const fecharDetalhe = useCallback(() => setDetalhe(null), []);
   const [erro, setErro] = useState("");
@@ -159,11 +164,12 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
     async function carregar() {
       setCarregando(true); setErro("");
       // Recebimentos não lê pedidos (a regra de acesso de pedidos é só do BI de Faturamento).
-      const [p, no, f, dv] = await Promise.all([
+      const [p, no, f, dv, ex] = await Promise.all([
         recebimentos ? Promise.resolve({ data: [] }) : buscarTodas(() => supabase.from("bi_pedidos_itens").select("*")),
         buscarTodas(() => supabase.from("bi_notas_itens").select("*")),
         buscarTodas(() => supabase.from("bi_lancamentos_financeiros").select("*")),
         buscarTodas(() => supabase.from("bi_devolucoes_itens").select("*")),
+        buscarTodas(() => supabase.from("clientes").select("codigo_cliente").eq("uf", "EX")),
       ]);
       if (!ativo) return;
       if (p.error || no.error || f.error || dv.error) {
@@ -172,6 +178,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
       } else {
         setPedidos(p.data || []); setNotas(no.data || []); setFinanceiro(f.data || []); setDevolucoes(dv.data || []);
       }
+      setClientesExterior(new Set((ex.data || []).map((c) => codigoNormal(c.codigo_cliente))));
       setCarregando(false);
     }
     carregar();
@@ -287,7 +294,8 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
   const emAberto = financeiroF.filter((x) => n(x.valor_saldo) > 0);
   const inicioVencidos = inicioRecorte(referencia, recorteVencidos);
   const rotuloRecorte = RECORTES_VENCIDOS.find(([t]) => t === recorteVencidos)[1].toLowerCase();
-  const vencidos = emAberto.filter((x) => x.data_vencimento < referencia && (!inicioVencidos || x.data_vencimento >= inicioVencidos));
+  const doExterior = (x) => clientesExterior.has(codigoNormal(x.cd_empresa));
+  const vencidos = emAberto.filter((x) => x.data_vencimento < referencia && (!inicioVencidos || x.data_vencimento >= inicioVencidos) && (!ocultarExterior || !doExterior(x)));
   const faixas = FAIXAS_ATRASO.map((faixa, i) => {
     const de = i === 0 ? 1 : FAIXAS_ATRASO[i - 1].ate + 1;
     return {
@@ -320,7 +328,7 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
     return { chave: i, de, ate, rotulo: `${dataBR(de).slice(0, 5)} a ${dataBR(ate).slice(0, 5)}`,
       valor: soma(emAberto.filter((x) => x.data_vencimento >= de && x.data_vencimento <= ate), (x) => n(x.valor_saldo)) };
   });
-  const semBaixa = emAberto.filter((x) => x.data_vencimento && diasEntre(x.data_vencimento, referencia) > 90);
+  const semBaixa = emAberto.filter((x) => x.data_vencimento && diasEntre(x.data_vencimento, referencia) > 90 && (!ocultarExterior || !doExterior(x)));
   const pontuar = (lista) => lista.reduce((a, x) => {
     if (!x.data_vencimento || !x.data_ultima_liquidacao) return a;
     const atraso = diasEntre(x.data_vencimento, x.data_ultima_liquidacao);
@@ -644,6 +652,9 @@ export default function PainelBIFaturamento({ modo = "faturamento" }) {
             <button key={t} type="button" className={recorteVencidos === t ? "ativo" : ""} onClick={() => setRecorteVencidos(t)}>{r}</button>
           ))}
         </div>
+        <label className="bi-opcao-check">
+          <input type="checkbox" checked={ocultarExterior} onChange={(e) => setOcultarExterior(e.target.checked)} /> Não exibir vencidos do exterior
+        </label>
         <button type="button" className="bi-link bi-recorte-total" onClick={() => abrir(`Carteira vencida · ${rotuloRecorte}`, COL_TITULOS, linhasTitulos(vencidos), "saldo", `Posição em ${dataBR(referencia)}`)}>
           {moeda(soma(vencidos, (x) => n(x.valor_saldo)))} em {vencidos.length} título(s)
         </button>
