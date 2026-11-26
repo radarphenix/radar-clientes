@@ -13,8 +13,8 @@ import "./bi-panel.css";
 
 // Painel BI · Funil e entregas (pedido do usuário, 25/11/2026). Três perguntas:
 // 1. Funil: dos pedidos lançados no período (data do pedido), quanto virou venda e quanto segue em aberto.
-//    O CIGAM guarda só o controle ATUAL do item (não há tempo por etapa) e a sincronização não traz itens
-//    cancelados/suspensos, então a conversão é venda ÷ lançado. Tempo pedido → nota ficou de fora: a maioria
+//    O CIGAM guarda só o controle ATUAL do item (não há tempo por etapa) e nenhum item com controle
+//    85-95 chega ao Supabase (a confirmar no Oracle), então a conversão é venda ÷ lançado. Tempo pedido → nota ficou de fora: a maioria
 //    dos pedidos é digitada no dia do faturamento (259 de 309 em 25/11/2026), o número não diria nada.
 // 2. Entrega no prazo: notas do período ligadas a um item de pedido, nota emitida até a data de previsão.
 // 3. Devoluções: devolvido ÷ faturado no período, por família, cliente e representante.
