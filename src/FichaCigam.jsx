@@ -181,30 +181,37 @@ export function PedidosCigam({ cliente }) {
 }
 
 // ------------------------------------------------------------------ Notas
+// `venda` vem do servidor (TotalFaturado > 0 e CFOP de saída); resposta antiga sem o campo conta como venda.
+const ehVenda = (n) => n.venda !== false;
+
 export function NotasCigam({ cliente }) {
   const [estado, repetir] = useFicha(cliente, "notas");
   const itens = useMemo(() => estado.itens || [], [estado.itens]);
+  // Só nota com faturamento conta como compra; remessa, amostra, retorno e nota cancelada
+  // aparecem na lista com o selo "Sem faturamento" (regra do servidor: campo `venda`).
   const resumo = useMemo(() => {
     const limite = new Date();
     limite.setFullYear(limite.getFullYear() - 1);
     const corte = limite.toISOString().slice(0, 10);
-    const ano = itens.filter((n) => (n.emissao || "") >= corte);
-    return { total12: ano.reduce((s, n) => s + n.total, 0), qtd12: ano.length };
+    const vendas = itens.filter(ehVenda);
+    const ano = vendas.filter((n) => (n.emissao || "") >= corte);
+    return { total12: ano.reduce((s, n) => s + n.total, 0), qtd12: ano.length, ultima: vendas[0]?.emissao };
   }, [itens]);
 
   return (
     <Estado estado={estado} repetir={repetir} vazio="Nenhuma nota fiscal deste cliente.">
       <div className="acomp-resumo">
         <div><strong>{moeda(resumo.total12)}</strong><span>Comprado em 12 meses</span></div>
-        <div><strong>{resumo.qtd12}</strong><span>Notas em 12 meses</span></div>
-        <div><strong>{data(itens[0]?.emissao)}</strong><span>Última compra</span></div>
+        <div><strong>{resumo.qtd12}</strong><span>Notas de venda em 12 meses</span></div>
+        <div><strong>{data(resumo.ultima)}</strong><span>Última compra</span></div>
       </div>
       <div className="ficha-lista">
         {itens.map((n) => (
-          <article key={`${n.serie}-${n.nf}`} className="ficha-linha">
+          <article key={`${n.serie}-${n.nf}`} className="ficha-linha" data-sem-faturamento={!ehVenda(n) || undefined}>
             <div className="ficha-linha-principal">
               <strong>NF {n.nf}</strong>
               {n.tipo && n.tipo !== "Normal" && <span className="ficha-selo">{n.tipo}</span>}
+              {!ehVenda(n) && <span className="ficha-selo" title={`Operação ${n.operacao || "-"} · CFOP ${n.cfop || "-"}: não conta como compra`}>Sem faturamento</span>}
             </div>
             <div className="ficha-linha-detalhe">
               <span>Emitida {data(n.emissao)}</span>
@@ -283,7 +290,8 @@ function somarDias(iso, dias) {
   return d.toISOString().slice(0, 10);
 }
 
-function calcular(pedidos, notas, abertos, pagos) {
+function calcular(pedidos, todasNotas, abertos, pagos) {
+  const notas = todasNotas.filter(ehVenda);
   const hoje = hojeISO();
   const ha12 = somarDias(hoje, -365);
   const ha24 = somarDias(hoje, -730);

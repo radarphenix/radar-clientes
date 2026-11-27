@@ -322,10 +322,12 @@ async function buscarFicha(parte: string, cliente: string) {
   }
   if (parte === "notas") {
     const r = (await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente eq '${cliente}'&$orderby=DataEmissao desc&$top=200`))) as L[];
+    // A lista mostra todas as notas; `venda` diz quais contam como compra (totais, última compra, ritmo).
     return (r || []).map((n) => ({
       nf: n.NF, serie: txt(n.CodigoSerie), emissao: txt(n.DataEmissao), saida: txt(n.DataSaida),
       total: Number(n.TotalNF) || 0, mercadoria: Number(n.TotalMercadoria) || 0,
       pedido: txt(n.CodigoPedido), cfop: txt(n.Cfop), tipo: txt(n.TipoNotaDescricao), frete: txt(n.TipoFreteDescricao),
+      operacao: txt(n.CodigoTipoOperacao), venda: ehVenda(n),
     }));
   }
   // Títulos a receber: em aberto = Tipo 'R' com saldo; pagos = Tipo 'c' (o CIGAM troca o tipo na liquidação,
@@ -398,6 +400,17 @@ async function sincronizarVisitas(req: Request) {
   return { processados, com_visita: comVisita, falhas, restantes: Math.max(0, fila.length - i), total: fila.length, segundos: Math.round((Date.now() - inicio) / 1000) };
 }
 
+// ------------------------------------------------------------------ O que conta como compra
+// Só nota com faturamento (pedido do usuário, 27/11/2026): TotalFaturado > 0 e CFOP de saída (5, 6 ou 7).
+// Mesmo critério do BI (views do MWFaturamentoSync: GETOPERA.FATURADO = 'S' e movimento de saída).
+// Ficam fora: remessa (7949), retorno de conserto (6916), amostra/demonstração (6912), outras saídas (6949),
+// nota cancelada/zerada e notas de entrada (importação 3101/3127, devolução 1/2xxx). Conferido na base
+// real em 27/11/2026: 114 das 363 notas de 24 meses (R$ 6,9 mi de R$ 14,4 mi) contavam como compra sem
+// serem venda, e 21 dos 104 clientes com nota apareciam como compradores só por elas.
+function ehVenda(n: Record<string, unknown>): boolean {
+  return (Number(n.TotalFaturado) || 0) > 0 && /^[567]/.test(String(n.Cfop || "").trim());
+}
+
 // ------------------------------------------------------------------ Dashboard: compras da carteira
 // Uma consulta de notas (24 meses) para a carteira inteira; por cliente: última compra, ritmo (média dos
 // últimos 10 intervalos entre datas de compra), próxima compra prevista, total 12 meses e 12 anteriores.
@@ -432,7 +445,7 @@ async function dashboardCarteira(req: Request) {
   const menos = (dias: number) => iso(new Date(hoje.getTime() - dias * 86400000));
   const ha12 = menos(365), ha24 = menos(730);
   type L = Record<string, unknown>;
-  const notas = (await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=DataEmissao ge ${ha24}&$top=20000`))) as L[];
+  const notas = ((await api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=DataEmissao ge ${ha24}&$top=20000`))) as L[] || []).filter(ehVenda);
 
   const por = new Map<string, { datas: Set<string>; total12: number; total24: number; notas12: number }>();
   for (const n of notas || []) {
@@ -613,9 +626,15 @@ async function alertas(req: Request, lista: string) {
           }
         }),
     podeVen === true &&
-      api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente in ${em}&$apply=groupby((CodigoCliente),aggregate(DataEmissao with max as Ultima))`))
+      // Sem groupby: a última compra precisa ignorar remessa/sem faturamento (ehVenda), e o CFOP não filtra
+      // bem no OData. Com $select o volume é pequeno (só as colunas usadas).
+      api(odata(`comercial/fa/NotaFiscal/Buscar?$filter=CodigoCliente in ${em}&$select=CodigoCliente,DataEmissao,Cfop,TotalFaturado&$top=20000`))
         .then((r) => {
-          for (const n of (r as L[]) || []) de(String(n.CodigoCliente).trim()).ultima_compra = String(n.Ultima || "").slice(0, 10) || null;
+          for (const n of ((r as L[]) || []).filter(ehVenda)) {
+            const a = de(String(n.CodigoCliente).trim());
+            const d = String(n.DataEmissao || "").slice(0, 10);
+            if (d && (!a.ultima_compra || d > String(a.ultima_compra))) a.ultima_compra = d;
+          }
           // Sem nota nenhuma no CIGAM: marca explicitamente para a tela poder dizer "sem compras".
           for (const c of codigos) if (!("ultima_compra" in de(c))) de(c).ultima_compra = null;
         }),
