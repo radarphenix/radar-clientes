@@ -407,8 +407,11 @@ async function sincronizarVisitas(req: Request) {
 // nota cancelada/zerada e notas de entrada (importação 3101/3127, devolução 1/2xxx). Conferido na base
 // real em 27/11/2026: 114 das 363 notas de 24 meses (R$ 6,9 mi de R$ 14,4 mi) contavam como compra sem
 // serem venda, e 21 dos 104 clientes com nota apareciam como compradores só por elas.
+// Venda de ativo imobilizado (CFOP x551, ex.: NF 10503 de 29/10/2026, R$ 290 mil) também fica fora: tem
+// faturamento, mas não é compra de produto (decisão do usuário, 27/11/2026; mesma exclusão nas views do BI).
 function ehVenda(n: Record<string, unknown>): boolean {
-  return (Number(n.TotalFaturado) || 0) > 0 && /^[567]/.test(String(n.Cfop || "").trim());
+  const cfop = String(n.Cfop || "").trim();
+  return (Number(n.TotalFaturado) || 0) > 0 && /^[567]/.test(cfop) && !/^[567]551/.test(cfop);
 }
 
 // ------------------------------------------------------------------ Dashboard: compras da carteira
